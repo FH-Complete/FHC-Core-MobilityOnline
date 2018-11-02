@@ -1,0 +1,8 @@
+{
+	"name": "FHC-Core-MobilityOnline",
+	"description": "MobilityOnline Extension ",
+	"version": "1",
+	"license": "GPL",
+	"url": "https://github.com/FH-Complete/FHC-Core-MobilityOnline",
+	"core_version": "3.3"
+}
