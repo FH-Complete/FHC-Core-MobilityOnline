@@ -9,7 +9,9 @@
 			'fontawesome' => true,
 			'sbadmintemplate' => true,
 			'ajaxlib' => true,
-			'navigationwidget' => true
+			'navigationwidget' => true,
+			'customJSs' => array('public/extensions/FHC-Core-MobilityOnline/js/MobilityOnline.js'),
+			'customCSSs' => array('public/extensions/FHC-Core-MobilityOnline/css/MobilityOnline.css')
 		)
 	);
 ?>
@@ -23,11 +25,43 @@
 			<div class="container-fluid">
 				<div class="row">
 					<div class="col-lg-12">
-						<h3 class="page-header">My Extension</h3>
+						<h3 class="page-header text-center">MobilityOnline Courses Synchronisation</h3>
 					</div>
 				</div>
-				<div>
-					This is the My Extension Template
+				<div class="row text-center">
+					<div class="col-xs-4 col-xs-offset-4 form-group">
+						<label>Studiensemester</label>
+						<select class="form-control" name="studiensemester" id="studiensemester">
+							<?php
+							foreach ($semester as $sem):
+								$selected = $sem->studiensemester_kurzbz === $currsemester[0]->studiensemester_kurzbz ? ' selected=""' : '';
+								?>
+								<option value="<?php echo $sem->studiensemester_kurzbz ?>"<?php echo $selected ?>>
+									<?php echo $sem->studiensemester_kurzbz ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-5 text-center">
+						<div class="well well-sm wellminheight">
+							<br />
+							<button class="btn btn-default" id="syncbtn"><i class="fa fa-refresh"></i>&nbsp;synchronise courses</button>
+							<br />
+							<h4><span id="lvhead"><span id="arrowtoggle"><i class="fa fa-chevron-right"></i>&nbsp;</span><span id="lvcount"><?php echo count($lvs) ?></span>&nbsp;courses with incoming places</span></h4>
+							<div id="lvs" class="panel panel-body">
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-7 text-center">
+						<div class="well well-sm wellminheight">
+							<h4>synchronisation output:</h4>
+							<div id="syncoutput" class="panel panel-body">
+								-
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>

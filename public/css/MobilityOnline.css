@@ -1,0 +1,24 @@
+.wellminheight{
+    min-height: 135px;
+}
+
+#lvhead{
+    cursor: pointer;
+}
+
+#lvs{
+    display: none;
+}
+
+#syncbtn{
+    font-size: 16px;
+}
+
+.fhc-ajaxclient-veil .veil-text
+{
+    font-size: 30px;
+    position: relative;
+    top: 56%;
+    left: 45%;
+    color: grey;
+}
