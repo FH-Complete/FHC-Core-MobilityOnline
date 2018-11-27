@@ -14,7 +14,8 @@ class MobilityOnlineLib
 	 */
 	public function mapLvToMoLv($lv)
 	{
-		$temp = $lv;
+		//deep copy
+		$temp = clone $lv;
 
 		//string replacements
 		$replacementsarr = array(
@@ -92,7 +93,7 @@ class MobilityOnlineLib
 		$moLv['ectsCredits'] = $temp->ects;
 		$moLv['freePlaces'] = $temp->incoming;
 		$moLv['studyLevels'] = array('number' => $temp->typ);
-		$moLv['linkEctsDescription'] = CIS_ROOT.'cis/private/lehre/ects/preview.php?lv='.$temp->lehrveranstaltung_id;
+		$moLv['linkEctsDescription'] = CIS_ROOT.'addons/lvinfo/cis/view.php?lehrveranstaltung_id='.$lv->lehrveranstaltung_id.'&studiensemester_kurzbz='.$lv->studiensemester_kurzbz;
 
 		return $moLv;
 	}

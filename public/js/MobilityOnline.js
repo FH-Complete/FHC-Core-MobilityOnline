@@ -78,7 +78,7 @@ var MobilityOnline = {
 	{
 
 		FHC_AjaxClient.showVeil();
-		$(".fhc-ajaxclient-veil").append("<p class='veil-text'>Synchronising...</p>");
+		$(".fhc-ajaxclient-veil").append("<div class='veil-text'>Synchronising...</div>");
 		$("#syncoutput").load(
 			FULL_URL + '/syncLvs?studiensemester=' + encodeURIComponent(studiensemester),
 			function()

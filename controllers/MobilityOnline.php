@@ -22,9 +22,10 @@ class MobilityOnline extends Auth_Controller
 		$this->config->load('extensions/FHC-Core-MobilityOnline/config');
 
 		$this->load->model('organisation/Studiensemester_model', 'StudiensemesterModel');
-		$this->load->model('extensions/FHC-Core-MobilityOnline/Mobilityonlinedb_model', 'MoDbModel');
-		$this->load->model('extensions/FHC-Core-MobilityOnline/Mobilityonlineapi_model', 'MoApiModel');
-		$this->load->model('extensions/FHC-Core-MobilityOnline/Moidzuordnung_model', 'MoidzuordnungModel');
+		$this->load->model('extensions/FHC-Core-MobilityOnline/Mobilityonlinefhc_model', 'MoFhcModel');
+		$this->load->model('extensions/FHC-Core-MobilityOnline/Mobilityonlineapi_model');//parent model
+		$this->load->model('extensions/FHC-Core-MobilityOnline/Mosetmasterdata_model', 'MoSetMaModel');
+		$this->load->model('extensions/FHC-Core-MobilityOnline/Molvidzuordnung_model', 'MolvidzuordnungModel');
 		$this->load->library('extensions/FHC-Core-MobilityOnline/MobilityOnlineLib');
 	}
 
@@ -47,7 +48,7 @@ class MobilityOnline extends Auth_Controller
 		if (isError($currsemdata))
 			show_error($currsemdata->retval);
 
-		$lvdata = $this->MoDbModel->getLvs($currsemdata->retval[0]->studiensemester_kurzbz);
+		$lvdata = $this->MoFhcModel->getLvs($currsemdata->retval[0]->studiensemester_kurzbz);
 
 		if (isError($lvdata))
 			show_error($lvdata->retval);
@@ -72,7 +73,7 @@ class MobilityOnline extends Auth_Controller
 
 		$coursesPerSemester = array();
 
-		$lvs = $this->MoDbModel->getLvs($studiensemester);
+		$lvs = $this->MoFhcModel->getLvs($studiensemester);
 
 		if (!hasData($lvs))
 		{
@@ -94,7 +95,7 @@ class MobilityOnline extends Auth_Controller
 		{
 			$lvid = $key;
 
-			$zuordnung = $this->MoidzuordnungModel->loadWhere(array('lvid' => $lvid, 'studiensemester_kurzbz' => $studiensemester));
+			$zuordnung = $this->MolvidzuordnungModel->loadWhere(array('lvid' => $lvid, 'studiensemester_kurzbz' => $studiensemester));
 
 			if (hasData($zuordnung))
 			{
@@ -104,9 +105,9 @@ class MobilityOnline extends Auth_Controller
 
 				$course['courseID'] = $zuordnung->mo_lvid;
 
-				if ($this->MoApiModel->updateCoursePerSemester($course))
+				if ($this->MoSetMaModel->updateCoursePerSemester($course))
 				{
-					$result = $this->MoidzuordnungModel->update(
+					$result = $this->MolvidzuordnungModel->update(
 						array('lvid' => $zuordnung->lvid, 'studiensemester_kurzbz' => $zuordnung->studiensemester_kurzbz),
 						array('updateamum' => 'NOW()')
 					);
@@ -124,11 +125,11 @@ class MobilityOnline extends Auth_Controller
 			}
 			else
 			{
-				$moid = $this->MoApiModel->addCoursePerSemester($course);
+				$moid = $this->MoSetMaModel->addCoursePerSemester($course);
 
 				if (is_numeric($moid))
 				{
-					$result = $this->MoidzuordnungModel->insert(
+					$result = $this->MolvidzuordnungModel->insert(
 						array('lvid' => $lvid, 'mo_lvid' => $moid, 'studiensemester_kurzbz' => $studiensemester, 'insertamum' => 'NOW()')
 					);
 
@@ -148,7 +149,7 @@ class MobilityOnline extends Auth_Controller
 			}
 		}
 
-		$zuordnungen = $this->MoidzuordnungModel->loadWhere(array('studiensemester_kurzbz' => $studiensemester));
+		$zuordnungen = $this->MolvidzuordnungModel->loadWhere(array('studiensemester_kurzbz' => $studiensemester));
 
 		// if lv not present in fhcomplete anymore, delete from mo.
 		foreach ($zuordnungen->retval as $zo)
@@ -164,8 +165,8 @@ class MobilityOnline extends Auth_Controller
 			if (!$found)
 			{
 				echo '<br />course with id '.$zo->lvid.' not present in fhcomplete, removing from MobilityOnline';
-				$this->MoApiModel->removeCoursePerSemesterByCourseID($zo->mo_lvid);
-				$result = $this->MoidzuordnungModel->delete(array('lvid' => $zo->lvid, 'studiensemester_kurzbz' => $zo->studiensemester_kurzbz));
+				$this->MoSetMaModel->removeCoursePerSemesterByCourseID($zo->mo_lvid);
+				$result = $this->MolvidzuordnungModel->delete(array('lvid' => $zo->lvid, 'studiensemester_kurzbz' => $zo->studiensemester_kurzbz));
 				if (hasData($result))
 				{
 					$deleted++;
@@ -191,15 +192,15 @@ class MobilityOnline extends Auth_Controller
 		{
 			$lv = $this->mobilityonlinelib->createLv($semester, $studienjahrres->retval[0]->studienjahr_kurzbz);
 			$molv = $this->mobilityonlinelib->mapLvToMoLv($lv);
-			$zuordnungen = $this->MoidzuordnungModel->loadWhere(array('studiensemester_kurzbz' => $semester));
+			$zuordnungen = $this->MolvidzuordnungModel->loadWhere(array('studiensemester_kurzbz' => $semester));
 
 			if (hasData($zuordnungen))
 			{
-				if ($this->MoApiModel->removeCoursesPerSemesterBySearchParameters($molv['semester'], $molv['academicYear']))
+				if ($this->MoSetMaModel->removeCoursesPerSemesterBySearchParameters($molv['semester'], $molv['academicYear']))
 				{
 					foreach ($zuordnungen->retval as $zuordnung)
 					{
-						$this->MoidzuordnungModel->delete(array('lvid' => $zuordnung->lvid, 'studiensemester_kurzbz' => $semester));
+						$this->MolvidzuordnungModel->delete(array('lvid' => $zuordnung->lvid, 'studiensemester_kurzbz' => $semester));
 					}
 					echo "<br />courses deleted successfully!";
 				}
@@ -222,7 +223,7 @@ class MobilityOnline extends Auth_Controller
 	{
 		$studiensemester = $this->input->get('studiensemester');
 		$json = null;
-		$lvdata = $this->MoDbModel->getLvs($studiensemester);
+		$lvdata = $this->MoFhcModel->getLvs($studiensemester);
 
 		if (hasData($lvdata))
 			$json = $lvdata;

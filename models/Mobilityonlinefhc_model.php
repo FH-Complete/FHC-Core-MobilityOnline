@@ -5,7 +5,7 @@ if (! defined('BASEPATH')) exit('No direct script access allowed');
 /**
  * Manages interaction with fhcomplete database for Mobility Online sync
  */
-class Mobilityonlinedb_model extends DB_Model
+class Mobilityonlinefhc_model extends DB_Model
 {
 	/**
 	 * Gets Lehrveranstaltungen for Mobility Online synchronisation.

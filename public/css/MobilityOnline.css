@@ -16,9 +16,11 @@
 
 .fhc-ajaxclient-veil .veil-text
 {
-    font-size: 30px;
+    font-size: 33px;
+    width: 210px;
     position: relative;
+    margin-left: auto;
+    margin-right: auto;
     top: 56%;
-    left: 45%;
     color: grey;
 }
