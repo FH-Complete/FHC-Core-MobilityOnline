@@ -25,7 +25,8 @@ class Mobilityonlineapi_model extends FHC_Model
 			array(
 				'soap_version' => $this->_mobilityonline_config['soapversion'],
 				'encoding' => $this->_mobilityonline_config['encoding'],
-				'uri' => $this->_mobilityonline_config['wsdlurl'].'/'.$this->service.'.'.$this->endpoint
+				'uri' => $this->_mobilityonline_config['wsdlurl'].'/'.$this->service.'.'.$this->endpoint/*,
+				'default_socket_timeout' => $this->_mobilityonline_config['default_socket_timeout']*/
 			)
 		);
 	}
@@ -40,16 +41,16 @@ class Mobilityonlineapi_model extends FHC_Model
 	{
 		$args = array_merge(array('authority' => $this->_mobilityonline_config['authority']), $data);
 
-		try{
+		try
+		{
 			return $this->_soapClient->$function($args);
 		}
 		catch (SoapFault $e)
 		{
 			echo "<br />SOAP ERROR:";
-			print_r($e->xdebug_message);
+			print_r($e);
 			echo "<br />-------------------------------<br />";
 		}
 		return false;
 	}
-
 }

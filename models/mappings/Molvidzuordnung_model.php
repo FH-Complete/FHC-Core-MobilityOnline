@@ -11,7 +11,7 @@ class Molvidzuordnung_model extends DB_Model
 	{
 		parent::__construct();
 		$this->dbTable = 'extension.tbl_mo_lvidzuordnung';
-		$this->pk = array('lvid', 'molvid', 'studiensemester');
+		$this->pk = array('lehrveranstaltung_id', 'molvid', 'studiensemester');
 		$this->hasSequence = false;
 	}
 }

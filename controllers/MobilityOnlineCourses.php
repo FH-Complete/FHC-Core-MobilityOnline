@@ -2,31 +2,33 @@
 if (! defined('BASEPATH')) exit('No direct script access allowed');
 
 /**
- * Manages synchronisation between fhcomplete and Mobility Online
+ * Manages Lehrveranstaltung synchronisation between fhcomplete and Mobility Online
  */
-class MobilityOnline extends Auth_Controller
+class MobilityOnlineCourses extends Auth_Controller
 {
 	/**
 	 * Constructor
 	 */
 	public function __construct()
 	{
-		parent::__construct(array(
-			'index'=>'admin:rw',
-			'syncLvs'=>'admin:rw',
-			'deleteLvs'=>'admin:rw',
-			'getLvsJson'=>'admin:rw'
+		parent::__construct(
+			array(
+			'index' => 'admin:rw',
+			'syncLvs' => 'admin:rw',
+			'deleteLvs' => 'admin:rw',
+			'getLvsJson' => 'admin:rw'
 			)
 		);
 
 		$this->config->load('extensions/FHC-Core-MobilityOnline/config');
 
 		$this->load->model('organisation/Studiensemester_model', 'StudiensemesterModel');
-		$this->load->model('extensions/FHC-Core-MobilityOnline/Mobilityonlinefhc_model', 'MoFhcModel');
-		$this->load->model('extensions/FHC-Core-MobilityOnline/Mobilityonlineapi_model');//parent model
-		$this->load->model('extensions/FHC-Core-MobilityOnline/Mosetmasterdata_model', 'MoSetMaModel');
-		$this->load->model('extensions/FHC-Core-MobilityOnline/Molvidzuordnung_model', 'MolvidzuordnungModel');
-		$this->load->library('extensions/FHC-Core-MobilityOnline/MobilityOnlineLib');
+		$this->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MoFhcModel');
+		$this->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
+		$this->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mosetmasterdata_model', 'MoSetMaModel');
+		$this->load->model('extensions/FHC-Core-MobilityOnline/mappings/Molvidzuordnung_model', 'MolvidzuordnungModel');
+		$this->load->library('extensions/FHC-Core-MobilityOnline/MobilityOnlineSyncLib');
+		$this->load->library('extensions/FHC-Core-MobilityOnline/SyncToMobilityOnlineLib');
 	}
 
 	/**
@@ -53,7 +55,8 @@ class MobilityOnline extends Auth_Controller
 		if (isError($lvdata))
 			show_error($lvdata->retval);
 
-		$this->load->view('extensions/FHC-Core-MobilityOnline/mobilityOnline',
+		$this->load->view(
+			'extensions/FHC-Core-MobilityOnline/mobilityOnlineCourses',
 			array(
 				'semester' => $studiensemesterdata->retval,
 				'currsemester' => $currsemdata->retval,
@@ -77,7 +80,7 @@ class MobilityOnline extends Auth_Controller
 
 		if (!hasData($lvs))
 		{
-			echo "No lvs found for sync! aborting.";
+			echo "No lvs found for sync! Aborting.";
 			return null;
 		}
 
@@ -88,14 +91,14 @@ class MobilityOnline extends Auth_Controller
 
 		foreach ($lvs->retval as $lv)
 		{
-			$coursesPerSemester[$lv->lehrveranstaltung_id] = $this->mobilityonlinelib->mapLvToMoLv($lv);
+			$coursesPerSemester[$lv->lehrveranstaltung_id] = $this->synctomobilityonlinelib->mapLvToMoLv($lv);
 		}
 
 		foreach ($coursesPerSemester as $key => $course)
 		{
 			$lvid = $key;
 
-			$zuordnung = $this->MolvidzuordnungModel->loadWhere(array('lvid' => $lvid, 'studiensemester_kurzbz' => $studiensemester));
+			$zuordnung = $this->MolvidzuordnungModel->loadWhere(array('lehrveranstaltung_id' => $lvid, 'studiensemester_kurzbz' => $studiensemester));
 
 			if (hasData($zuordnung))
 			{
@@ -108,7 +111,7 @@ class MobilityOnline extends Auth_Controller
 				if ($this->MoSetMaModel->updateCoursePerSemester($course))
 				{
 					$result = $this->MolvidzuordnungModel->update(
-						array('lvid' => $zuordnung->lvid, 'studiensemester_kurzbz' => $zuordnung->studiensemester_kurzbz),
+						array('lehrveranstaltung_id' => $zuordnung->lehrveranstaltung_id, 'studiensemester_kurzbz' => $zuordnung->studiensemester_kurzbz),
 						array('updateamum' => 'NOW()')
 					);
 
@@ -130,7 +133,7 @@ class MobilityOnline extends Auth_Controller
 				if (is_numeric($moid))
 				{
 					$result = $this->MolvidzuordnungModel->insert(
-						array('lvid' => $lvid, 'mo_lvid' => $moid, 'studiensemester_kurzbz' => $studiensemester, 'insertamum' => 'NOW()')
+						array('lehrveranstaltung_id' => $lvid, 'mo_lvid' => $moid, 'studiensemester_kurzbz' => $studiensemester, 'insertamum' => 'NOW()')
 					);
 
 					if (hasData($result))
@@ -157,20 +160,20 @@ class MobilityOnline extends Auth_Controller
 			$found = false;
 			foreach ($lvs->retval as $lv)
 			{
-				if ($zo->lvid === $lv->lehrveranstaltung_id)
+				if ($zo->lehrveranstaltung_id === $lv->lehrveranstaltung_id)
 				{
 					$found = true;
 				}
 			}
 			if (!$found)
 			{
-				echo '<br />course with id '.$zo->lvid.' not present in fhcomplete, removing from MobilityOnline';
+				echo '<br />course with id '.$zo->lehrveranstaltung_id.' not present in fhcomplete, removing from MobilityOnline';
 				$this->MoSetMaModel->removeCoursePerSemesterByCourseID($zo->mo_lvid);
-				$result = $this->MolvidzuordnungModel->delete(array('lvid' => $zo->lvid, 'studiensemester_kurzbz' => $zo->studiensemester_kurzbz));
+				$result = $this->MolvidzuordnungModel->delete(array('lehrveranstaltung_id' => $zo->lehrveranstaltung_id, 'studiensemester_kurzbz' => $zo->studiensemester_kurzbz));
 				if (hasData($result))
 				{
 					$deleted++;
-					echo '<br />course with id '.$zo->lvid.' successfully deleted';
+					echo '<br />course with id '.$zo->lehrveranstaltung_id.' successfully deleted';
 				}
 			}
 		}
@@ -190,17 +193,18 @@ class MobilityOnline extends Auth_Controller
 
 		if (hasData($studienjahrres))
 		{
-			$lv = $this->mobilityonlinelib->createLv($semester, $studienjahrres->retval[0]->studienjahr_kurzbz);
-			$molv = $this->mobilityonlinelib->mapLvToMoLv($lv);
 			$zuordnungen = $this->MolvidzuordnungModel->loadWhere(array('studiensemester_kurzbz' => $semester));
 
 			if (hasData($zuordnungen))
 			{
-				if ($this->MoSetMaModel->removeCoursesPerSemesterBySearchParameters($molv['semester'], $molv['academicYear']))
+				$mosemester = $this->mobilityonlinesynclib->mapSemesterToMo($semester);
+				$mostudienjahr = $this->mobilityonlinesynclib->mapStudienjahrToMo($studienjahrres->retval[0]->studienjahr_kurzbz);
+
+				if ($this->MoSetMaModel->removeCoursesPerSemesterBySearchParameters($mosemester, $mostudienjahr))
 				{
 					foreach ($zuordnungen->retval as $zuordnung)
 					{
-						$this->MolvidzuordnungModel->delete(array('lvid' => $zuordnung->lvid, 'studiensemester_kurzbz' => $semester));
+						$this->MolvidzuordnungModel->delete(array('lehrveranstaltung_id' => $zuordnung->lehrveranstaltung_id, 'studiensemester_kurzbz' => $semester));
 					}
 					echo "<br />courses deleted successfully!";
 				}
@@ -231,4 +235,3 @@ class MobilityOnline extends Auth_Controller
 		$this->output->set_content_type('application/json')->set_output(json_encode($json));
 	}
 }
-

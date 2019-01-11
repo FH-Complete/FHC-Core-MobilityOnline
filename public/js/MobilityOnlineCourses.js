@@ -1,19 +1,18 @@
 /**
- * javascript file for Mobility Online sync
+ * javascript file for Mobility Online courses sync
  */
-const CONTROLLER_URL = "extensions/FHC-Core-MobilityOnline/MobilityOnline/";
 const FULL_URL = FHC_JS_DATA_STORAGE_OBJECT.app_root + FHC_JS_DATA_STORAGE_OBJECT.ci_router + "/"+FHC_JS_DATA_STORAGE_OBJECT.called_path;
 
 $(document).ready(function()
 	{
-		MobilityOnline.getLvs($("#studiensemester").val());
+		MobilityOnlineCourses.getLvs($("#studiensemester").val());
 
 		// change displayed lvs when Studiensemester selected
 		$("#studiensemester").change(
 			function()
 			{
 				var studiensemester = $(this).val();
-				MobilityOnline.getLvs(studiensemester);
+				MobilityOnlineCourses.getLvs(studiensemester);
 			}
 		);
 
@@ -38,17 +37,17 @@ $(document).ready(function()
 		$("#syncbtn").click(
 			function()
 			{
-				MobilityOnline.syncLvs($("#studiensemester").val());
+				MobilityOnlineCourses.syncLvs($("#studiensemester").val());
 			}
 		);
 	}
 );
 
-var MobilityOnline = {
+var MobilityOnlineCourses = {
 	getLvs: function(studiensemester)
 	{
 		FHC_AjaxClient.ajaxCallGet(
-			CONTROLLER_URL+'getLvsJson',
+			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/getLvsJson',
 			{"studiensemester": studiensemester},
 			{
 				successCallback: function(data, textStatus, jqXHR)
@@ -69,8 +68,7 @@ var MobilityOnline = {
 					{
 						alert('No courses found!');
 					}
-				},
-				veilTimeout: 0
+				}
 			}
 		);
 	},
@@ -81,9 +79,11 @@ var MobilityOnline = {
 		$(".fhc-ajaxclient-veil").append("<div class='veil-text'>Synchronising...</div>");
 		$("#syncoutput").load(
 			FULL_URL + '/syncLvs?studiensemester=' + encodeURIComponent(studiensemester),
-			function()
+			function(response, status, xhr)
 			{
 				FHC_AjaxClient.hideVeil();
+				if (status == "error")
+					$("#syncoutput").text("error occured while syncing!");
 			}
 		);
 

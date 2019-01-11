@@ -2,7 +2,7 @@
     min-height: 135px;
 }
 
-#lvhead{
+#lvhead, #selectallincomings, #selectnewincomings{
     cursor: pointer;
 }
 
@@ -22,5 +22,26 @@
     margin-left: auto;
     margin-right: auto;
     top: 56%;
+    color: grey;
+}
+
+#incomingstbl
+{
+    border: 1px solid #ddd;
+}
+
+#incomings
+{
+    width: 80%;
+    margin: auto;
+}
+
+#noincomingstext
+{
+    margin-bottom: 5px;
+}
+
+.inactive
+{
     color: grey;
 }

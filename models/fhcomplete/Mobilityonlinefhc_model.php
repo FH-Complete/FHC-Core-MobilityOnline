@@ -2,8 +2,11 @@
 
 if (! defined('BASEPATH')) exit('No direct script access allowed');
 
+require_once('include/'.EXT_FKT_PATH.'/generateuid.inc.php');
+require_once('include/functions.inc.php');
+
 /**
- * Manages interaction with fhcomplete database for Mobility Online sync
+ * Manages operations with fhcomplete database for Mobility Online sync
  */
 class Mobilityonlinefhc_model extends DB_Model
 {
@@ -58,4 +61,46 @@ class Mobilityonlinefhc_model extends DB_Model
 
 		return $this->execQuery($query, $parametersarray);
 	}
+
+
+
+	// ****
+// * Generiert die Matrikelnummer
+// * FORMAT: 0710254001
+// * 07 = Jahr
+// * 1/2/0  = WS/SS/incoming
+// * 0254 = Studiengangskennzahl vierstellig
+// * 001 = Laufende Nummer
+// ****
+/*	private function generateMatrikelnummer($studiengang_kz, $studiensemester_kurzbz)
+	{
+		$db = new basis_db();
+
+		$jahr = mb_substr($studiensemester_kurzbz, 4);
+		$sem = mb_substr($studiensemester_kurzbz, 0, 2);
+		if($sem=='SS')
+			$jahr = $jahr-1;
+		$art =0;
+
+		$matrikelnummer = sprintf("%02d",$jahr).$art.sprintf("%04d",$studiengang_kz);
+
+		$qry = "SELECT matrikelnr FROM public.tbl_student WHERE matrikelnr LIKE '".$db->db_escape($matrikelnummer)."%' ORDER BY matrikelnr DESC LIMIT 1";
+
+		if($db->db_query($qry))
+		{
+			if($row = $db->db_fetch_object())
+			{
+				$max = mb_substr($row->matrikelnr,7);
+			}
+			else
+				$max = 0;
+
+			$max += 1;
+			return $matrikelnummer.sprintf("%03d",$max);
+		}
+		else
+		{
+			return false;
+		}
+	}*/
 }

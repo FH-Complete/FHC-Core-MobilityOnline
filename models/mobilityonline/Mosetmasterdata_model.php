@@ -2,6 +2,7 @@
 if (! defined('BASEPATH')) exit('No direct script access allowed');
 
 /**
+ * Functions for MobilityOnline API interaction for SetMasterDataService
  */
 class Mosetmasterdata_model extends Mobilityonlineapi_model
 {
@@ -68,7 +69,7 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 	 */
 	public function removeCoursesPerSemesterBySearchParameters($semester, $academicYear)
 	{
-		$success = $this->performCall('removeCoursesPerSemesterBySearchParameters', array('semester' => $semester, 'academicYear' => $academicYear));
+		$success = $this->performCall('removeCoursesPerSemesterBySearchParameters', array('semester' => $semester, 'academicYear' => array('description' => $academicYear)));
 		if (isset($success->return))
 			return $success->return;
 		else
