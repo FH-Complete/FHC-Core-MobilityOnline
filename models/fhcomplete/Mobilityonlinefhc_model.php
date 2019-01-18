@@ -34,7 +34,7 @@ class Mobilityonlinefhc_model extends DB_Model
 
 		$query = "
 			SELECT tbl_lehrveranstaltung.*, ? AS studiensemester_kurzbz, ? AS studienjahr_kurzbz, UPPER(tbl_studiengang.typ::varchar(1) || tbl_studiengang.kurzbz) AS studiengang_kuerzel, 
-			tbl_studiengang.bezeichnung AS studiengang_bezeichnung, tbl_studiengang.english AS studiengang_bezeichnung_english, tbl_studiengang.typ, substring(tbl_sprache.locale, 0, 3) AS sprachkuerzel
+			tbl_studiengang.bezeichnung AS studiengang_bezeichnung, tbl_studiengang.english AS studiengang_bezeichnung_english, tbl_studiengang.typ, tbl_sprache.locale
 			FROM lehre.tbl_lehrveranstaltung
 			JOIN public.tbl_studiengang ON tbl_lehrveranstaltung.studiengang_kz = tbl_studiengang.studiengang_kz
 			JOIN public.tbl_sprache ON tbl_lehrveranstaltung.sprache = tbl_sprache.sprache

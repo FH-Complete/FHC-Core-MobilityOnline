@@ -4,15 +4,15 @@
  * array structure: ['direction']['fhcvaluefieldname']
  */
 
-$config['valuemappings']['tomo']['sprache'] = array(
-	'English' => 'Englisch',
-	'German' => 'Deutsch'
+$config['valuemappings']['tomo']['locale'] = array(
+	'de-AT' => 'de',
+	'en-US' => 'en'
 );
 
-$config['valuemappings']['tomo']['typ'] = array(
+/*$config['valuemappings']['tomo']['typ'] = array(
 	'b' => 'B',
 	'm' => 'M'
-);
+);*/
 
 $nations = array(
 	'Bosnien Herzegowina' => 'BSH',

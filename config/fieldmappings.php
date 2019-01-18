@@ -83,7 +83,7 @@ $config['fieldmappings']['course'] = array(
 	'semester' => 'semesterNr',
 	'studiengang_kuerzel' => array('name' => 'studyField', 'type' => 'number'),
 	'lehrform_kurzbz' => array('name' => 'courseType', 'type' => 'number', 'default' => 'LV'),
-	'sprachkuerzel' => array('name' => 'language', 'type' => 'number'),
+	'locale' => array('name' => 'language', 'type' => 'number'),
 	'sws' => 'numberOfLessons',
 	'ects' => 'ectsCredits',
 	'incoming' => 'freePlaces',

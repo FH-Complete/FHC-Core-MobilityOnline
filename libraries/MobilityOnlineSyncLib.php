@@ -163,6 +163,7 @@ class MobilityOnlineSyncLib
 	{
 		$fieldmappings = isset($this->conffieldmappings[$objtype]) ? $this->conffieldmappings[$objtype] : array();
 		$defaults = $this->_confmodefaults[$objtype];
+		$valuemappings = $this->_valuemappings['tomo'];
 		$moobj = array();
 		$movalue = null;
 
@@ -191,11 +192,11 @@ class MobilityOnlineSyncLib
 			}
 
 			//if exists in valuemappings - take value
-			if (array_key_exists($name, $this->_valuemappings)
-				&& array_key_exists($fhcobj->$name, $this->_valuemappings[$name])
+			if (!empty($valuemappings[$name])
+				&& array_key_exists($fhcobj->$name, $valuemappings[$name])
 			)
 			{
-				$movalue = $this->_valuemappings[$name][$fhcobj->$name];
+				$movalue = $valuemappings[$name][$fhcobj->$name];
 			}
 			else//otherwise look in replacements array
 			{

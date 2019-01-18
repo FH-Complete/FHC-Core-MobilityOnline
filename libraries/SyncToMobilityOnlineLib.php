@@ -24,8 +24,6 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 	{
 		$moLv = $this->convertToMoFormat($lv, 'course');
 
-		//var_dump($moLv);
-
 		/* lv structure in mobility online
 		 * array(
 				'courseId' => 1114,
