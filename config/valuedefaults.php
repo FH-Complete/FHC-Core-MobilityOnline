@@ -47,6 +47,10 @@ $config['fhcdefaults']['address']['adresse'] = array(
 	'zustelladresse' => true
 );
 
+$config['fhcdefaults']['address']['kontakttel'] = array(
+	'kontakttyp' => 'telefon'
+);
+
 $config['fhcdefaults']['application']['kontaktmail'] = array(
 	'kontakttyp' => 'email',
 	'zustellung' => true

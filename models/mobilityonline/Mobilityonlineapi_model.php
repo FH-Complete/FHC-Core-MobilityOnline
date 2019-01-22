@@ -47,8 +47,8 @@ class Mobilityonlineapi_model extends FHC_Model
 		}
 		catch (SoapFault $e)
 		{
-			echo "<br />SOAP ERROR:";
-			print_r($e);
+			echo "<br />SOAP ERROR: ";
+			print_r($e->getMessage());
 			echo "<br />-------------------------------<br />";
 		}
 		return false;

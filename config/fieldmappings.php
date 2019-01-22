@@ -64,13 +64,13 @@ $config['fieldmappings']['address']['adresse'] = array(
 	'nation' => 'country'
 );
 
+$config['fieldmappings']['address']['kontakttel'] = array(
+	'kontakt' => 'telNumber'
+);
+
 $config['fieldmappings']['application']['kontaktmail'] = array(
 	'kontakt' => 'email'
 );
-
-/*$config['fieldmappings']['application']['kontakttel'] = array(
-	'kontakt' => 'bew_tel_nr_kontakt'
-);*/
 
 $config['fieldmappings']['application']['kontaktnotfall'] = array(
 	'kontakt' => 'bew_tel_nr_kontakt'

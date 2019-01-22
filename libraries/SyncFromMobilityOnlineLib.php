@@ -64,7 +64,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		// Nation
 		$monation = $moapp->{$personmappings['staatsbuergerschaft']};
-		$moaddrnation = $moaddr->{$adressemappings['nation']}->description;
+		$moaddrnation = isset($moaddr) ? $moaddr->{$adressemappings['nation']}->description : null;
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 
 		$fhcnations = $this->ci->NationModel->load();
@@ -183,42 +183,57 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$this->ci->load->model('education/studentlehrverband_model', 'StudentlehrverbandModel');
 		$this->ci->load->model('codex/bisio_model', 'BisioModel');
 
-		$tables = array('person', 'prestudent', 'prestudentstatus', 'benutzer', 'student', 'studentlehrverband',
-						'akte', 'adresse', 'kontaktmail', 'kontaktnotfall', 'bisio');
+		//error check for missing data etc.
+		$errors = $this->fhcObjHasError($incoming, 'application');
+
+		if ($errors->error)
+		{
+			echo "<br />ERROR! ";
+			foreach ($errors->errorMessages as $errorMessage)
+			{
+				echo "$errorMessage";
+			}
+
+			echo "<br />aborting incoming save";
+		}
+
+/*		$tables = array('person' => array(),
+						'prestudent',
+						'prestudentstatus' => array(''),
+						'benutzer',
+						'student',
+						'studentlehrverband',
+						'akte',
+						'adresse',
+						'kontaktmail',
+						'kontaktnotfall',
+						'bisio');
 
 		foreach ($tables as $table)
 		{
 			if (!array_key_exists($table, $incoming))
 			{
-				echo "incoming data missing: $table, aborting incoming save";
+				echo "<br />incoming data missing: $table, aborting incoming save";
 				return false;
 			}
-		}
+		}*/
 
-		$tblcnt = 0;
-		$person = $incoming[$tables[$tblcnt++]];
-		$prestudent = $incoming[$tables[$tblcnt++]];
-		$prestudentstatus = $incoming[$tables[$tblcnt++]];
-		$benutzer = $incoming[$tables[$tblcnt++]];
-		$student = $incoming[$tables[$tblcnt++]];
-		$studentlehrverband = $incoming[$tables[$tblcnt++]];
-		$akte = $incoming[$tables[$tblcnt++]];
-		$adresse = $incoming[$tables[$tblcnt++]];
-		$kontaktmail = $incoming[$tables[$tblcnt++]];
-		$kontaktnotfall = $incoming[$tables[$tblcnt++]];
-		$bisio = $incoming[$tables[$tblcnt]];
+		$person = $incoming['person'];
+		$prestudent = $incoming['prestudent'];
+		$prestudentstatus = $incoming['prestudentstatus'];
+		$benutzer = $incoming['benutzer'];
+		$student = $incoming['student'];
+		$studentlehrverband = $incoming['studentlehrverband'];
+		$adresse = $incoming['adresse'];
+		$kontaktmail = $incoming['kontaktmail'];
+		$bisio = $incoming['bisio'];
 
-		if (empty($prestudent['studiengang_kz']))
-		{
-			echo "studiengang_kz missing, aborting incoming save";
-			return false;
-		}
+		// optional
+		$akte = isset($incoming['akte']) ? $incoming['akte'] : array();
+		$kontaktnotfall = isset($incoming['kontaktnotfall']) ? $incoming['kontaktnotfall'] : array();
+		$kontakttel = isset($incoming['kontakttel']) ? $incoming['kontakttel'] : array();
 
 		$studiensemester = $prestudentstatus['studiensemester_kurzbz'];
-
-		//social security number cannot be empty string
-		if ($person['svnr'] === '')
-			$person['svnr'] = null;
 
 		$prestudentstatus['studiensemester_kurzbz'] = $studiensemester;
 
@@ -262,7 +277,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				$this->_log('insert', $addrresp, 'adresse');
 			}
 			// kontakt
-			$kontaktmailresp = $this->ci->KontaktModel->loadWhere(array('person_id' => $person_id, 'kontakttyp' => 'email'));
+			$kontaktmailresp = $this->ci->KontaktModel->loadWhere(array('person_id' => $person_id, 'kontakttyp' => $kontaktmail['kontakttyp']));
 
 			$mailfound = false;
 			if (hasData($kontaktmailresp))
@@ -285,45 +300,78 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				$this->_log('insert', $kontaktinsresp, 'mailkontakt');
 			}
 
-			$kontaktnfresp = $this->ci->KontaktModel->loadWhere(array('person_id' => $person_id, 'kontakttyp' => 'notfallkontakt'));
+			$kontakttelresp = $this->ci->KontaktModel->loadWhere(array('person_id' => $person_id, 'kontakttyp' => $kontakttel['kontakttyp']));
 
-			$nfkfound = false;
-			if (hasData($kontaktnfresp))
+			if (!empty($kontakttel['kontakt']))
 			{
-				foreach ($kontaktnfresp->retval as $kontakt)
+				$telfound = false;
+				if (hasData($kontakttelresp))
 				{
-					if ($kontakt->kontakt === $kontaktnotfall['kontakt'])
+					foreach ($kontakttelresp->retval as $kontakt)
 					{
-						$nfkfound = true;
-						break;
+						if ($kontakt->kontakt === $kontakttel['kontakt'])
+						{
+							$telfound = true;
+							break;
+						}
 					}
 				}
-			}
 
-			if (isSuccess($kontaktnfresp) && !$nfkfound)
-			{
-				$kontaktnotfall['person_id'] = $person_id;
-				$this->_stamp('insert', $kontaktnotfall);
-				$kontaktinsresp = $this->ci->KontaktModel->insert($kontaktnotfall);
-				$this->_log('insert', $kontaktinsresp, 'notfallkontakt');
-			}
-
-			// lichtbild - akte
-			$aktecheckresp = $this->ci->AkteModel->loadWhere(array('person_id' => $person_id, 'dokument_kurzbz' => $akte['dokument_kurzbz']));
-
-			if (isSuccess($aktecheckresp))
-			{
-				if (hasData($aktecheckresp))
+				if (isSuccess($kontakttelresp) && !$telfound)
 				{
-					echo '<br />Lichtbild already exists, akte_id '.$aktecheckresp->retval[0]->akte_id;
+					$kontakttel['person_id'] = $person_id;
+					$this->_stamp('insert', $kontakttel);
+					$kontaktinsresp = $this->ci->KontaktModel->insert($kontakttel);
+					$this->_log('insert', $kontaktinsresp, 'telefonkontakt');
 				}
-				else
+			}
+
+			$kontaktnfresp = $this->ci->KontaktModel->loadWhere(array('person_id' => $person_id, 'kontakttyp' => $kontaktnotfall['kontakttyp']));
+
+			if (!empty($kontaktnotfall['kontakt']))
+			{
+				$nfkfound = false;
+				if (hasData($kontaktnfresp))
 				{
-					$akte['person_id'] = $person_id;
-					$akte['titel'] = 'Lichtbild_'.$person_id;
-					$this->_stamp('insert', $akte);
-					$akteresp = $this->ci->AkteModel->insert($akte);
-					$this->_log('insert', $akteresp, 'akte');
+					foreach ($kontaktnfresp->retval as $kontakt)
+					{
+						if ($kontakt->kontakt === $kontaktnotfall['kontakt'])
+						{
+							$nfkfound = true;
+							break;
+						}
+					}
+				}
+
+
+				if (isSuccess($kontaktnfresp) && !$nfkfound)
+				{
+					$kontaktnotfall['person_id'] = $person_id;
+					$this->_stamp('insert', $kontaktnotfall);
+					$kontaktinsresp = $this->ci->KontaktModel->insert($kontaktnotfall);
+					$this->_log('insert', $kontaktinsresp, 'notfallkontakt');
+				}
+			}
+
+			if (isset($akte['dokument_kurzbz']))
+			{
+				// lichtbild - akte
+				$aktecheckresp = $this->ci->AkteModel->loadWhere(array('person_id' => $person_id, 'dokument_kurzbz' => $akte['dokument_kurzbz']));
+
+				if (isSuccess($aktecheckresp))
+				{
+					if (hasData($aktecheckresp))
+					{
+						echo '<br />Lichtbild already exists, akte_id ' . $aktecheckresp->retval[0]->akte_id;
+					}
+					else
+					{
+						$akte['person_id'] = $person_id;
+						$akte['titel'] = 'Lichtbild_' . $person_id;
+						$this->_stamp('insert', $akte);
+						$akteresp = $this->ci->AkteModel->insert($akte);
+						$this->_log('insert', $akteresp, 'akte');
+					}
 				}
 			}
 
@@ -404,13 +452,13 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			// benutzer
 			$matrikelnr = $this->ci->StudentModel->generateMatrikelnummer($prestudent['studiengang_kz'], $studiensemester);
 			$this->ci->StudentModel->addOrder('insertamum');
-			$benutzercheckresp = $this->ci->StudentModel->loadWhere(array('prestudent_id' => $prestudent_id));
+			$benutzerstudcheckresp = $this->ci->StudentModel->loadWhere(array('prestudent_id' => $prestudent_id));
 
-			if (isSuccess($benutzercheckresp))
+			if (isSuccess($benutzerstudcheckresp))
 			{
-				if (hasData($benutzercheckresp))
+				if (hasData($benutzerstudcheckresp))
 				{
-					$benutzer['uid'] = $benutzercheckresp->retval[0]->student_uid;
+					$benutzer['uid'] = $benutzerstudcheckresp->retval[0]->student_uid;
 					echo "<br />benutzer for student $prestudent_id already exists, uid ". $benutzer['uid'];
 				}
 				else
@@ -427,15 +475,27 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					{
 						$stg_bez = $stgres->retval[0]->kurzbz;
 						$benutzer['uid'] = generateUID($stg_bez, $jahr, 'x', $matrikelnr);
-						$benutzer['aktivierungscode'] = generateActivationKey();
-						$this->_stamp('insert', $benutzer);
-						$benutzercheckresp = $this->ci->BenutzerModel->insert($benutzer);
-						$this->_log('insert', $benutzercheckresp, 'benutzer');
+
+						//check for existing benutzer
+						$benutzercheckresp = $this->ci->BenutzerModel->loadWhere(array('uid' => $benutzer['uid']));
+
+						if (hasData($benutzercheckresp))
+						{
+							echo "<br />benutzer with uid ".$benutzer['uid']." already exists";
+						}
+						else
+						{
+							$benutzer['aktivierungscode'] = generateActivationKey();
+							$this->_stamp('insert', $benutzer);
+							$benutzerstudcheckresp = $this->ci->BenutzerModel->insert($benutzer);
+							$this->_log('insert', $benutzerstudcheckresp, 'benutzer');
+						}
 					}
 				}
 			}
 
-			if (isSuccess($benutzercheckresp) && isset($prestudent_id) && is_numeric($prestudent_id))
+			if (isSuccess($benutzerstudcheckresp) && isSuccess($benutzercheckresp) &&
+				isset($prestudent_id) && is_numeric($prestudent_id))
 			{
 				// student
 				$student['student_uid'] = $benutzer['uid'];
@@ -517,6 +577,43 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		}
 
 		return $prestudent_id;
+	}
+
+	/**
+	 * Checks if fhcomplete object has errors, like missing fields,
+	 * so it cannot be inserted in db
+	 * @param $fhcobj
+	 * @param $objtype
+	 * @return StdClass object with properties bollean for has Error and array with errormessages
+	 */
+	public function fhcObjHasError($fhcobj, $objtype)
+	{
+		$hasError = new StdClass();
+		$hasError->error = false;
+		$hasError->errorMessages = array();
+		$requiredfields = $this->requiredfields[$objtype];
+
+		foreach ($requiredfields as $table => $fields)
+		{
+			if (array_key_exists($table, $fhcobj))
+			{
+				foreach ($fields as $field)
+				{
+					if (!isset($fhcobj[$table][$field]) || (!is_numeric($fhcobj[$table][$field]) && isEmptyString($fhcobj[$table][$field])))
+					{
+						$hasError->errorMessages[] = "$table: $field from MobilityOnline missing or has no match in fhc";
+						$hasError->error = true;
+					}
+				}
+			}
+			else
+			{
+				$hasError->errorMessages[] = "data missing: $table";
+				$hasError->error = true;
+			}
+		}
+
+		return $hasError;
 	}
 
 	/**

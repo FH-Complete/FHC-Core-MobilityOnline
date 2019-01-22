@@ -58,7 +58,9 @@ $config['valuemappings']['frommo']['studiengang_kz'] = array(
 	'Wirtschaftsinformatik Master' => 302,
 	'Integrative Stadtentwicklung-Smart City' => 334,
 	'Internationales Wirtschaftsingenieurwesen' => 335,
-	'Informatik/Computer Science' => 257
+	'Informatik/Computer Science' => 257,
+	'Maschinenbau' => 804,
+	'Elektronik/Wirtschaft' => 255
 );
 
 $config['valuemappings']['frommo']['mobilitaetsprogramm_code'] = array(

@@ -83,23 +83,33 @@ var MobilityOnlineIncoming = {
 					if (data !== null)
 					{
 						$("#incomings").empty();
+						var incomings = data.data;
+						
 						for (var incoming in data)
 						{
-							var person = data[incoming].person;
-							var stgexists = $.isNumeric(data[incoming].prestudent.studiengang_kz);
-							var chkbxstring, stgnotsettxt, stgnotsetclass, newicon;
-							chkbxstring = stgnotsettxt = stgnotsetclass = "";
+							var incomingobj = data[incoming];
+							var incomingdata = incomingobj.data;
 
-							if (stgexists)
+							var person = incomingdata.person;
+							var hasError = incomingobj.error;
+							var chkbxstring, stgnotsettxt, errorclass, newicon;
+							chkbxstring = stgnotsettxt = errorclass = "";
+
+							if (hasError)
 							{
-								chkbxstring = "<input type='checkbox' value='"+incoming+"' name='incoming[]'>";
+								errorclass = " class='inactive' data-toggle='tooltip' title='";
+								for(var i in incomingobj.errorMessages)
+								{
+									errorclass += incomingobj.errorMessages[i];
+								}
+								errorclass += "'";
 							}
 							else
 							{
-								stgnotsetclass = " class='inactive' data-toggle='tooltip' title='no Studiengang set in Mobility Online'";
+								chkbxstring = "<input type='checkbox' value='"+incomingobj.moid+"' name='incoming[]'>";
 							}
 
-							if (data[incoming].infhc)
+							if (incomingobj.infhc)
 							{
 								newicon = "<i class='fa fa-check'></i><span style='display:none' class='infhc'>1</span>";
 							}
@@ -109,10 +119,10 @@ var MobilityOnlineIncoming = {
 							}
 
 							$("#incomings").append(
-								"<tr"+stgnotsetclass+">" +
-									"<td>"+chkbxstring+"</td>" +
+								"<tr"+errorclass+">" +
+									"<td class='text-center'>"+chkbxstring+"</td>" +
 									"<td>"+person.vorname+" "+person.nachname+"</td>" +
-									"<td>"+data[incoming].kontaktmail.kontakt+"</td>" +
+									"<td>"+incomingdata.kontaktmail.kontakt+"</td>" +
 									"<td class='text-center'>"+newicon+"</td>" +
 								"</tr>"
 							);

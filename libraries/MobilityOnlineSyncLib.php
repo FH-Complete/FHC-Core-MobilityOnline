@@ -15,6 +15,8 @@ class MobilityOnlineSyncLib
 	private $_conffhcdefaults = array();
 	// separate fielddefinitions
 	protected $conffields = array();
+	// required fields for checking
+	protected $requiredfields = array();
 
 	// mo string replacements for fhc values. Numeric indices mean callback function names used for replacements.
 	private $_replacementsarrToMo = array(
@@ -48,8 +50,13 @@ class MobilityOnlineSyncLib
 		),
 		'anmerkung' => array(
 			0 => 'replaceEmpty'
-		)
+		),
+		'svnr' => array(
+			0 => 'replaceEmpty'//social security number cannot be empty string
+		),
 	);
+
+	protected $errorMessages = array();
 
 	/**
 	 * MobilityOnlineSyncLib constructor.
@@ -62,12 +69,14 @@ class MobilityOnlineSyncLib
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/fieldmappings');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/valuemappings');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/valuedefaults');
+		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/requiredfields');
 
 		$this->conffieldmappings = $this->ci->config->item('fieldmappings');
 		$this->_valuemappings = $this->ci->config->item('valuemappings');
 		$this->_conffhcdefaults = $this->ci->config->item('fhcdefaults');
 		$this->_confmodefaults = $this->ci->config->item('modefaults');
 		$this->conffields = $this->ci->config->item('fields');
+		$this->requiredfields = $this->ci->config->item('requiredfields');
 
 		$this->_setSemesterMappings();
 		$this->_setStudienjahrMappings();
@@ -85,6 +94,9 @@ class MobilityOnlineSyncLib
 	 */
 	protected function convertToFhcFormat($moobj, $objtype)
 	{
+		if (!isset($moobj))
+			return array();
+
 		$defaults = isset($this->_conffhcdefaults[$objtype]) ? $this->_conffhcdefaults[$objtype] : array();
 		$valuemappings = $this->_valuemappings['frommo'];
 
@@ -103,7 +115,7 @@ class MobilityOnlineSyncLib
 				//if exists in valuemappings - take value
 				if (!empty($fhcindeces))
 				{
-					foreach($fhcindeces as $fhcindex)
+					foreach ($fhcindeces as $fhcindex)
 					{
 						if (!empty($valuemappings[$fhcindex])
 							&& array_key_exists($moobj->$name, $valuemappings[$fhcindex])
@@ -161,6 +173,9 @@ class MobilityOnlineSyncLib
 	*/
 	protected function convertToMoFormat($fhcobj, $objtype)
 	{
+		if (!isset($fhcobj))
+			return array();
+
 		$fieldmappings = isset($this->conffieldmappings[$objtype]) ? $this->conffieldmappings[$objtype] : array();
 		$defaults = $this->_confmodefaults[$objtype];
 		$valuemappings = $this->_valuemappings['tomo'];
