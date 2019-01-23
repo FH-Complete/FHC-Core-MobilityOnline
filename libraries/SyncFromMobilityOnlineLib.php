@@ -38,7 +38,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		//applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
 		$comboboxvaluefields = array($personmappings['staatsbuergerschaft'], $personmappings['sprache'], $prestudentstatusmappings['studiensemester_kurzbz'],
-									 $prestudentmappings['studiengang_kz'], $bisiomappings['mobilitaetsprogramm_code'], $bisiomappings['nation_code']);
+									 $prestudentmappings['studiengang_kz'], $prestudentmappings['zgvmas_code'], $prestudentmappings['zgvnation'], $prestudentmappings['zgvmanation'],
+									 $bisiomappings['mobilitaetsprogramm_code'], $bisiomappings['nation_code']);
 
 		foreach ($fieldmappings as $fhctable)
 		{
@@ -65,6 +66,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		// Nation
 		$monation = $moapp->{$personmappings['staatsbuergerschaft']};
 		$moaddrnation = isset($moaddr) ? $moaddr->{$adressemappings['nation']}->description : null;
+		$mozgvnation = $moapp->{$prestudentmappings['zgvnation']};
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 
 		$fhcnations = $this->ci->NationModel->load();
@@ -78,11 +80,19 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				{
 					$moapp->{$personmappings['staatsbuergerschaft']} = $fhcnation->nation_code;
 					$moapp->{$bisiomappings['nation_code']} = $fhcnation->nation_code;
+					$moapp->{$prestudentmappings['zgvnation']} = $fhcnation->nation_code;
+					$moapp->{$prestudentmappings['zgvmanation']} = $fhcnation->nation_code;
 				}
 
 				if ($fhcnation->kurztext === $moaddrnation || $fhcnation->langtext === $moaddrnation || $fhcnation->engltext === $moaddrnation)
 				{
 					$moaddr->{$adressemappings['nation']} = $fhcnation->nation_code;
+				}
+
+				if ($fhcnation->kurztext === $mozgvnation || $fhcnation->langtext === $mozgvnation || $fhcnation->engltext === $mozgvnation)
+				{
+					$moapp->{$prestudentmappings['zgvnation']} = $fhcnation->nation_code;
+					$moapp->{$prestudentmappings['zgvmanation']} = $fhcnation->nation_code;
 				}
 			}
 		}
@@ -260,7 +270,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			}
 			$this->_log('insert', $personresponse, 'person');
 		}
-
 
 		if (isset($person_id) && is_numeric($person_id))
 		{
@@ -453,6 +462,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			$matrikelnr = $this->ci->StudentModel->generateMatrikelnummer($prestudent['studiengang_kz'], $studiensemester);
 			$this->ci->StudentModel->addOrder('insertamum');
 			$benutzerstudcheckresp = $this->ci->StudentModel->loadWhere(array('prestudent_id' => $prestudent_id));
+			$benutzercheckresp = success('success');
 
 			if (isSuccess($benutzerstudcheckresp))
 			{
@@ -483,19 +493,19 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 						{
 							echo "<br />benutzer with uid ".$benutzer['uid']." already exists";
 						}
-						else
+						elseif (isSuccess($benutzercheckresp))
 						{
 							$benutzer['aktivierungscode'] = generateActivationKey();
 							$this->_stamp('insert', $benutzer);
-							$benutzerstudcheckresp = $this->ci->BenutzerModel->insert($benutzer);
-							$this->_log('insert', $benutzerstudcheckresp, 'benutzer');
+							$benutzerinscheckresp = $this->ci->BenutzerModel->insert($benutzer);
+							$this->_log('insert', $benutzerinscheckresp, 'benutzer');
 						}
 					}
 				}
 			}
 
-			if (isSuccess($benutzerstudcheckresp) && isSuccess($benutzercheckresp) &&
-				isset($prestudent_id) && is_numeric($prestudent_id))
+			if (isSuccess($benutzerstudcheckresp) && isSuccess($benutzercheckresp)
+				&& isset($prestudent_id) && is_numeric($prestudent_id))
 			{
 				// student
 				$student['student_uid'] = $benutzer['uid'];
@@ -601,7 +611,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				{
 					if (!isset($fhcobj[$table][$field]) || (!is_numeric($fhcobj[$table][$field]) && isEmptyString($fhcobj[$table][$field])))
 					{
-						$hasError->errorMessages[] = "$table: $field from MobilityOnline missing or has no match in fhc";
+						$hasError->errorMessages[] = "$table: $field missing or has no match";
 						$hasError->error = true;
 					}
 				}

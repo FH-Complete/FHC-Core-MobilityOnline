@@ -54,6 +54,15 @@ class MobilityOnlineSyncLib
 		'svnr' => array(
 			0 => 'replaceEmpty'//social security number cannot be empty string
 		),
+		'zgvmas_code' => array(
+			0 => 'replaceEmpty'
+		),
+		'zgvdatum' => array(
+			0 =>'mapDateToFhc'
+		),
+		'zgvmadatum' => array(
+			0 =>'mapDateToFhc'
+		)
 	);
 
 	protected $errorMessages = array();
@@ -349,7 +358,15 @@ class MobilityOnlineSyncLib
 	 */
 	private function mapDateToFhc($modate)
 	{
-		return preg_replace('/(\d{2}).(\d{2}).(\d{4})/', '$3-$2-$1', $modate);
+		$pattern = '/^(\d{1,2}).(\d{1,2}).(\d{4})$/';
+		if (preg_match($pattern, $modate))
+		{
+			$date = DateTime::createFromFormat('d.m.Y', $modate);
+			return date_format($date, 'Y-m-d');
+			//return preg_replace('/(\d{2}).(\d{2}).(\d{4})/', '$3-$2-$1', $modate);
+		}
+		else
+			return null;
 	}
 
 	/**

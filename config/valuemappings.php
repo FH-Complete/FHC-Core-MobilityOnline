@@ -63,6 +63,23 @@ $config['valuemappings']['frommo']['studiengang_kz'] = array(
 	'Elektronik/Wirtschaft' => 255
 );
 
+$config['valuemappings']['frommo']['zgvnation'] = $nations;
+
+$config['valuemappings']['frommo']['zgvmas_code'] = array(
+	'postsek.Ausland' => 4,
+	'postsek.Inland' => 3,
+	'FH-Bachelor (A)' => 2,
+	'FH-Bachelor (I)' => 1,
+	'FH (I)' => 7,
+	'FH (A)' => 8,
+	'Uni-Bachelor (A)' => 6,
+	'Uni-Bachelor (I)' => 5,
+	'Uni (I)' => 9,
+	'Uni (A)' => 10
+);
+
+$config['valuemappings']['frommo']['zgvmanation'] = $nations;
+
 $config['valuemappings']['frommo']['mobilitaetsprogramm_code'] = array(
 	'Erasmus SMS' => '7'
 );

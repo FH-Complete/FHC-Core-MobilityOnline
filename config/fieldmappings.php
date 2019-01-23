@@ -36,7 +36,14 @@ $config['fieldmappings']['application']['person'] = array(
 );
 
 $config['fieldmappings']['application']['prestudent'] = array(
-	'studiengang_kz' => 'studr_id'
+	'studiengang_kz' => 'studr_id',
+	'zgvort' => 'varchar_freifeld3',
+	'zgvnation' => 'lcd_id_bereits',
+	'zgvdatum' => 'varchar_freifeld1',
+	'zgvmas_code' => 'int_freifeld1',
+	'zgvmaort' => 'varchar_freifeld3',
+	'zgvmadatum' => 'varchar_freifeld2',
+	'zgvmanation' => 'lcd_id_bereits'
 );
 
 $config['fieldmappings']['application']['prestudentstatus'] = array(
@@ -51,7 +58,6 @@ $config['fieldmappings']['application']['bisio'] = array(
 	'von' => 'bew_dat_von',
 	'bis' => 'bew_dat_bis',
 	'universitaet' => 'inst_id_heim_name',
-	//'universitaet' => 'inst_id_gast_name',
 	//'zweck_code' => 'aust_prog_id',
 	'nation_code' => 'lcd_id_gast',
 	'mobilitaetsprogramm_code' => 'aust_prog_id'
