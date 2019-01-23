@@ -27,6 +27,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 */
 	public function mapMoAppToIncoming($moapp, $moaddr, $photo)
 	{
+		//var_dump($moapp->applicationDataElements); die();
+
 		$fieldmappings = $this->conffieldmappings['application'];
 		$personmappings = $fieldmappings['person'];
 		$prestudentmappings = $fieldmappings['prestudent'];
@@ -38,7 +40,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		//applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
 		$comboboxvaluefields = array($personmappings['staatsbuergerschaft'], $personmappings['sprache'], $prestudentstatusmappings['studiensemester_kurzbz'],
-									 $prestudentmappings['studiengang_kz'], $prestudentmappings['zgvmas_code'], $prestudentmappings['zgvnation'], $prestudentmappings['zgvmanation'],
+									 $prestudentmappings['studiengang_kz'], $prestudentmappings['zgvmas_code'], /*$prestudentmappings['zgvnation'],*/ $prestudentmappings['zgvmanation'],
 									 $bisiomappings['mobilitaetsprogramm_code'], $bisiomappings['nation_code']);
 
 		foreach ($fieldmappings as $fhctable)
@@ -66,7 +68,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		// Nation
 		$monation = $moapp->{$personmappings['staatsbuergerschaft']};
 		$moaddrnation = isset($moaddr) ? $moaddr->{$adressemappings['nation']}->description : null;
-		$mozgvnation = $moapp->{$prestudentmappings['zgvnation']};
+		$mozgvnation = isset($prestudentmappings['zgvnation']) && isset($moapp->{$prestudentmappings['zgvnation']}) ? $moapp->{$prestudentmappings['zgvnation']} : null;
+		$mozgvmanation = isset($prestudentmappings['zgvmanation']) && isset($moapp->{$prestudentmappings['zgvmanation']}) ? $moapp->{$prestudentmappings['zgvmanation']} : null;
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 
 		$fhcnations = $this->ci->NationModel->load();
@@ -80,8 +83,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				{
 					$moapp->{$personmappings['staatsbuergerschaft']} = $fhcnation->nation_code;
 					$moapp->{$bisiomappings['nation_code']} = $fhcnation->nation_code;
-					$moapp->{$prestudentmappings['zgvnation']} = $fhcnation->nation_code;
-					$moapp->{$prestudentmappings['zgvmanation']} = $fhcnation->nation_code;
 				}
 
 				if ($fhcnation->kurztext === $moaddrnation || $fhcnation->langtext === $moaddrnation || $fhcnation->engltext === $moaddrnation)
@@ -91,8 +92,14 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 				if ($fhcnation->kurztext === $mozgvnation || $fhcnation->langtext === $mozgvnation || $fhcnation->engltext === $mozgvnation)
 				{
-					$moapp->{$prestudentmappings['zgvnation']} = $fhcnation->nation_code;
-					$moapp->{$prestudentmappings['zgvmanation']} = $fhcnation->nation_code;
+					if (isset($moapp->{$prestudentmappings['zgvnation']}))
+						$moapp->{$prestudentmappings['zgvnation']} = $fhcnation->nation_code;
+				}
+
+				if ($fhcnation->kurztext === $mozgvmanation || $fhcnation->langtext === $mozgvmanation || $fhcnation->engltext === $mozgvmanation)
+				{
+					if (isset($moapp->{$prestudentmappings['zgvmanation']}))
+						$moapp->{$prestudentmappings['zgvmanation']} = $fhcnation->nation_code;
 				}
 			}
 		}
@@ -102,6 +109,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		{
 			$moapp->{$aktemappings['inhalt']} = base64_encode($photo[0]->{$aktemappings['inhalt']});
 		}
+
 		// Studiengang
 		/*$mostg = $moapp->{$fieldmappings['studiengang_kz']};
 		$this->ci->load->model('organisation/Studiengang_model', 'StudiengangModel');

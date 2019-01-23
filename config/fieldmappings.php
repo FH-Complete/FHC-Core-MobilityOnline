@@ -37,8 +37,7 @@ $config['fieldmappings']['application']['person'] = array(
 
 $config['fieldmappings']['application']['prestudent'] = array(
 	'studiengang_kz' => 'studr_id',
-	'zgvort' => 'varchar_freifeld3',
-	'zgvnation' => 'lcd_id_bereits',
+/*	'zgvnation' => 'lcd_id_bereits',*/
 	'zgvdatum' => 'varchar_freifeld1',
 	'zgvmas_code' => 'int_freifeld1',
 	'zgvmaort' => 'varchar_freifeld3',
@@ -80,6 +79,10 @@ $config['fieldmappings']['application']['kontaktmail'] = array(
 
 $config['fieldmappings']['application']['kontaktnotfall'] = array(
 	'kontakt' => 'bew_tel_nr_kontakt'
+);
+
+$config['fieldmappings']['application']['studiengang'] = array(
+	'typ' => 'stud_niveau_id'
 );
 
 $config['fieldmappings']['course'] = array(

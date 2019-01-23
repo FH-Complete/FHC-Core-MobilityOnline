@@ -54,14 +54,23 @@ class MobilityOnlineSyncLib
 		'svnr' => array(
 			0 => 'replaceEmpty'//social security number cannot be empty string
 		),
-		'zgvmas_code' => array(
+		'zgvnation' => array(
 			0 => 'replaceEmpty'
 		),
 		'zgvdatum' => array(
-			0 =>'mapDateToFhc'
+			0 => 'mapDateToFhc'
+		),
+		'zgvmas_code' => array(
+			0 => 'replaceEmpty'
+		),
+		'zgvmaort' => array(
+			0 => 'replaceEmpty'
+		),
+		'zgvmanation' => array(
+			0 => 'replaceEmpty'
 		),
 		'zgvmadatum' => array(
-			0 =>'mapDateToFhc'
+			0 => 'mapDateToFhc'
 		)
 	);
 
