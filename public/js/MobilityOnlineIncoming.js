@@ -84,7 +84,7 @@ var MobilityOnlineIncoming = {
 					{
 						$("#incomings").empty();
 						var incomings = data.data;
-						
+
 						for (var incoming in data)
 						{
 							var incomingobj = data[incoming];
@@ -98,9 +98,14 @@ var MobilityOnlineIncoming = {
 							if (hasError)
 							{
 								errorclass = " class='inactive' data-toggle='tooltip' title='";
+								var first = true;
 								for(var i in incomingobj.errorMessages)
 								{
-									errorclass += incomingobj.errorMessages[i];
+									var coma = '';
+									if (!first)
+										coma = ', ';
+									errorclass += coma + incomingobj.errorMessages[i];
+									first = false;
 								}
 								errorclass += "'";
 							}
@@ -123,6 +128,7 @@ var MobilityOnlineIncoming = {
 									"<td class='text-center'>"+chkbxstring+"</td>" +
 									"<td>"+person.vorname+" "+person.nachname+"</td>" +
 									"<td>"+incomingdata.kontaktmail.kontakt+"</td>" +
+									"<td>"+incomingdata.pipelineStatusDescription+"</td>" +
 									"<td class='text-center'>"+newicon+"</td>" +
 								"</tr>"
 							);

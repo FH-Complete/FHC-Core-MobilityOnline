@@ -2,9 +2,6 @@
 
 if (! defined('BASEPATH')) exit('No direct script access allowed');
 
-require_once('include/'.EXT_FKT_PATH.'/generateuid.inc.php');
-require_once('include/functions.inc.php');
-
 /**
  * Manages operations with fhcomplete database for Mobility Online sync
  */

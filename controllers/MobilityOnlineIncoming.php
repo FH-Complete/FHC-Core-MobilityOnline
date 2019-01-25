@@ -99,7 +99,9 @@ class MobilityOnlineIncoming extends Auth_Controller
 			{
 				echo "<br />prestudent for applicationid $appid " . $incomingdata['person']['vorname'] . " " . $incomingdata['person']['nachname'] . " already exists in fhcomplete - updating";
 
-				if ($this->syncfrommobilityonlinelib->saveIncoming($incomingdata, $incoming->prestudent_id))
+				$prestudent_id = $this->syncfrommobilityonlinelib->saveIncoming($incomingdata, $incoming->prestudent_id);
+
+				if (isset($prestudent_id) && is_numeric($prestudent_id))
 				{
 					$result = $this->MoappidzuordnungModel->update(
 						array('mo_applicationid' => $appid, 'studiensemester_kurzbz' => $studiensemester),

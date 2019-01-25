@@ -2,6 +2,9 @@
 
 if (! defined('BASEPATH')) exit('No direct script access allowed');
 
+require_once('include/'.EXT_FKT_PATH.'/generateuid.inc.php');
+require_once('include/functions.inc.php');
+
 /**
  * Functionality for syncing MobilityOnline objects to fhcomplete
  */
@@ -9,6 +12,14 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 {
 	// user saved in db insertvon, updatevon fields
 	const IMPORTUSER = 'mo_import';
+	private $_pipelinestati = array(
+		'is_mail_best_bew',
+		'is_registriert',
+		'is_mail_best_reg',
+		'is_pers_daten_erf',
+		'is_abgeschlossen'
+	);
+
 
 	/**
 	 * SyncFromMobilityOnlineLib constructor.
@@ -27,8 +38,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 */
 	public function mapMoAppToIncoming($moapp, $moaddr, $photo)
 	{
-		//var_dump($moapp->applicationDataElements); die();
-
 		$fieldmappings = $this->conffieldmappings['application'];
 		$personmappings = $fieldmappings['person'];
 		$prestudentmappings = $fieldmappings['prestudent'];
@@ -149,6 +158,23 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$fhcobj = $this->convertToFhcFormat($moapp, 'application');
 
+		$fhcobj['pipelineStatus'] = 'not set';
+		$fhcobj['pipelineStatusDescription'] = 'no Status set';
+
+		// add last status
+		for ($i = count($this->_pipelinestati) - 1; $i >= 0; $i--)
+		{
+			foreach ($moapp->nonUsedApplicationDataElements as $element)
+			{
+				if ($element->elementName === $this->_pipelinestati[$i] && $element->elementValueBoolean === true)
+				{
+						$fhcobj['pipelineStatus'] = $element->elementName;
+						$fhcobj['pipelineStatusDescription'] = $element->elementDescription;
+						break 2;
+				}
+			}
+		}
+
 		$fhcaddr = $this->convertToFhcFormat($moaddr, 'address');
 
 		$fhcobj = array_merge($fhcobj, $fhcaddr);
@@ -255,6 +281,9 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$prestudentstatus['studiensemester_kurzbz'] = $studiensemester;
 
+		// Start DB transaction
+		$this->ci->db->trans_begin();
+
 		$prestudentcheckresp = isset($prestudent_id) && is_numeric($prestudent_id) ? $this->ci->PrestudentModel->load($prestudent_id) : null;
 
 		$update = hasData($prestudentcheckresp);
@@ -360,7 +389,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					}
 				}
 
-
 				if (isSuccess($kontaktnfresp) && !$nfkfound)
 				{
 					$kontaktnotfall['person_id'] = $person_id;
@@ -408,9 +436,9 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			}
 
 			$prestudent_id = isset($prestudentresponse->retval) ? $prestudentresponse->retval : null;
-			// prestudent status
 			if (isset($prestudent_id) && is_numeric($prestudent_id))
 			{
+				// prestudentstatus
 				$prestudentstatus['prestudent_id'] = $prestudent_id;
 
 				$studiensemarr = array($studiensemester);
@@ -492,7 +520,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					if (hasData($stgres))
 					{
 						$stg_bez = $stgres->retval[0]->kurzbz;
-						$benutzer['uid'] = generateUID($stg_bez, $jahr, 'x', $matrikelnr);
+						$stg_typ = $stgres->retval[0]->typ;
+						$benutzer['uid'] = generateUID($stg_bez, $jahr, $stg_typ, $matrikelnr);
 
 						//check for existing benutzer
 						$benutzercheckresp = $this->ci->BenutzerModel->loadWhere(array('uid' => $benutzer['uid']));
@@ -594,7 +623,21 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			}
 		}
 
-		return $prestudent_id;
+		// Transaction complete!
+		$this->ci->db->trans_complete();
+
+		// Check if everything went ok during the transaction
+		if ($this->ci->db->trans_status() === false)
+		{
+			echo "rolling back...";
+			$this->ci->db->trans_rollback();
+			return null;
+		}
+		else
+		{
+			$this->ci->db->trans_commit();
+			return $prestudent_id;
+		}
 	}
 
 	/**
