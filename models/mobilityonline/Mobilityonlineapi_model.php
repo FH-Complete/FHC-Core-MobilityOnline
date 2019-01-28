@@ -35,7 +35,7 @@ class Mobilityonlineapi_model extends FHC_Model
 	 * Performs generic call of wsdl service
 	 * @param $function name of function offered by wsdl service to call
 	 * @param $data
-	 * @return object returned by called function if successfull call, false otherwise
+	 * @return object returned by called function if successful call, false otherwise
 	 */
 	protected function performCall($function, $data)
 	{

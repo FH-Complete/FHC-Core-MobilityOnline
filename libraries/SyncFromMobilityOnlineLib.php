@@ -692,7 +692,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			else
 				$id = $response->retval;
 
-			echo "<br />$table $modtype successfull, id ".$id;
+			echo "<br />$table $modtype successful, id ".$id;
 		}
 		else
 		{
