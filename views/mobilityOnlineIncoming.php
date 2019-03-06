@@ -56,7 +56,6 @@
 						<div class="well well-sm wellminheight">
 							<div class="text-center">
 								<h4><span id="lvhead">&nbsp;MobilityOnline Incomings</span></h4>
-								<br />
 								<div id="noincomingstext">
 									<span id="noincomings">0</span> Incomings selected
 								</div>

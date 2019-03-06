@@ -1,21 +1,20 @@
-.wellminheight{
+.wellminheight {
     min-height: 135px;
 }
 
-#lvhead, #selectallincomings, #selectnewincomings{
+#lvhead, #selectallincomings, #selectnewincomings {
     cursor: pointer;
 }
 
-#lvs{
+#lvs {
     display: none;
 }
 
-#syncbtn{
+#syncbtn {
     font-size: 16px;
 }
 
-.fhc-ajaxclient-veil .veil-text
-{
+.fhc-ajaxclient-veil .veil-text {
     font-size: 33px;
     width: 210px;
     position: relative;
@@ -25,23 +24,23 @@
     color: grey;
 }
 
-#incomingstbl
-{
+#incomingstbl {
     border: 1px solid #ddd;
 }
 
-#incomings
-{
+#incomings {
     width: 80%;
     margin: auto;
 }
 
-#noincomingstext
-{
+#noincomingstext {
     margin-bottom: 5px;
 }
 
-.inactive
-{
+.inactive {
     color: grey;
+}
+
+table.table-vertical-center td,th {
+    vertical-align: middle !important;
 }

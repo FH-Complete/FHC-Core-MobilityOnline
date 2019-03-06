@@ -9,8 +9,10 @@
 			'fontawesome' => true,
 			'sbadmintemplate' => true,
 			'ajaxlib' => true,
+			'tablesorter' => true,
 			'navigationwidget' => true,
-			'customJSs' => array('public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineCourses.js'),
+			'customJSs' => array('public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineIncomingCourses.js',
+								 'public/js/tablesort/tablesort.js'),
 			'customCSSs' => array('public/extensions/FHC-Core-MobilityOnline/css/MobilityOnline.css')
 		)
 	);
@@ -25,7 +27,7 @@
 			<div class="container-fluid">
 				<div class="row">
 					<div class="col-lg-12">
-						<h3 class="page-header text-center">MobilityOnline Courses Synchronisation</h3>
+						<h3 class="page-header text-center">MobilityOnline Incoming Courses Assignment</h3>
 					</div>
 				</div>
 				<div class="row text-center">
@@ -45,21 +47,35 @@
 				</div>
 				<div class="row">
 					<div class="col-xs-5 text-center">
-						<div class="well well-sm wellminheight">
+						<div class="well well-sm" id="leftwell">
 							<h4>FH-Complete courses</h4>
-							<br />
-							<button class="btn btn-default" id="syncbtn"><i class="fa fa-refresh"></i>&nbsp;Synchronise Courses</button>
-							<br />
-							<h4><span id="lvhead"><span id="arrowtoggle"><i class="fa fa-chevron-right"></i>&nbsp;</span><span id="lvcount"><?php echo count($lvs) ?></span>&nbsp;courses with incoming places</span></h4>
-							<div id="lvs" class="panel panel-body">
+							<div id="fhcles" class="panel panel-body">
+								-
 							</div>
 						</div>
 					</div>
-					<div class="col-xs-7 text-center">
+					<div class="col-xs-7">
 						<div class="well well-sm wellminheight">
-							<h4>synchronisation output:</h4>
-							<div id="syncoutput" class="panel panel-body">
-								-
+							<div class="text-center">
+								<h4><span id="lvhead">&nbsp;MobilityOnline Incoming Courses</span></h4>
+								<div id="noincomingstext">
+									<span id="nrteachingunits">0</span> teaching units assigned
+								</div>
+							</div>
+							<div class="panel panel-body">
+								<table class="table table-bordered table-condensed table-vertical-center" id="incomingstbl">
+									<thead>
+										<tr>
+											<th class="text-center">Assign teaching units</th>
+											<th class="text-center">Name</th>
+											<th class="text-center">E-Mail</th>
+											<th class="text-center">Elected Courses</th>
+											<th class="text-center">Status</th>
+										</tr>
+									</thead>
+									<tbody id="incomings">
+									</tbody>
+								</table>
 							</div>
 						</div>
 					</div>
@@ -70,4 +86,3 @@
 </body>
 
 <?php $this->load->view('templates/FHC-Footer'); ?>
-

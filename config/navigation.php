@@ -24,5 +24,10 @@ $config['navigation_menu']['extensions/FHC-Core-MobilityOnline/*'] = array(
 		'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineIncoming'),
 		'description' => 'MobilityOnline Incoming Sync',
 		'icon' => 'group'
+	),
+	'MobilityOnline Incoming courses assignment' => array(
+		'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineIncomingCourses'),
+		'description' => 'MobilityOnline Incoming Courses Assignment',
+		'icon' => 'group'
 	)
 );

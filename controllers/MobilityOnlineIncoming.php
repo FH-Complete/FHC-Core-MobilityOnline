@@ -3,7 +3,7 @@
 if (! defined('BASEPATH')) exit('No direct script access allowed');
 
 /**
- * Manages synchronisation between fhcomplete and MobilityOnline
+ * Manages Incoming students synchronisation between fhcomplete and MobilityOnline
  */
 class MobilityOnlineIncoming extends Auth_Controller
 {
@@ -45,7 +45,7 @@ class MobilityOnlineIncoming extends Auth_Controller
 		if (isError($studiensemesterdata))
 			show_error($studiensemesterdata->retval);
 
-		$currsemdata = $this->StudiensemesterModel->getLastOrAktSemester();
+		$currsemdata = $this->StudiensemesterModel->getLastOrAktSemester(0);
 
 		if (isError($currsemdata))
 			show_error($currsemdata->retval);
@@ -159,7 +159,7 @@ class MobilityOnlineIncoming extends Auth_Controller
 		$json = null;
 		$incomingdata = $this->_getIncoming($studiensemester);
 
-		$this->output->set_content_type('application/json')->set_output(json_encode($incomingdata));
+		$this->outputJsonSuccess($incomingdata);
 	}
 
 	/**
@@ -171,7 +171,12 @@ class MobilityOnlineIncoming extends Auth_Controller
 	{
 		$studiensemestermo = $this->mobilityonlinesynclib->mapSemesterToMo($studiensemester);
 
-		$appobj = $this->syncfrommobilityonlinelib->getSearchAppObj($studiensemestermo, 'IN');
+		$appobj = $this->syncfrommobilityonlinelib->getSearchObj(
+			'application',
+			array('semesterDescription' => $studiensemestermo,
+				  'applicationType' => 'IN',
+				  'personType' => 'S')
+		);
 
 		$appids = $this->MoGetAppModel->getApplicationIds($appobj);
 

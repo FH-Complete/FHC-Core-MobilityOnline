@@ -3,7 +3,8 @@
 if (! defined('BASEPATH')) exit('No direct script access allowed');
 
 /**
- * Provides functionality needed for Mobility Online sync
+ * Provides generic functionality needed for Mobility Online sync
+ * particular objects are synced in subclasses
  */
 class MobilityOnlineSyncLib
 {
@@ -15,7 +16,7 @@ class MobilityOnlineSyncLib
 	private $_conffhcdefaults = array();
 	// separate fielddefinitions
 	protected $conffields = array();
-	// required fields for checking
+	// required fields for syncing
 	protected $requiredfields = array();
 
 	// mo string replacements for fhc values. Numeric indices mean callback function names used for replacements.
@@ -71,10 +72,13 @@ class MobilityOnlineSyncLib
 		),
 		'zgvmadatum' => array(
 			0 => 'mapDateToFhc'
-		)
+		)/*,
+		'lehrveranstaltung_id' => array(
+			//extracting lvid from MobilityOnline coursenumber, assuming format id_orgform_ausbildungssemester,
+			//e.g. 35408_VZ_2sem
+			'(\d+)_(.*)' => '$1'
+		)*/
 	);
-
-	protected $errorMessages = array();
 
 	/**
 	 * MobilityOnlineSyncLib constructor.

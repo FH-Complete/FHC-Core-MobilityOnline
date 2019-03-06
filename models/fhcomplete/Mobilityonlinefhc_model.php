@@ -30,12 +30,12 @@ class Mobilityonlinefhc_model extends DB_Model
 		$parametersarray = array($studiensemester_kurzbz, $studsemres->retval[0]->studienjahr_kurzbz, $semstart, $semende, $studiensemester_kurzbz);
 
 		$query = "
-			SELECT tbl_lehrveranstaltung.*, ? AS studiensemester_kurzbz, ? AS studienjahr_kurzbz, UPPER(tbl_studiengang.typ::varchar(1) || tbl_studiengang.kurzbz) AS studiengang_kuerzel, 
-			tbl_studiengang.bezeichnung AS studiengang_bezeichnung, tbl_studiengang.english AS studiengang_bezeichnung_english, tbl_studiengang.typ, tbl_sprache.locale
-			FROM lehre.tbl_lehrveranstaltung
-			JOIN public.tbl_studiengang ON tbl_lehrveranstaltung.studiengang_kz = tbl_studiengang.studiengang_kz
-			JOIN public.tbl_sprache ON tbl_lehrveranstaltung.sprache = tbl_sprache.sprache
-			WHERE tbl_lehrveranstaltung.lehrtyp_kurzbz != 'modul'
+			SELECT lv.*, ? AS studiensemester_kurzbz, ? AS studienjahr_kurzbz, UPPER(stg.typ::varchar(1) || stg.kurzbz) AS studiengang_kuerzel, 
+			stg.bezeichnung AS studiengang_bezeichnung, stg.english AS studiengang_bezeichnung_english, stg.typ, tbl_sprache.locale
+			FROM lehre.tbl_lehrveranstaltung lv
+			JOIN public.tbl_studiengang stg ON lv.studiengang_kz = stg.studiengang_kz
+			JOIN public.tbl_sprache ON lv.sprache = tbl_sprache.sprache
+			WHERE lv.lehrtyp_kurzbz != 'modul'
 			AND (
 				EXISTS 
 				(
@@ -45,59 +45,17 @@ class Mobilityonlinefhc_model extends DB_Model
 					JOIN lehre.tbl_studienordnung ON tbl_studienordnung.studienordnung_id = tbl_studienplan.studienordnung_id
 					JOIN public.tbl_studiensemester semvon ON lehre.tbl_studienordnung.gueltigvon = semvon.studiensemester_kurzbz OR lehre.tbl_studienordnung.gueltigvon IS NULL
 					JOIN public.tbl_studiensemester sembis ON lehre.tbl_studienordnung.gueltigbis = sembis.studiensemester_kurzbz OR lehre.tbl_studienordnung.gueltigbis IS NULL
-					WHERE tbl_studienplan_lehrveranstaltung.lehrveranstaltung_id = tbl_lehrveranstaltung.lehrveranstaltung_id
+					WHERE tbl_studienplan_lehrveranstaltung.lehrveranstaltung_id = lv.lehrveranstaltung_id
 					AND (?::date >= semvon.start OR semvon.start IS NULL) AND (?::date <= sembis.ende OR sembis.ende IS NULL)
 				)
-				OR EXISTS (SELECT 1 FROM lehre.tbl_lehreinheit WHERE lehrveranstaltung_id = tbl_lehrveranstaltung.lehrveranstaltung_id AND studiensemester_kurzbz = ?)
+				OR EXISTS (SELECT 1 FROM lehre.tbl_lehreinheit WHERE lehrveranstaltung_id = lv.lehrveranstaltung_id AND studiensemester_kurzbz = ?)
 			)
-			AND incoming > 0
-			AND tbl_lehrveranstaltung.aktiv
-			AND tbl_studiengang.typ IN ('b', 'm')
-			ORDER BY studiengang_kuerzel, tbl_lehrveranstaltung.bezeichnung, tbl_lehrveranstaltung.lehrveranstaltung_id
+			AND lv.incoming > 0
+			AND lv.aktiv
+			AND stg.typ IN ('b', 'm')
+			ORDER BY studiengang_kuerzel, lv.bezeichnung, lv.lehrveranstaltung_id
 		";
 
 		return $this->execQuery($query, $parametersarray);
 	}
-
-
-
-	// ****
-// * Generiert die Matrikelnummer
-// * FORMAT: 0710254001
-// * 07 = Jahr
-// * 1/2/0  = WS/SS/incoming
-// * 0254 = Studiengangskennzahl vierstellig
-// * 001 = Laufende Nummer
-// ****
-/*	private function generateMatrikelnummer($studiengang_kz, $studiensemester_kurzbz)
-	{
-		$db = new basis_db();
-
-		$jahr = mb_substr($studiensemester_kurzbz, 4);
-		$sem = mb_substr($studiensemester_kurzbz, 0, 2);
-		if($sem=='SS')
-			$jahr = $jahr-1;
-		$art =0;
-
-		$matrikelnummer = sprintf("%02d",$jahr).$art.sprintf("%04d",$studiengang_kz);
-
-		$qry = "SELECT matrikelnr FROM public.tbl_student WHERE matrikelnr LIKE '".$db->db_escape($matrikelnummer)."%' ORDER BY matrikelnr DESC LIMIT 1";
-
-		if($db->db_query($qry))
-		{
-			if($row = $db->db_fetch_object())
-			{
-				$max = mb_substr($row->matrikelnr,7);
-			}
-			else
-				$max = 0;
-
-			$max += 1;
-			return $matrikelnummer.sprintf("%03d",$max);
-		}
-		else
-		{
-			return false;
-		}
-	}*/
 }

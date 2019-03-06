@@ -80,14 +80,14 @@ var MobilityOnlineIncoming = {
 			{
 				successCallback: function(data, textStatus, jqXHR)
 				{
-					if (data !== null)
+					if (FHC_AjaxClient.hasData(data))
 					{
 						$("#incomings").empty();
-						var incomings = data.data;
+						var incomings = data.retval;
 
-						for (var incoming in data)
+						for (var incoming in incomings)
 						{
-							var incomingobj = data[incoming];
+							var incomingobj = incomings[incoming];
 							var incomingdata = incomingobj.data;
 
 							var person = incomingdata.person;
@@ -99,7 +99,7 @@ var MobilityOnlineIncoming = {
 							{
 								errorclass = " class='inactive' data-toggle='tooltip' title='";
 								var first = true;
-								for(var i in incomingobj.errorMessages)
+								for (var i in incomingobj.errorMessages)
 								{
 									var coma = '';
 									if (!first)
@@ -111,7 +111,7 @@ var MobilityOnlineIncoming = {
 							}
 							else
 							{
-								chkbxstring = "<input type='checkbox' value='"+incomingobj.moid+"' name='incoming[]'>";
+								chkbxstring = "<input type='checkbox' value='" + incomingobj.moid + "' name='incoming[]'>";
 							}
 
 							if (incomingobj.infhc)
@@ -124,12 +124,12 @@ var MobilityOnlineIncoming = {
 							}
 
 							$("#incomings").append(
-								"<tr"+errorclass+">" +
-									"<td class='text-center'>"+chkbxstring+"</td>" +
-									"<td>"+person.vorname+" "+person.nachname+"</td>" +
-									"<td>"+incomingdata.kontaktmail.kontakt+"</td>" +
-									"<td>"+incomingdata.pipelineStatusDescription+"</td>" +
-									"<td class='text-center'>"+newicon+"</td>" +
+								"<tr" + errorclass + ">" +
+								"<td class='text-center'>" + chkbxstring + "</td>" +
+								"<td>" + person.nachname + ", " + person.vorname + "</td>" +
+								"<td>" + incomingdata.kontaktmail.kontakt + "</td>" +
+								"<td>" + incomingdata.pipelineStatusDescription + "</td>" +
+								"<td class='text-center'>" + newicon + "</td>" +
 								"</tr>"
 							);
 

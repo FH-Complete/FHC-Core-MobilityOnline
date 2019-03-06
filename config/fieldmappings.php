@@ -21,6 +21,19 @@ $config['fields']['application'] = array(
 	'login'
 );
 
+$config['fields']['course'] = array(
+	'semesterDescription',
+	'applicationType',
+	'studyArea',
+	'studyField',
+	'studySubject',
+	'courseType',
+	'language',
+	'studyLevels',
+	'courseNumber',
+	'courseName'
+);
+
 $config['fieldmappings']['application']['person'] = array(
 	'vorname' => $config['fields']['application'][0],
 	'nachname' => $config['fields']['application'][1],
@@ -83,6 +96,15 @@ $config['fieldmappings']['application']['kontaktnotfall'] = array(
 
 $config['fieldmappings']['application']['studiengang'] = array(
 	'typ' => 'stud_niveau_id'
+);
+
+$config['fieldmappings']['incomingcourse']['lehrveranstaltung'] = array(
+	'mobezeichnung' => 'hostCourseName',
+
+);
+
+$config['fieldmappings']['incomingcourse']['studiengang'] = array(
+	'bezeichnung' => 'studyFieldDescription'
 );
 
 $config['fieldmappings']['course'] = array(

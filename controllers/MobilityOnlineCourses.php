@@ -45,7 +45,7 @@ class MobilityOnlineCourses extends Auth_Controller
 		if (isError($studiensemesterdata))
 			show_error($studiensemesterdata->retval);
 
-		$currsemdata = $this->StudiensemesterModel->getLastOrAktSemester();
+		$currsemdata = $this->StudiensemesterModel->getLastOrAktSemester(0);
 
 		if (isError($currsemdata))
 			show_error($currsemdata->retval);
@@ -230,8 +230,8 @@ class MobilityOnlineCourses extends Auth_Controller
 		$lvdata = $this->MoFhcModel->getLvs($studiensemester);
 
 		if (hasData($lvdata))
-			$json = $lvdata;
+			$json = $lvdata->retval;
 
-		$this->output->set_content_type('application/json')->set_output(json_encode($json));
+		$this->outputJsonSuccess($json);
 	}
 }
