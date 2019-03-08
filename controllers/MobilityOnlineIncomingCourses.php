@@ -89,7 +89,8 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 
 		$lehreinheitassignments = $this->input->post('lehreinheitassignments');
 
-		$changed = false;
+		$errors = '';
+		$hasError = $changed = false;
 
 		foreach ($lehreinheitassignments as $lehreinheitassignment)
 		{
@@ -104,37 +105,44 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 				{
 					if (!hasData($grpassignment))
 					{
+						$changed = true;
 						$direktUserAddResult = $this->LehreinheitgruppeModel->direktUserAdd($lehreinheitassignment['uid'], $lehreinheitassignment['lehreinheit_id']);
-						if (isSuccess($direktUserAddResult))
-							$changed = true;
-						else
-							$json = $direktUserAddResult;
+						if (isError($direktUserAddResult))
+						{
+							$hasError = true;
+							if (!isEmptyString($errors))
+								$errors .= '; ';
+							$errors .= $direktUserAddResult->retval;
+						}
 					}
 				}
 				elseif ($lehreinheitassignment['assigned'] === 'false')
 				{
 					if (hasData($grpassignment))
 					{
+						$changed = true;
 						$direktUserDeleteResult = $this->LehreinheitgruppeModel->direktUserDelete($lehreinheitassignment['uid'], $lehreinheitassignment['lehreinheit_id']);
-						if (isSuccess($direktUserDeleteResult))
-							$changed = true;
-						else
-							$json = $direktUserDeleteResult;
+						if (isError($direktUserDeleteResult))
+						{
+							$hasError = true;
+							if (!isEmptyString($errors))
+								$errors .= '; ';
+							$errors .= $direktUserDeleteResult->retval;
+						}
 					}
 				}
 			}
 		}
 
 		if (!$changed)
-			$json = success('No teaching unit assignments changed');
-
-		if (isSuccess($json))
+			$this->outputJsonSuccess('No teaching unit assignments changed');
+		elseif (isSuccess($json) && !$hasError)
 		{
 			$this->outputJsonSuccess($json->retval);
 		}
 		else
 		{
-			$this->outputJsonError($json->retval);
+			$this->outputJsonError($errors);
 		}
 	}
 

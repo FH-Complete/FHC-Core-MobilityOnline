@@ -20,8 +20,6 @@ class MobilityOnlineIncoming extends Auth_Controller
 			)
 		);
 
-		$this->config->load('extensions/FHC-Core-MobilityOnline/config');
-
 		$this->load->model('organisation/Studiensemester_model', 'StudiensemesterModel');
 		$this->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MoFhcModel');
 		$this->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model

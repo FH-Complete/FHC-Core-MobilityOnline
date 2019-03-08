@@ -10,6 +10,8 @@ require_once('include/functions.inc.php');
  */
 class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 {
+	private $_mobilityonline_config;
+	private $_debugmode = false;
 	// user saved in db insertvon, updatevon fields
 	const IMPORTUSER = 'mo_import';
 	private $_pipelinestati = array(
@@ -26,6 +28,10 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	public function __construct()
 	{
 		parent::__construct();
+
+		$this->_mobilityonline_config = $this->ci->config->item('FHC-Core-MobilityOnline');
+		$this->_debugmode = isset($this->_mobilityonline_config['debugmode']) &&
+			$this->_mobilityonline_config['debugmode'] === true;
 
 		$this->ci->load->model('person/person_model', 'PersonModel');
 		$this->ci->load->model('person/benutzer_model', 'BenutzerModel');
@@ -448,7 +454,10 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				{
 					if (hasData($aktecheckresp))
 					{
-						echo '<br />Lichtbild already exists, akte_id ' . $aktecheckresp->retval[0]->akte_id;
+						if ($this->_debugmode)
+						{
+							echo '<br />Lichtbild already exists, akte_id ' . $aktecheckresp->retval[0]->akte_id;
+						}
 					}
 					else
 					{
@@ -545,7 +554,10 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				if (hasData($benutzerstudcheckresp))
 				{
 					$benutzer['uid'] = $benutzerstudcheckresp->retval[0]->student_uid;
-					echo "<br />benutzer for student $prestudent_id_res already exists, uid ". $benutzer['uid'];
+					if ($this->_debugmode)
+					{
+						echo "<br />benutzer for student $prestudent_id_res already exists, uid " . $benutzer['uid'];
+					}
 				}
 				else
 				{
@@ -751,18 +763,21 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 */
 	private function _log($modtype, $response, $table)
 	{
-		if (isSuccess($response))
+		if ($this->_debugmode)
 		{
-			if (is_array($response->retval))
-				$id = implode('; ', $response->retval);
-			else
-				$id = $response->retval;
+			if (isSuccess($response))
+			{
+				if (is_array($response->retval))
+					$id = implode('; ', $response->retval);
+				else
+					$id = $response->retval;
 
-			echo "<br />$table $modtype successful, id ".$id;
-		}
-		else
-		{
-			echo "<br />$table $modtype error";
+				echo "<br />$table $modtype successful, id " . $id;
+			}
+			else
+			{
+				echo "<br />$table $modtype error";
+			}
 		}
 	}
 

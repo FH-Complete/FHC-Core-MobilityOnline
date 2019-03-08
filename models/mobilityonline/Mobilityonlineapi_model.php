@@ -16,6 +16,7 @@ class Mobilityonlineapi_model extends FHC_Model
 	 */
 	public function __construct()
 	{
+		$this->config->load('extensions/FHC-Core-MobilityOnline/config');
 		$this->_mobilityonline_config = $this->config->item('FHC-Core-MobilityOnline');
 	}
 
