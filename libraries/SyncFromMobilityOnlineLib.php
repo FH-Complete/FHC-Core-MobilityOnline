@@ -21,6 +21,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		'is_pers_daten_erf',
 		'is_abgeschlossen'
 	);
+	private $_output = '';
 
 	/**
 	 * SyncFromMobilityOnlineLib constructor.
@@ -61,7 +62,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 * @param $photo of applicant
 	 * @return array with fhcomplete table arrays
 	 */
-	public function mapMoAppToIncoming($moapp, $moaddr, $photo)
+	public function mapMoAppToIncoming($moapp, $moaddr = null, $photo = null)
 	{
 		$fieldmappings = $this->conffieldmappings['application'];
 		$personmappings = $fieldmappings['person'];
@@ -74,7 +75,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		//applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
 		$comboboxvaluefields = array($personmappings['staatsbuergerschaft'], $personmappings['sprache'], $prestudentstatusmappings['studiensemester_kurzbz'],
-									 $prestudentmappings['studiengang_kz'], $prestudentmappings['zgvmas_code'], /*$prestudentmappings['zgvnation'],*/ $prestudentmappings['zgvmanation'],
+									 $prestudentmappings['studiengang_kz'], $prestudentmappings['zgvmas_code'], $prestudentmappings['zgvnation'], /*$prestudentmappings['zgvmanation'],*/
 									 $bisiomappings['mobilitaetsprogramm_code'], $bisiomappings['nation_code']);
 
 		foreach ($fieldmappings as $fhctable)
@@ -101,6 +102,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		// Nation
 		$monation = $moapp->{$personmappings['staatsbuergerschaft']};
+		$mobisionation = $moapp->{$bisiomappings['nation_code']};
 		$moaddrnation = isset($moaddr) ? $moaddr->{$adressemappings['nation']}->description : null;
 		$mozgvnation = isset($prestudentmappings['zgvnation']) && isset($moapp->{$prestudentmappings['zgvnation']}) ? $moapp->{$prestudentmappings['zgvnation']} : null;
 		$mozgvmanation = isset($prestudentmappings['zgvmanation']) && isset($moapp->{$prestudentmappings['zgvmanation']}) ? $moapp->{$prestudentmappings['zgvmanation']} : null;
@@ -115,6 +117,11 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				if ($fhcnation->kurztext === $monation || $fhcnation->langtext === $monation || $fhcnation->engltext === $monation)
 				{
 					$moapp->{$personmappings['staatsbuergerschaft']} = $fhcnation->nation_code;
+				}
+
+				// try to get nation by bezeichnung
+				if ($fhcnation->kurztext === $mobisionation || $fhcnation->langtext === $mobisionation || $fhcnation->engltext === $mobisionation)
+				{
 					$moapp->{$bisiomappings['nation_code']} = $fhcnation->nation_code;
 				}
 
@@ -295,18 +302,20 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 */
 	public function saveIncoming($incoming, $prestudent_id = null)
 	{
+		$this->_output = '';
 		//error check for missing data etc.
 		$errors = $this->fhcObjHasError($incoming, 'application');
 
 		if ($errors->error)
 		{
-			echo "<br />ERROR! ";
+			$this->_output .= "<br />ERROR! ";
 			foreach ($errors->errorMessages as $errorMessage)
 			{
-				echo "$errorMessage";
+				$this->_output .= "$errorMessage";
 			}
 
-			echo "<br />aborting incoming save";
+			$this->_output .= "<br />aborting incoming save";
+			return null;
 		}
 
 		$person = $incoming['person'];
@@ -456,7 +465,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					{
 						if ($this->_debugmode)
 						{
-							echo '<br />Lichtbild already exists, akte_id ' . $aktecheckresp->retval[0]->akte_id;
+							$this->_output .= '<br />lichtbild already exists, akte_id ' .$aktecheckresp->retval[0]->akte_id;
 						}
 					}
 					else
@@ -556,7 +565,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					$benutzer['uid'] = $benutzerstudcheckresp->retval[0]->student_uid;
 					if ($this->_debugmode)
 					{
-						echo "<br />benutzer for student $prestudent_id_res already exists, uid " . $benutzer['uid'];
+						$this->_output .= "<br />benutzer for student $prestudent_id_res already exists, uid " .$benutzer['uid'];
 					}
 				}
 				else
@@ -578,7 +587,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 						if (hasData($benutzercheckresp))
 						{
-							echo "<br />benutzer with uid ".$benutzer['uid']." already exists";
+							$this->_output .= "<br />benutzer with uid ".$benutzer['uid']." already exists";
 						}
 						elseif (isSuccess($benutzercheckresp))
 						{
@@ -679,7 +688,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		// Check if everything went ok during the transaction
 		if ($this->ci->db->trans_status() === false)
 		{
-			echo "rolling back...";
+			$this->_output .= "rolling back...";
 			$this->ci->db->trans_rollback();
 			return null;
 		}
@@ -688,6 +697,15 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			$this->ci->db->trans_commit();
 			return $prestudent_id_res;
 		}
+	}
+
+	/**
+	 * Gets sync output string
+	 * @return string
+	 */
+	public function getOutput()
+	{
+		return $this->_output;
 	}
 
 	/**
@@ -772,11 +790,11 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				else
 					$id = $response->retval;
 
-				echo "<br />$table $modtype successful, id " . $id;
+				$this->_output .= "<br />$table $modtype successful, id " . $id;
 			}
 			else
 			{
-				echo "<br />$table $modtype error";
+				$this->_output .= "<br />$table $modtype error";
 			}
 		}
 	}

@@ -22,15 +22,20 @@ $(document).ready(function()
 			function()
 			{
 				var incomingelem = $("#incomings input[type=checkbox]:checked");
-				var incomingids = [];
+				var incomings = [];
 				incomingelem.each(
 					function()
 					{
-						incomingids.push($(this).val());
+						for (var incoming in MobilityOnlineIncoming.incomings)
+						{
+							var moinc = MobilityOnlineIncoming.incomings[incoming];
+							if (moinc.moid == $(this).val())
+								incomings.push(moinc)
+						}
 					}
 				);
 
-				MobilityOnlineIncoming.syncIncomings(incomingids, $("#studiensemester").val());
+				MobilityOnlineIncoming.syncIncomings(incomings, $("#studiensemester").val());
 			}
 		);
 
@@ -57,7 +62,7 @@ $(document).ready(function()
 				incomingelem.each(
 					function()
 					{
-						var infhc = $(this).find(".infhc").text();
+						var infhc = $(this).find("input.infhc").val();
 
 						if (infhc === '0')
 							$(this).find("input[type=checkbox][name='incoming[]']").prop('checked', true);
@@ -72,6 +77,7 @@ $(document).ready(function()
 );
 
 var MobilityOnlineIncoming = {
+	incomings: null,
 	getIncoming: function(studiensemester)
 	{
 		FHC_AjaxClient.ajaxCallGet(
@@ -84,6 +90,7 @@ var MobilityOnlineIncoming = {
 					{
 						$("#incomings").empty();
 						var incomings = data.retval;
+						MobilityOnlineIncoming.incomings = incomings;
 
 						for (var incoming in incomings)
 						{
@@ -116,11 +123,11 @@ var MobilityOnlineIncoming = {
 
 							if (incomingobj.infhc)
 							{
-								newicon = "<i class='fa fa-check'></i><span style='display:none' class='infhc'>1</span>";
+								newicon = "<i id='infhcicon_"+incomingobj.moid+"' class='fa fa-check'></i><input type='hidden' id='infhc_"+incomingobj.moid+"' class='infhc' value='1'>";
 							}
 							else
 							{
-								newicon = "<i class='fa fa-times'></i><span style='display:none' class='infhc'>0</span>";
+								newicon = "<i id='infhcicon_"+incomingobj.moid+"' class='fa fa-times'></i><input type='hidden' id='infhc_"+incomingobj.moid+"' class='infhc' value='0'>";
 							}
 
 							$("#incomings").append(
@@ -147,22 +154,71 @@ var MobilityOnlineIncoming = {
 			}
 		);
 	},
-	syncIncomings: function(incomingids, studiensemester)
+	syncIncomings: function(incomings, studiensemester)
 	{
-		FHC_AjaxClient.showVeil();
-		$(".fhc-ajaxclient-veil").append("<div class='veil-text'>Synchronising...</div>");
-		$("#syncoutput").load(
-			FULL_URL + '/syncIncomings',
-			{
-				"incomingids[]": incomingids,
+		FHC_AjaxClient.ajaxCallPost(
+			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/syncIncomings',
+			{	"incomings": JSON.stringify(incomings),
 				"studiensemester": studiensemester
 			},
-			function(response, status, xhr)
 			{
-				FHC_AjaxClient.hideVeil();
-				if (status == "error")
-					$("#syncoutput").text("error occured while syncing!");
-				MobilityOnlineIncoming.getIncoming(studiensemester);
+				successCallback: function (data, textStatus, jqXHR)
+				{
+					if (!FHC_AjaxClient.hasData(data))
+						$("#syncoutput").text("error occured while syncing!");
+					else
+					{
+						$("#syncoutput").html(data.retval);
+						MobilityOnlineIncoming.refreshInFhcColumn();
+					}
+				}
+			}
+		);
+	},
+	refreshInFhcColumn: function()
+	{
+		var moidsel = $("#incomings input[name='incoming[]']");
+		var moids = [];
+
+		$(moidsel).each(
+			function()
+			{
+				moids.push($(this).val());
+			}
+		);
+
+		FHC_AjaxClient.ajaxCallGet(
+			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/checkMoidsInFhc',
+			{
+				"moids": moids
+			},
+			{
+				successCallback: function (data, textStatus, jqXHR)
+				{
+					if (!FHC_AjaxClient.hasData(data))
+						alert("error when refreshing FHC column!");
+					else
+					{
+						for (var incoming in data.retval)
+						{
+							var incomingobj = data.retval[incoming];
+							var infhciconel = $("#infhcicon_" + incoming);
+							var infhcel = $("#infhc_" + incoming);
+
+							infhciconel.removeClass();
+							if (incomingobj === true)
+							{
+								infhcel.val("1");
+								infhciconel.addClass("fa fa-check");
+							}
+							else
+							{
+								infhcel.val("0");
+								infhciconel.addClass("fa fa-times");
+							}
+						}
+					}
+				}
 			}
 		);
 	},
