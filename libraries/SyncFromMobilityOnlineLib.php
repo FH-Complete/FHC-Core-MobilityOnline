@@ -278,13 +278,23 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			if (isset($fhccourse['lehrveranstaltung']['lehrveranstaltung_id']) &&
 				is_numeric($fhccourse['lehrveranstaltung']['lehrveranstaltung_id']))
 			{
-				$fhccourse['lehreinheiten'] = $this->ci->LehreinheitModel->getLesForLv($fhccourse['lehrveranstaltung']['lehrveranstaltung_id'], $studiensemester_kurzbz);
+				$fhccourse['lehreinheiten'] = $this->ci->LehreinheitModel->getLesForLv($fhccourse['lehrveranstaltung']['lehrveranstaltung_id'], $studiensemester_kurzbz, false);
 
 				foreach ($fhccourse['lehreinheiten'] as $lehreinheit)
 				{
 					$lehreinheit->directlyAssigned = false;
 
-							//$directlyassigned = $this->ci->BenutzergruppeModel->loadWhere(array('uid' => $uid, 'gruppe_kurzbz' => $directgroup->retval[0]->gruppe_kurzbz));
+					$students = $this->ci->LehreinheitModel->getStudenten($lehreinheit->lehreinheit_id);
+
+					$anz_teilnehmer = 0;
+
+					if (isSuccess($students))
+					{
+						$anz_teilnehmer = count($students->retval);
+					}
+
+					$lehreinheit->anz_teilnehmer = $anz_teilnehmer;
+
 					$directlyassigned = $this->ci->LehreinheitgruppeModel->getDirectGroupAssignment($uid, $lehreinheit->lehreinheit_id);
 
 					if (hasData($directlyassigned))

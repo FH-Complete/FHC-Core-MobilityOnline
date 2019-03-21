@@ -9,9 +9,12 @@
 			'fontawesome' => true,
 			'sbadmintemplate' => true,
 			'ajaxlib' => true,
+			'tablesorter' => true,
 			'navigationwidget' => true,
-			'customJSs' => array('public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineIncoming.js'),
-			'customCSSs' => array('public/extensions/FHC-Core-MobilityOnline/css/MobilityOnline.css')
+			'customJSs' => array('public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineIncoming.js',
+								 'public/js/tablesort/tablesort.js'),
+			'customCSSs' => array('public/extensions/FHC-Core-MobilityOnline/css/MobilityOnline.css',
+								  'public/css/sbadmin2/tablesort_bootstrap.css')
 		)
 	);
 ?>

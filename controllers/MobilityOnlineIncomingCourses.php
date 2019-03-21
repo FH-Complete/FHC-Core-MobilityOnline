@@ -16,7 +16,8 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 			array(
 				'index' => 'admin:rw',
 				'getIncomingCoursesJson' => 'admin:r',
-				'changeLehreinheitAssignment' => 'admin:rw'
+				'updateLehreinheitAssignment' => 'admin:rw',
+				'getCourseAssignments' => 'admin:r'
 			)
 		);
 
@@ -83,7 +84,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 	 * Expects array with uid, lehreinheit_id and boolean value (assigned/not assigned) as POST parameter.
 	 * Adds and deletes Lehreinheit assignments, where necessary.
 	 */
-	public function changeLehreinheitAssignment()
+	public function updateLehreinheitAssignment()
 	{
 		$json = success('Teaching units assignment changed successfully');
 
@@ -147,7 +148,39 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 	}
 
 	/**
-	 * Gets incomings with coursesfor a studiensemester
+	 * Gets direct course assignments for a user and an array of lehreinheitids.
+	 * Returns array with lvids and their directly assigned leids
+	 */
+	public function getCourseAssignments()
+	{
+		$ledata = $this->input->post('ledata');
+		$uid = $this->input->post('uid');
+
+		$result = array();
+
+		if (isset($ledata) && is_array($ledata))
+		{
+			foreach ($ledata as $le)
+			{
+				$lv = key($le);
+				$le = $le[$lv];
+				$groupAssignments = $this->LehreinheitgruppeModel->getDirectGroupAssignment($uid, $le);
+
+				if (!isset($result[$lv]))
+					$result[$lv] = array();
+
+				if (hasData($groupAssignments))
+				{
+					$result[$lv][] = $le;
+				}
+			}
+		}
+
+		$this->outputJsonSuccess($result);
+	}
+
+	/**
+	 * Gets incomings with courses for a studiensemester
 	 * @param $studiensemester
 	 * @return array with prestudents
 	 */
@@ -156,44 +189,40 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 		$prestudents = array();
 
 		$this->MoappidzuordnungModel->addSelect('prestudent_id, mo_applicationid');
-
 		$syncedIncomingIds = $this->MoappidzuordnungModel->loadWhere(array('studiensemester_kurzbz' => $studiensemester));
 
 		if (hasData($syncedIncomingIds))
 		{
-			$this->load->model('person/Kontakt_model', 'KontaktModel');
-
 			foreach ($syncedIncomingIds->retval as $syncedIncomingId)
 			{
-				$this->PrestudentModel->addSelect('prestudent_id, person_id, vorname, nachname, uid');
-				$this->PrestudentModel->addJoin('public.tbl_person', 'person_id');
-				$this->PrestudentModel->addJoin('public.tbl_benutzer', 'person_id');
-				$prestudent = $this->PrestudentModel->load($syncedIncomingId->prestudent_id);
+				$prestudent = $this->MoFhcModel->getIncomingPrestudent($syncedIncomingId->prestudent_id);
 
 				if (hasData($prestudent))
 				{
-					$prestudent = $prestudent->retval[0];
+					$prestudentobj = $prestudent->retval;
 
-					$this->KontaktModel->addLimit(1);
-					$kontakt = $this->KontaktModel->loadWhere(array('person_id' => $prestudent->person_id, 'kontakttyp' => 'email', 'zustellung' => true));
-					if (hasData($kontakt))
+					$courses = $this->MoGetAppModel->getCoursesOfApplication($syncedIncomingId->mo_applicationid);
+
+					$prestudentobj->lvs = array();
+					$prestudentobj->nonMoLvs = array();
+
+					if (isset($courses) && is_array($courses))
 					{
-						$prestudentobj = new StdClass();
-
-						$courses = $this->MoGetAppModel->getCoursesOfApplication($syncedIncomingId->mo_applicationid);
-
-						$prestudentobj->lvs = array();
-						$prestudentobj->nonMoLvs = array();
-
 						foreach ($courses as $course)
 						{
-							$fhclv = $this->syncfrommobilityonlinelib->mapMoIncomingCourseToLv($course, $studiensemester, $prestudent->uid);
+							$fhclv = $this->syncfrommobilityonlinelib->mapMoIncomingCourseToLv($course, $studiensemester, $prestudentobj->uid);
 							if (isset($fhclv))
 								$prestudentobj->lvs[] = $fhclv;
 						}
+					}
 
-						$additionalCourses = $this->LehrveranstaltungModel->getLvsByStudent($prestudent->uid, $studiensemester);
+					//sort courses alphabetically
+					usort($prestudentobj->lvs, array($this, '_cmpCourses'));
 
+					$additionalCourses = $this->LehrveranstaltungModel->getLvsByStudent($prestudentobj->uid, $studiensemester);
+
+					if (hasData($additionalCourses))
+					{
 						foreach ($additionalCourses->retval as $additionalCourse)
 						{
 							$fhclv = array();
@@ -202,7 +231,8 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 							foreach ($prestudentobj->lvs as $molv)
 							{
 								if (isset($molv['lehrveranstaltung']['lehrveranstaltung_id'])
-									&& $molv['lehrveranstaltung']['lehrveranstaltung_id'] === $additionalCourse->lehrveranstaltung_id)
+									&& $molv['lehrveranstaltung']['lehrveranstaltung_id'] === $additionalCourse->lehrveranstaltung_id
+								)
 								{
 									$found = true;
 									break;
@@ -210,23 +240,33 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 							}
 							if (!$found)
 							{
-								$this->syncfrommobilityonlinelib->fillFhcCourse($additionalCourse->lehrveranstaltung_id, $prestudent->uid, $studiensemester, $fhclv);
+								$this->syncfrommobilityonlinelib->fillFhcCourse($additionalCourse->lehrveranstaltung_id, $prestudentobj->uid, $studiensemester, $fhclv);
 								$prestudentobj->nonMoLvs[] = $fhclv;
 							}
 						}
-
-						$prestudentobj->prestudent_id = $prestudent->prestudent_id;
-						$prestudentobj->vorname = $prestudent->vorname;
-						$prestudentobj->nachname = $prestudent->nachname;
-						$prestudentobj->uid = $prestudent->uid;
-						$prestudentobj->email = $kontakt->retval[0]->kontakt;
-						$prestudentobj->studiensemester_kurzbz = $studiensemester;
-
-						$prestudents[] = $prestudentobj;
 					}
+
+					$prestudents[] = $prestudentobj;
 				}
 			}
 		}
 		return $prestudents;
+	}
+
+	/**
+	 * Compares two courses by Bezeichnung in MobilityOnline for sort
+	 * @param $a
+	 * @param $b
+	 * @return int
+	 */
+	private function _cmpCourses($a, $b)
+	{
+		$amobez = strtolower($a['lehrveranstaltung']['mobezeichnung']);
+		$bmobez = strtolower($b['lehrveranstaltung']['mobezeichnung']);
+
+		if ($amobez == $bmobez)
+			return 0;
+
+		return $amobez > $bmobez ? 1 : -1;
 	}
 }

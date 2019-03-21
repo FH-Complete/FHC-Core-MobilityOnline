@@ -36,7 +36,7 @@ class Mobilityonlineapi_model extends FHC_Model
 	 * Performs generic call of wsdl service
 	 * @param $function name of function offered by wsdl service to call
 	 * @param $data
-	 * @return object returned by called function if successful call, false otherwise
+	 * @return object returned by called function if successful call, null otherwise
 	 */
 	protected function performCall($function, $data)
 	{
@@ -48,10 +48,7 @@ class Mobilityonlineapi_model extends FHC_Model
 		}
 		catch (SoapFault $e)
 		{
-			echo "<br />SOAP ERROR: ";
-			print_r($e->getMessage());
-			echo "<br />-------------------------------<br />";
+			return null;
 		}
-		return false;
 	}
 }

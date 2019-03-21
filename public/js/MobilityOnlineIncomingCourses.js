@@ -15,17 +15,17 @@ $(document).ready(function()
 			}
 		);
 
-		// make left box follow on scroll
-		var leftwell = $("#leftwell"), originalY = leftwell.offset().top;
+		// make right MO courses box follow on scroll
+		var mocourseswell = $("#mocourseswell"), originalY = mocourseswell.offset().top;
 
-		var topMargin = 10;
+		var topMargin = 0;
 
-		leftwell.css('position', 'relative');
+		mocourseswell.css('position', 'relative');
 
 		$(window).on('scroll', function(event) {
 			var scrollTop = $(window).scrollTop();
 
-			leftwell.stop(false, false).animate({
+			mocourseswell.stop(false, false).animate({
 				top: scrollTop < originalY
 					? 0
 					: scrollTop - originalY + topMargin
@@ -36,6 +36,12 @@ $(document).ready(function()
 );
 
 var MobilityOnlineIncomingCourses = {
+	incomingCourses: null,// object for storing array with incomings and their courses
+	/**
+	 * Gets incomings from MobilityOnline and fhcomplete together with
+	 * their courses assigned in MobilityOnline
+	 * @param studiensemester
+	 */
 	getIncomingCourses: function(studiensemester)
 	{
 		FHC_AjaxClient.ajaxCallGet(
@@ -46,109 +52,277 @@ var MobilityOnlineIncomingCourses = {
 				{
 					if (FHC_AjaxClient.hasData(data))
 					{
-						$("#incomings").empty();
+						$("#incomingprestudents").empty();
 						var incomingcourses = data.retval;
-						MobilityOnlineIncomingCourses._printMoCourses(incomingcourses);
+						MobilityOnlineIncomingCourses.incomingCourses = incomingcourses;
+						MobilityOnlineIncomingCourses._printIncomingPrestudents(incomingcourses);
 					}
 					else
 					{
 						$("#fhcles").text("-");
-						$("#incomings").html("<tr align='center'><td colspan='5'>No incomings with courses found!</td></tr>");
+						$("#incomingprestudents").html("<tr align='center'><td colspan='5'>No incomings with courses found!</td></tr>");
 					}
 				}
 			}
 		);
 	},
-	changeLehreinheitAssignment: function(lehreinheitassignments, studiensemester)
+	/**
+	 * Updates Lehreinheitassignments, i.e. adds or deletes direct assignments to a lehreinheit
+	 * @param lehreinheitassignments array, each entry contains uid, lehreinheit_id and bool indicating if directly assigned
+	 */
+	updateLehreinheitAssignment: function(lehreinheitassignments)
 	{
 		FHC_AjaxClient.ajaxCallPost(
-			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/changeLehreinheitAssignment',
+			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/updateLehreinheitAssignment',
 			{"lehreinheitassignments": lehreinheitassignments},
 			{
 				successCallback: function (data, textStatus, jqXHR)
 				{
-					$("#message").removeClass();
+					var messageel = $("#message");
 					if (FHC_AjaxClient.isSuccess(data))
 					{
-						$("#message").addClass("text-success");
+						messageel.removeClass("text-danger");
+						messageel.addClass("text-success");
+
+						var checkboxes = $("#allfhcles .checkbox");
+						var ledata = [];
+
+						checkboxes.each(
+							function()
+							{
+								var idstr = $(this).find(".lehreinheitinput").prop("id");
+								var lehreinheit_id = idstr.substr(idstr.indexOf("_") + 1);
+								var lehrveranstaltung_id = $(this).find(".lehrveranstaltunginput").val();
+								var le = {};
+								le[lehrveranstaltung_id] = lehreinheit_id;
+								ledata.push(le);
+							}
+						);
+
+						MobilityOnlineIncomingCourses.refreshCourseAssignments(ledata, lehreinheitassignments[0].uid)
 					}
 					else
 					{
-						$("#message").addClass("text-danger");
+						messageel.removeClass("text-success");
+						messageel.addClass("text-danger");
 					}
 
-					$("#message").text(data.retval);
+					messageel.html(data.retval);
 
-					MobilityOnlineIncomingCourses.getIncomingCourses(studiensemester);
 				}
 			}
 		)
 	},
-	_printMoCourses: function(incomingscourses)
+	/**
+	 * Gets course assignments for a user, refreshes directlyAssigned fields in global assignments object
+	 * Updates numbers in html views accordingly
+	 * @param ledata array, contains lehreinheited for which data has to refreshed,
+	 * each entry has form lvid:lehreinheitid
+	 * @param uid user for which lehreinheitassignments should be refreshed
+	 */
+	refreshCourseAssignments: function(ledata, uid)
 	{
-		var totalAssigned = 0;
+		FHC_AjaxClient.ajaxCallPost(
+			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/getCourseAssignments',
+			{
+				"uid": uid,
+				"ledata": ledata
+			},
+			{
+				successCallback: function (data, textStatus, jqXHR)
+				{
+					if (FHC_AjaxClient.hasData(data))
+					{
+						for (var prestudent in MobilityOnlineIncomingCourses.incomingCourses)
+						{
+							var prestudentobj = MobilityOnlineIncomingCourses.incomingCourses[prestudent];
+							if (prestudentobj.uid === uid)
+							{
+								for (var lvid in data.retval)
+								{
+									var leids = data.retval[lvid];
+									MobilityOnlineIncomingCourses._setDirectlyAssigned(prestudentobj.lvs, lvid, leids);
+									MobilityOnlineIncomingCourses._setDirectlyAssigned(prestudentobj.nonMoLvs, lvid, leids);
+								}
+								MobilityOnlineIncomingCourses._printMoCourses(prestudentobj);
+								MobilityOnlineIncomingCourses._printFhcCourses(prestudentobj);
+								break;
+							}
+						}
+						MobilityOnlineIncomingCourses._printIncomingPrestudents(MobilityOnlineIncomingCourses.incomingCourses);
+					}
+				}
+			}
+		)
+
+	},
+	/**
+	 * Prints initial prestudent table with list of synced prestudents
+	 * @param incomingscourses
+	 * @private
+	 */
+	_printIncomingPrestudents: function(incomingscourses)
+	{
+		$("#incomingprestudents").empty();
+
+		var totalAssigned = 0, totalLvsInFhc = 0;
 
 		for (var person in incomingscourses)
 		{
 			var prestudentobj = incomingscourses[person];
-			var rowspan = prestudentobj.lvs.length;
 			var tablerowstring = "";
 
 			tablerowstring += "<tr>" +
-				"<td class='text-center' rowspan='"+rowspan+"'>" +
-				"<button class='btn btn-default' id='lezuw_"+prestudentobj.prestudent_id+"'>" +
-				"<i class='fa fa-chevron-left'></i>" +
+				"<td class='text-center'>" +
+				"<button class='btn btn-default btn-sm' id='lezuw_"+prestudentobj.prestudent_id+"'>" +
+				"<i class='fa fa-edit'></i>" +
 				"</button>" +
 				"</td>";
-			tablerowstring += "<td rowspan='"+rowspan+"'>"+prestudentobj.nachname+", "+prestudentobj.vorname+"</td>" +
-				"<td rowspan='"+rowspan+"'>"+prestudentobj.email+"</td>";
+			tablerowstring += "<td>"+prestudentobj.nachname+", "+prestudentobj.vorname+"</td>" +
+				"<td>"+prestudentobj.email+"</td>";
 
+			var assignedCount = 0, notInMo = 0;
+			var lvsInFhc = prestudentobj.lvs.length;
 
 			for (var lv in prestudentobj.lvs)
 			{
 				var lvobj = prestudentobj.lvs[lv];
 
-				tablerowstring += "<td>"+lvobj.lehrveranstaltung.mobezeichnung+"</td>";
-				var status = "";
-				var assignedCount = 0;
-
 				for (var le in lvobj.lehreinheiten)
 				{
 					if (lvobj.lehreinheiten[le].directlyAssigned === true)
+					{
 						assignedCount++;
+						break;
+					}
 				}
-
-				if (assignedCount > 0)
-					status = "<i class='fa fa-check text-success'></i> "+assignedCount+" unit"+(assignedCount > 1 ? "s" : "")+" assigned";
-				else if ($.isNumeric(lvobj.lehrveranstaltung.lehrveranstaltung_id))
-				{
-					status = "<i class='fa fa-times text-danger'></i> no unit assigned";
-				}
-				else
-				{
-					status = "<i class='fa fa-times text-danger'></i> not in FHC";
-				}
-
-				tablerowstring += "<td>"+ status +"</td>";
-				tablerowstring += "</tr>";
-
-				totalAssigned += assignedCount;
 			}
 
-			$("#incomings").append(tablerowstring);
+			for (var nomolv in prestudentobj.nonMoLvs)
+			{
+				var nomolvobj = prestudentobj.nonMoLvs[nomolv];
+
+				for (var le in nomolvobj.lehreinheiten)
+				{
+					if (nomolvobj.lehreinheiten[le].directlyAssigned === true)
+					{
+						notInMo++;
+						break;
+					}
+				}
+			}
+
+			totalAssigned += assignedCount;
+			totalLvsInFhc += lvsInFhc;
+
+			tablerowstring += "<td class='text-center'>" +
+				"<span>"+assignedCount+"/" +
+				+lvsInFhc+"</span>";
+
+			if (assignedCount < lvsInFhc)
+			{
+				tablerowstring += "&nbsp;<i class ='fa fa-times text-danger'></i>";
+			}
+			else
+			{
+				tablerowstring += "&nbsp;<i class ='fa fa-check text-success'></i>";
+			}
+
+			if (notInMo > 0)
+				tablerowstring += "<br /><span class='text-danger'>"+notInMo+" not in MobilityOnline</span>";
+
+			tablerowstring += "</td>";
+
+			tablerowstring += "</tr>";
+
+			$("#incomingprestudents").append(tablerowstring);
 
 			$("#lezuw_"+prestudentobj.prestudent_id).click(
 				prestudentobj,
-				MobilityOnlineIncomingCourses._printFhcCourses
+				MobilityOnlineIncomingCourses._printLvs
 			)
 		}
-		$("#nrteachingunits").text(totalAssigned);
+		$("#totalCoursesAssigned").text(totalAssigned);
+		$("#totalCoursesFhc").text(totalLvsInFhc);
+
+		var headers = {headers: { 0: { sorter: false, filter: false}}};
+		Tablesort.addTablesorter("incomingprestudentstbl", [[1, 0], [2, 0]], ["filter"], 2, headers);
 	},
-	_printFhcCourses: function(prestudentobj)
+	/**
+	 * Prints courses from in Mobility Online and courses in fhcomplete
+	 * @param prestudentobj prestudent whose courses are displayed
+	 * @private
+	 */
+	_printLvs: function(prestudentobj)
 	{
-		var fhcprestudent = prestudentobj.data;
-		var fhclvhtml = "<h4>"+fhcprestudent.vorname+" "+fhcprestudent.nachname+"</h4><hr>";
+		MobilityOnlineIncomingCourses._printMoCourses(prestudentobj.data);
+		MobilityOnlineIncomingCourses._printFhcCourses(prestudentobj.data);
+		MobilityOnlineIncomingCourses._toggleIncomingCoursesView();
+	},
+	_printMoCourses: function(moapplication)
+	{
+		var totalAssigned = 0;
+
+		var prestudentdatahtml = "<tr><td class='prestudentfieldname'>First name</td><td>"+moapplication.vorname+"</td>" +
+			"<td class='prestudentfieldname'>Last name</td><td class='prestudentfieldvalue'>"+moapplication.nachname+"</td></tr>" +
+			"<tr><td class='prestudentfieldname'>E-Mail</td><td class='prestudentfieldvalue'>"+moapplication.email+"</td>" +
+			"<td class='prestudentfieldname'>Phone number</td><td class='prestudentfieldvalue'>"+moapplication.phonenumber+"</td></tr>" +
+			"<tr><td class='prestudentfieldname'>Study field</td><td class='prestudentfieldvalue'>"+moapplication.studiengang+"</td>" +
+			"<td class='prestudentfieldname'>Stay</td><td class='prestudentfieldvalue'>"+MobilityOnlineIncomingCourses._formatDateGerman(moapplication.stayfrom) +
+			" - " + MobilityOnlineIncomingCourses._formatDateGerman(moapplication.stayto) +
+			"</td>" +
+			"</tr>";
+
+		$("#lvsprestudentdata").html(prestudentdatahtml);
+
+		$("#molvs").empty();
+		$("#molvstbl").trigger("destroy");
+
+		for (var lv in moapplication.lvs)
+		{
+			var assignedCount = 0;
+			var status = "";
+			var lvobj = moapplication.lvs[lv];
+
+			for (var le in lvobj.lehreinheiten)
+			{
+				if (lvobj.lehreinheiten[le].directlyAssigned === true)
+					assignedCount++;
+			}
+
+			var tablerowstring = "<tr><td>"+lvobj.lehrveranstaltung.mobezeichnung+"</td>";
+
+			var textclass = 'fa fa-check text-success';
+
+			if (assignedCount <= 0)
+				textclass = 'fa fa-times text-danger';
+
+			if ($.isNumeric(lvobj.lehrveranstaltung.lehrveranstaltung_id))
+				status = "<i class='"+textclass+"' id='courselestatus_"+lvobj.lehrveranstaltung.lehrveranstaltung_id+"'></i>" +
+					" <span id='courseleamount_"+lvobj.lehrveranstaltung.lehrveranstaltung_id+"'>"+assignedCount+" unit"+(assignedCount === 1 ? "" : "s")+"</span>" +
+					" assigned";
+			else
+			{
+				status = "<i class='fa fa-times text-danger' id='courselestatus_"+lvobj.lehrveranstaltung.lehrveranstaltung_id+"'></i> not in FHC";
+			}
+
+			tablerowstring += "<td>"+ status +"</td>";
+			tablerowstring += "</tr>";
+
+			$("#molvs").append(tablerowstring);
+
+			totalAssigned += assignedCount;
+		}
+
+		Tablesort.addTablesorter("molvstbl", [[0, 0], [1, 0]], ["filter"], 2);
+	},
+	_printFhcCourses: function(fhcprestudent)
+	{
+		var fhclvhtml = "";
 		var numLvs = 0;
+		var hasLes = false;
+
+		fhclvhtml += "<div id='fhcles'>";
 
 		for (var fhclv in fhcprestudent.lvs)
 		{
@@ -157,14 +331,18 @@ var MobilityOnlineIncomingCourses = {
 			{
 				numLvs++;
 				fhclvhtml += MobilityOnlineIncomingCourses._getLehrveranstaltungHtml(fhclvobj);
+				if (fhclvobj.lehreinheiten.length > 0)
+					hasLes = true;
 			}
 		}
+		fhclvhtml += "</div>";
 
+		fhclvhtml += "<div id='fhconlyles'>";
 		// Lvs which are not in Mobility Online, but in FH-Complete
 		// (e.g. when course assignment gets deleted in MobilityOnline)
 		if (fhcprestudent.nonMoLvs.length > 0)
 		{
-			fhclvhtml += "<hr>Not in Mobility Online:<br /><br />";
+			fhclvhtml += "<hr><strong>In FH-Complete, but not in MobilityOnline:</strong><br /><br />";
 
 			for (var nomolv in fhcprestudent.nonMoLvs)
 			{
@@ -173,16 +351,36 @@ var MobilityOnlineIncomingCourses = {
 				{
 					numLvs++;
 					fhclvhtml += MobilityOnlineIncomingCourses._getLehrveranstaltungHtml(nonmolvobj);
+					if (nonmolvobj.lehreinheiten.length > 0)
+						hasLes = true;
 				}
 			}
 		}
+		fhclvhtml += "</div>";
 
-		if (numLvs > 0)
-			fhclvhtml += "<hr><input type='button' class='btn btn-default' id='save' value='Save'>";
+		fhclvhtml += "<hr>";
 
-		fhclvhtml += "<br /><br /><span id='message'></span>";
+		fhclvhtml += "<div class='row'>";
+		fhclvhtml += "<div class='col-xs-6 text-left'>" +
+			"<button class='btn btn-default' id='backtoincomings'>" +
+			"<i class='fa fa-arrow-left'></i> Back to all incomings"+
+			"</button>"+
+			"</div>";
 
-		$("#fhcles").html(fhclvhtml);
+		if (numLvs > 0 && hasLes)
+			fhclvhtml += "<div class='col-xs-6 text-right'>" +
+				"<button class='btn btn-default' id='save'>" +
+				"<i class='glyphicon glyphicon-floppy-disk'></i> Save"+
+				"</button>"+
+				"</div>";
+
+		fhclvhtml += "</div>";
+
+		$("#allfhcles").html(fhclvhtml);
+
+		$("#backtoincomings").click(
+				MobilityOnlineIncomingCourses._toggleIncomingCoursesView
+		);
 
 		$("#save").off("click");
 
@@ -194,33 +392,35 @@ var MobilityOnlineIncomingCourses = {
 				$(".lehreinheitinput").each(
 					function()
 					{
+						var idstr = $(this).prop("id");
+						var lehreinheit_id = idstr.substr(idstr.indexOf("_") + 1);
 						lehreinheitassignments.push(
 							{
 								"uid": uid,
-								"lehreinheit_id": $(this).prop("id"),
+								"lehreinheit_id": lehreinheit_id,
 								"assigned": $(this).prop("checked")
 							}
 						);
 					}
 				);
 
-				MobilityOnlineIncomingCourses.changeLehreinheitAssignment(lehreinheitassignments, fhcprestudent.studiensemester_kurzbz);
+				MobilityOnlineIncomingCourses.updateLehreinheitAssignment(lehreinheitassignments);
 			}
 		);
-	}
-	,
+	},
 	_getLehrveranstaltungHtml: function(lehrveranstaltungobj)
 	{
-		var fhclvhtml = "<div class='well well-sm'>";
-		fhclvhtml += "<h4>" + lehrveranstaltungobj.lehrveranstaltung.fhcbezeichnung + "</h4>";
+		var fhclvhtml = "<div class='panel panel-default'>";
+		fhclvhtml += "<div class='panel-heading fhclvpanelheading'>";
+		fhclvhtml += "" + lehrveranstaltungobj.lehrveranstaltung.fhcbezeichnung + "";
+		fhclvhtml += "</div><div class='panel-body fhclvpanel'>";
 
 		for (var le in lehrveranstaltungobj.lehreinheiten)
 		{
 			var lehreinheitobj = lehrveranstaltungobj.lehreinheiten[le];
 			fhclvhtml += MobilityOnlineIncomingCourses._getLehreinheitHtml(lehrveranstaltungobj, lehreinheitobj);
 		}
-
-		fhclvhtml += "</div>";
+		fhclvhtml += "</div></div>";
 
 		return fhclvhtml;
 	},
@@ -228,20 +428,108 @@ var MobilityOnlineIncomingCourses = {
 	{
 		var fhcleshtml = '';
 		var checked = lehreinheitobj.directlyAssigned === true ? "checked": '';
-		fhcleshtml += "<div class='checkbox'><input type='checkbox' class='lehreinheitinput' id="+lehreinheitobj.lehreinheit_id+" "+checked+">";
+		fhcleshtml += "<div class='checkbox'><input type='checkbox' class='lehreinheitinput' id='lecheckbox_"+lehreinheitobj.lehreinheit_id+"' "+checked+">";
+		fhcleshtml += "<input type='hidden' class='lehrveranstaltunginput' value="+lehrveranstaltungobj.lehrveranstaltung.lehrveranstaltung_id+">";
 		fhcleshtml += lehreinheitobj.lehrform_kurzbz + " " + lehrveranstaltungobj.studiengang.kuerzel;
+
 		for (var legr in lehreinheitobj.lehreinheitgruppen)
 		{
 			var legrobj = lehreinheitobj.lehreinheitgruppen[legr];
-			fhcleshtml += " "+legrobj .semester;
-			fhcleshtml += (legrobj.verband == null ? "" : legrobj.verband);
-			fhcleshtml += (legrobj.gruppe == null ? "" : legrobj.gruppe);
+			if (legrobj.direktinskription === true)
+				continue;
+
+			if (legrobj.gruppe_kurzbz != null && typeof legrobj.gruppe_kurzbz == "string"
+				&& legrobj.gruppe_kurzbz.length > 0)
+			{
+				fhcleshtml += " "+legrobj.gruppe_kurzbz;
+			}
+			else
+			{
+				fhcleshtml += " "+(legrobj.semester == null ? "" : legrobj.semester);
+				fhcleshtml += (legrobj.verband == null ? "" : legrobj.verband);
+				fhcleshtml += (legrobj.gruppe == null ? "" : legrobj.gruppe);
+			}
 		}
+
 		for (var lektor in lehreinheitobj.lektoren)
 		{
 			var lektoruid = lehreinheitobj.lektoren[lektor];
-			fhcleshtml += " "+(lektoruid == null ? '' : lektoruid)+"</div>";
+			fhcleshtml += " "+(lektoruid == null ? '' : lektoruid);
 		}
+
+		fhcleshtml += " <span class='nowrap'>("+lehreinheitobj.anz_teilnehmer+ " participants)</span>";
+
+		fhcleshtml += "</div>";
+
 		return fhcleshtml;
+	},
+	/**
+	 * Shows hidden html views, hides non-hidden
+	 * @private
+	 */
+	_toggleIncomingCoursesView: function()
+	{
+		$("#message").empty();
+
+		var toToggle = [
+			$("#studiensemesterinput"),
+			$("#incomingprestudentsrow"),
+			$("#coursesassignment"),
+			$("#lvsprestudent")
+		];
+
+		for (var element in toToggle)
+		{
+			var el = toToggle[element];
+
+			if (el.hasClass("hidden"))
+				el.removeClass("hidden");
+			else
+				el.addClass("hidden");
+		}
+	},
+	/**
+	 * Marks certain Lehreinheiten from a certain lv in a given Lv array
+	 * as directlyAssigned
+	 * @param lvs
+	 * @param lvid
+	 * @param leids
+	 * @private
+	 */
+	_setDirectlyAssigned: function(lvs, lvid, leids)
+	{
+		for (var lv in lvs)
+		{
+			var lvobj = lvs[lv];
+			var found = false;
+			if ($.isNumeric(lvobj.lehrveranstaltung.lehrveranstaltung_id) &&
+				parseInt(lvobj.lehrveranstaltung.lehrveranstaltung_id) === parseInt(lvid))
+			{
+				for (var le in lvobj.lehreinheiten)
+				{
+					var leobj = lvobj.lehreinheiten[le];
+					leobj.directlyAssigned = false;
+					for (var leidx in leids)
+					{
+						var leid = leids[leidx];
+						if (parseInt(leobj.lehreinheit_id) === parseInt(leid))
+						{
+							leobj.directlyAssigned = true;
+							found = true;
+						}
+					}
+				}
+				break;
+			}
+		}
+	},
+	/**
+	 * Formats a date in format YYYY-mm-dd to dd.mm.YYYY
+	 * @param date
+	 * @returns {string}
+	 */
+	_formatDateGerman: function(date)
+	{
+		return date.substring(8, 10) + "." + date.substring(5, 7) + "." + date.substring(0, 4);
 	}
 };

@@ -46,7 +46,7 @@
 				<div class="row">
 					<div class="col-xs-5 text-center">
 						<div class="well well-sm wellminheight">
-							<h4>FH-Complete courses</h4>
+							<h4>FH-Complete Courses</h4>
 							<br />
 							<button class="btn btn-default" id="syncbtn"><i class="fa fa-refresh"></i>&nbsp;Synchronise Courses</button>
 							<br />

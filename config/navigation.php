@@ -1,7 +1,7 @@
 <?php
 
-// Add Side-Menu-Entry to Main Page
-$config['navigation_menu']['Vilesci/index']['administration']['children']['MobilityOnline'] = array(
+// Add Menu-Entry to Main Page
+$config['navigation_header']['*']['Personen']['children']['MobilityOnline'] = array(
 	'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineCourses'),
 	'icon' => 'exchange',
 	'description' => 'MobilityOnline Sync',
@@ -17,17 +17,17 @@ $config['navigation_menu']['extensions/FHC-Core-MobilityOnline/*'] = array(
 	),
 	'MobilityOnline Courses sync' => array(
 		'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineCourses'),
-		'description' => 'MobilityOnline Courses Sync',
+		'description' => 'Courses',
 		'icon' => 'graduation-cap'
 	),
 	'MobilityOnline Incoming sync' => array(
 		'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineIncoming'),
-		'description' => 'MobilityOnline Incoming Sync',
+		'description' => 'Incomings',
 		'icon' => 'group'
 	),
 	'MobilityOnline Incoming courses assignment' => array(
 		'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineIncomingCourses'),
-		'description' => 'MobilityOnline Incoming Courses Assignment',
+		'description' => 'Incoming Courses',
 		'icon' => 'group'
 	)
 );

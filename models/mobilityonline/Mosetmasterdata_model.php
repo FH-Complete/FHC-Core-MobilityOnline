@@ -21,7 +21,7 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 	/**
 	 * Adds course to MobilityOnline
 	 * @param $data coursedata, of type CoursePerSemesterDetails (see wsdl)
-	 * @return bool CourseId of course added if successful, false otherwise
+	 * @return mixed CourseId of course added if successful, null otherwise
 	 */
 	public function addCoursePerSemester($data)
 	{
@@ -29,7 +29,7 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 		if (isset($id->return) && is_numeric($id->return))
 			return $id->return;
 		else
-			return false;
+			return null;
 	}
 
 	/**

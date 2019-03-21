@@ -13,7 +13,8 @@
 			'navigationwidget' => true,
 			'customJSs' => array('public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineIncomingCourses.js',
 								 'public/js/tablesort/tablesort.js'),
-			'customCSSs' => array('public/extensions/FHC-Core-MobilityOnline/css/MobilityOnline.css')
+			'customCSSs' => array('public/extensions/FHC-Core-MobilityOnline/css/MobilityOnline.css',
+								  'public/css/sbadmin2/tablesort_bootstrap.css')
 		)
 	);
 ?>
@@ -30,7 +31,7 @@
 						<h3 class="page-header text-center">MobilityOnline Incoming Courses Assignment</h3>
 					</div>
 				</div>
-				<div class="row text-center">
+				<div class="row text-center" id="studiensemesterinput">
 					<div class="col-xs-4 col-xs-offset-4 form-group">
 						<label>Studiensemester</label>
 						<select class="form-control" name="studiensemester" id="studiensemester">
@@ -45,37 +46,70 @@
 						</select>
 					</div>
 				</div>
-				<div class="row">
-					<div class="col-xs-5 text-center">
-						<div class="well well-sm" id="leftwell">
-							<h4>FH-Complete courses</h4>
-							<div id="fhcles" class="panel panel-body">
-								-
-							</div>
-						</div>
-					</div>
-					<div class="col-xs-7">
+				<div class="row" id="incomingprestudentsrow">
+					<div class="col-xs-12">
 						<div class="well well-sm wellminheight">
 							<div class="text-center">
-								<h4><span id="lvhead">&nbsp;MobilityOnline Incoming Courses</span></h4>
+								<h4>MobilityOnline Incomings</h4>
 								<div id="noincomingstext">
-									<span id="nrteachingunits">0</span> teaching units assigned
+									<span id="totalCoursesAssigned">0</span>/<span id="totalCoursesFhc">0</span> courses assigned
 								</div>
 							</div>
 							<div class="panel panel-body">
-								<table class="table table-bordered table-condensed table-vertical-center" id="incomingstbl">
+								<table class="table table-bordered table-condensed table-vertical-center" id="incomingprestudentstbl">
 									<thead>
 										<tr>
-											<th class="text-center">Assign teaching units</th>
+											<th class="text-center">Assign courses</th>
 											<th class="text-center">Name</th>
 											<th class="text-center">E-Mail</th>
-											<th class="text-center">Elected Courses</th>
-											<th class="text-center">Status</th>
+											<th class="text-center">Courses assigned</th>
 										</tr>
 									</thead>
-									<tbody id="incomings">
+									<tbody id="incomingprestudents">
 									</tbody>
 								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row hidden" id="lvsprestudent">
+					<div class="col-xs-12">
+						<div class="panel panel-default">
+							<table class="table table-condensed table-bordered">
+								<tbody id="lvsprestudentdata">
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+				<div class="row hidden" id="coursesassignment">
+					<div class="col-xs-6">
+						<div class="well well-sm" id="fhccourseswell">
+							<h4 class="text-center">FH-Complete Courses</h4>
+							<div id="allfhcles" class="panel panel-body">
+								-
+							</div>
+							<div id='message' class="text-center"></div>
+						</div>
+					</div>
+					<div class="col-xs-6">
+						<div class="well well-sm wellminheight" id="mocourseswell">
+							<div class="text-center">
+								<h4>MobilityOnline Courses</h4>
+							</div>
+							<div class="panel panel-body" id="molvspnl">
+								<div class="panel panel-default">
+								<table class="table table-bordered table-condensed table-vertical-center" id="molvstbl">
+									<thead>
+									<tr>
+										<th class="text-center">Course</th>
+										<th class="text-center">Status</th>
+									</tr>
+									</thead>
+									<tbody id="molvs">
+									</tbody>
+								</table>
+								</div>
 							</div>
 						</div>
 					</div>

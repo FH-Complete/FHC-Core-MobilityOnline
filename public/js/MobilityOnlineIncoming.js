@@ -145,6 +145,9 @@ var MobilityOnlineIncoming = {
 							);
 							MobilityOnlineIncoming._refreshIncomingNumber();
 						}
+						var headers = {headers: { 0: { sorter: false, filter: false}, 4: {sorter: false, filter: false} }};
+
+						Tablesort.addTablesorter("incomingstbl", [[1, 0], [2, 0]], ["filter"], 2, headers);
 					}
 					else
 					{

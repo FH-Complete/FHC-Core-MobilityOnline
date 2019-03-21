@@ -21,7 +21,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	/**
 	 * Get applications by search params, e.g. studiensemester
 	 * @param $data
-	 * @return array|bool applications on success, false otherwise
+	 * @return array applications on success, null otherwise
 	 */
 	public function getApplications($data)
 	{
@@ -58,7 +58,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	/**
 	 * Get application by applicationid
 	 * @param $appid
-	 * @return array|bool application on success, false otherwise
+	 * @return array application on success, null otherwise
 	 */
 	public function getApplicationById($appid)
 	{
@@ -92,7 +92,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	/**
 	 * Get application ids by search params, e.g. studiensemester
 	 * @param $data
-	 * @return array|bool application ids on success, false otherwise
+	 * @return array application ids on success, null otherwise
 	 */
 	public function getApplicationIds($data)
 	{
@@ -112,7 +112,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	/**
 	 * Get permanent (home) adress of applicant
 	 * @param $appid
-	 * @return array|bool adress on success, false otherwise
+	 * @return array address on success, null otherwise
 	 */
 	public function getPermanentAddress($appid)
 	{
@@ -129,7 +129,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	/**
 	 * Get Courses an applicant has assigned for
 	 * @param $appid
-	 * @return array|null
+	 * @return array courses on success, null otherwise
 	 */
 	public function getCoursesOfApplication($appid)
 	{
@@ -150,7 +150,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 * Gets files associated with an application, for a certain upload setting
 	 * @param $appid
 	 * @param $uploadSettingNumber
-	 * @return array|bool files on success, false otherwise
+	 * @return array files on success, null otherwise
 	 */
 	public function getFilesOfApplication($appid, $uploadSettingNumber)
 	{
@@ -170,7 +170,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	/**
 	 * Get all files of an application
 	 * @param $appid
-	 * @return array|bool files on success, false otherwise
+	 * @return array files on success, null otherwise
 	 */
 	public function getAllFilesOfApplication($appid)
 	{

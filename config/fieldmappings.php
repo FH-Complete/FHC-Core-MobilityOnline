@@ -100,7 +100,6 @@ $config['fieldmappings']['application']['studiengang'] = array(
 
 $config['fieldmappings']['incomingcourse']['lehrveranstaltung'] = array(
 	'mobezeichnung' => 'hostCourseName',
-
 );
 
 $config['fieldmappings']['incomingcourse']['studiengang'] = array(

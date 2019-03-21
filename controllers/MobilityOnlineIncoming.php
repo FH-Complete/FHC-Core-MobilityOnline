@@ -108,7 +108,7 @@ class MobilityOnlineIncoming extends Auth_Controller
 				if (isset($prestudent_id) && is_numeric($prestudent_id))
 				{
 					$result = $this->MoappidzuordnungModel->update(
-						array('mo_applicationid' => $appid, 'studiensemester_kurzbz' => $studiensemester),
+						array('mo_applicationid' => $appid, 'prestudent_id' => $prestudent_id, 'studiensemester_kurzbz' => $studiensemester),
 						array('updateamum' => 'NOW()')
 					);
 
