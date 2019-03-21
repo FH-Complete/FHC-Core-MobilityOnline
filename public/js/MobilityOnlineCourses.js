@@ -20,15 +20,16 @@ $(document).ready(function()
 		$("#lvhead").click(
 			function()
 			{
-				if ($("#lvs").is(':visible'))
+				var lvsel = $("#lvs");
+				if (lvsel.hasClass("hidden"))
 				{
-					$("#lvs").hide();
-					$("#arrowtoggle").html("<i class='fa fa-chevron-right'></i>");
+					lvsel.removeClass("hidden");
+					$("#arrowtoggle").html("<i class='fa fa-chevron-down'></i>");
 				}
 				else
 				{
-					$("#lvs").show();
-					$("#arrowtoggle").html("<i class='fa fa-chevron-down'></i>");
+					lvsel.addClass("hidden");
+					$("#arrowtoggle").html("<i class='fa fa-chevron-right'></i>");
 				}
 			}
 		);

@@ -44,14 +44,21 @@
 					</div>
 				</div>
 				<div class="row">
-					<div class="col-xs-5 text-center">
+					<div class="col-xs-5">
 						<div class="well well-sm wellminheight">
-							<h4>FH-Complete Courses</h4>
-							<br />
-							<button class="btn btn-default" id="syncbtn"><i class="fa fa-refresh"></i>&nbsp;Synchronise Courses</button>
-							<br />
-							<h4><span id="lvhead"><span id="arrowtoggle"><i class="fa fa-chevron-right"></i>&nbsp;</span><span id="lvcount"><?php echo count($lvs) ?></span>&nbsp;courses with incoming places</span></h4>
-							<div id="lvs" class="panel panel-body">
+							<div class="text-center">
+								<h4>FH-Complete Courses</h4>
+								<br />
+								<button class="btn btn-default" id="syncbtn"><i class="fa fa-refresh"></i>&nbsp;Synchronise Courses</button>
+								<br />
+								<h4>
+									<span id="lvhead">
+										<span id="arrowtoggle"><i class="fa fa-chevron-right"></i>&nbsp;</span>
+										<span id="lvcount"><?php echo count($lvs) ?></span>&nbsp;courses with incoming places
+									</span>
+								</h4>
+							</div>
+							<div id="lvs" class="panel panel-body hidden">
 							</div>
 						</div>
 					</div>

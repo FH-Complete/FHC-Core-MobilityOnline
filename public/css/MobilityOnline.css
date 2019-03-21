@@ -6,8 +6,8 @@
     cursor: pointer;
 }
 
-#lvs {
-    display: none;
+#lvs p {
+    margin-left: 4%;
 }
 
 #syncbtn {
@@ -68,7 +68,6 @@ table.table-vertical-center td,th {
 
 .fhclvpanel {
     margin-left: 10%;
-    /*margin-right: 10%;*/
     padding: 5px;
 }
 
