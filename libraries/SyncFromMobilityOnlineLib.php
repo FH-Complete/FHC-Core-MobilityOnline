@@ -75,7 +75,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		//applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
 		$comboboxvaluefields = array($personmappings['staatsbuergerschaft'], $personmappings['sprache'], $prestudentstatusmappings['studiensemester_kurzbz'],
-									 $prestudentmappings['studiengang_kz'], $prestudentmappings['zgvmas_code'], $prestudentmappings['zgvnation'], /*$prestudentmappings['zgvmanation'],*/
+									 $prestudentmappings['studiengang_kz'], $prestudentmappings['zgvmas_code'], $prestudentmappings['zgvnation'], $prestudentmappings['zgvmanation'],
 									 $bisiomappings['mobilitaetsprogramm_code'], $bisiomappings['nation_code']);
 
 		foreach ($fieldmappings as $fhctable)
@@ -538,28 +538,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 						$this->_log('insert', $prestudentstatusresponse, 'prestudentstatus');
 					}
 				}
-
-				/*				$this->ci->load->model('organisation/studienplan_model', 'StudienplanModel');
-
-								$prestudentstatus['orgform_kurzbz'] = null;
-								$prestudentstatus['studienplan_id'] = null;
-
-								$studienplaene = $this->StudienplanModel->getStudienplaeneBySemester($prestudent['studiengang_kz'], $prestudentstatus['studiensemester_kurzbz'], $prestudentstatus['ausbildungssemester'], 'VZ');
-
-								if (hasData($studienplaene))
-								{
-									$prestudentstatus['studienplan_id'] = $studienplaene->retval[0]->studienplan_id;
-									$prestudentstatus['orgform_kurzbz'] = 'VZ';
-								}
-								else
-								{
-									$studienplaene = $this->StudienplanModel->getStudienplaeneBySemester($prestudent['studiengang_kz'], $prestudentstatus['studiensemester_kurzbz'], $prestudentstatus['ausbildungssemester'], 'BB');
-									if (hasData($studienplaene))
-									{
-										$prestudentstatus['studienplan_id'] = $studienplaene->retval[0]->studienplan_id;
-										$prestudentstatus['orgform_kurzbz'] = 'BB';
-									}
-								}*/
 			}
 
 			// benutzer

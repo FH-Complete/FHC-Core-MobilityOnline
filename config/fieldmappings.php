@@ -54,8 +54,8 @@ $config['fieldmappings']['application']['prestudent'] = array(
 	'zgvdatum' => 'varchar_freifeld1',
 	'zgvmas_code' => 'int_freifeld1',
 	'zgvmaort' => 'varchar_freifeld3',
-	'zgvmadatum' => 'varchar_freifeld2'/*,
-	'zgvmanation' => 'lcd_id_bereits'*/
+	'zgvmadatum' => 'varchar_freifeld2',
+	'zgvmanation' => 'lcd_id_bereits_2'
 );
 
 $config['fieldmappings']['application']['prestudentstatus'] = array(
