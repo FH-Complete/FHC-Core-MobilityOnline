@@ -8,6 +8,7 @@
 			'bootstrap' => true,
 			'fontawesome' => true,
 			'sbadmintemplate' => true,
+			'dialoglib' => true,
 			'ajaxlib' => true,
 			'tablesorter' => true,
 			'navigationwidget' => true,
@@ -47,11 +48,11 @@
 					</div>
 				</div>
 				<div class="row">
-					<div class="col-xs-5 text-center">
+					<div class="col-xs-5">
 						<div class="well well-sm wellminheight">
-							<h4>synchronisation output:</h4>
-							<div id="syncoutput" class="panel panel-body">
-								-
+							<h4 class="text-center">synchronisation output:</h4>
+							<div id="incomingsyncoutput" class="panel panel-body">
+								<div class="text-center">-</div>
 							</div>
 						</div>
 					</div>
@@ -62,7 +63,7 @@
 								<div id="noincomingstext">
 									<span id="noincomings">0</span> Incomings selected
 								</div>
-								<button class="btn btn-default" id="syncbtn"><i class="fa fa-refresh"></i>&nbsp;Synchronise Incomings</button>
+								<button class="btn btn-default" id="incomingsyncbtn"><i class="fa fa-refresh"></i>&nbsp;Synchronise Incomings</button>
 							</div>
 							<br />
 							<div class="panel panel-body">

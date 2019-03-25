@@ -10,8 +10,17 @@
     margin-left: 4%;
 }
 
-#syncbtn {
+#lvsyncbtn, #incomingsyncbtn {
     font-size: 16px;
+}
+
+.lvsyncoutputtext {
+    margin-left: 8%;
+    margin-right: 8%;
+}
+
+.incomingsyncoutputtext {
+    margin-left: 4%;
 }
 
 /*center veil*/

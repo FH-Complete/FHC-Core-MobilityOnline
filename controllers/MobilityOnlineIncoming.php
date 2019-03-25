@@ -14,10 +14,10 @@ class MobilityOnlineIncoming extends Auth_Controller
 	{
 		parent::__construct(
 			array(
-			'index' => 'admin:rw',
-			'syncIncomings' => 'admin:rw',
-			'getIncomingJson' => 'admin:r',
-			'checkMoidsInFhc' => 'admin:r'
+			'index' => 'inout/incoming:rw',
+			'syncIncomings' => 'inout/incoming:rw',
+			'getIncomingJson' => 'inout/incoming:r',
+			'checkMoidsInFhc' => 'inout/incoming:r'
 			)
 		);
 
@@ -63,101 +63,102 @@ class MobilityOnlineIncoming extends Auth_Controller
 	 */
 	public function syncIncomings()
 	{
-		$output = '';
+		$syncoutput = '';
 		$incomings = $this->input->post('incomings');
 		$studiensemester = $this->input->post('studiensemester');
 
 		$incomings = json_decode($incomings, true);
 
-		if (empty($incomings) || !is_array($incomings))
-		{
-			$output .= "No incomings for sync! aborting.";
-			return $output;
-		}
-
 		$studcount = count($incomings);
 
-		if ($studcount <= 0)
+		if (empty($incomings) || !is_array($incomings) || $studcount <= 0)
 		{
-			$output .= "No incomings found for sync! aborting.";
-			return $output;
+			$syncoutput .= "No incomings found for sync! aborting.";
 		}
-
-		$added = $updated = 0;
-
-		$output .= "MOBILITY ONLINE INCOMINGS SYNC start. $studcount incomings to sync.";
-		$output .= '<br/>-----------------------------------------------';
-
-		foreach ($incomings as $incoming)
+		else
 		{
-			$incomingdata = $incoming['data'];
-			$appid = $incoming['moid'];
+			$added = $updated = 0;
 
-			$output .= "<br />";
+			$syncoutput .= "<div class='text-center'>MOBILITY ONLINE INCOMINGS SYNC start. $studcount incomings to sync.";
+			$syncoutput .= '<br/>-----------------------------------------------</div><div class="incomingsyncoutputtext">';
 
-			if ($incoming['infhc'] === true)
+			$first = true;
+			foreach ($incomings as $incoming)
 			{
-				$output .= "<br />prestudent for applicationid $appid " . $incomingdata['person']['vorname'] . " " . $incomingdata['person']['nachname'] . " already exists in fhcomplete - updating";
+				$incomingdata = $incoming['data'];
+				$appid = $incoming['moid'];
 
-				$prestudent_id = $this->syncfrommobilityonlinelib->saveIncoming($incomingdata, $incoming['prestudent_id']);
+				if (!$first)
+					$syncoutput .= "<br />";
+				$first = false;
 
-				$saveIncomingOutput = $this->syncfrommobilityonlinelib->getOutput();
-
-				$output .= $saveIncomingOutput;
-
-				if (isset($prestudent_id) && is_numeric($prestudent_id))
+				if ($incoming['infhc'] === true)
 				{
-					$result = $this->MoappidzuordnungModel->update(
-						array('mo_applicationid' => $appid, 'prestudent_id' => $prestudent_id, 'studiensemester_kurzbz' => $studiensemester),
-						array('updateamum' => 'NOW()')
-					);
+					$syncoutput .= "<br />prestudent ".("for applicationid $appid ").$incomingdata['person']['vorname'].
+						" ".$incomingdata['person']['nachname']." already exists in fhcomplete - updating";
 
-					if (hasData($result))
+					$prestudent_id = $this->syncfrommobilityonlinelib->saveIncoming($incomingdata, $incoming['prestudent_id']);
+
+					$saveIncomingOutput = $this->syncfrommobilityonlinelib->getOutput();
+
+					$syncoutput .= $saveIncomingOutput;
+
+					if (isset($prestudent_id) && is_numeric($prestudent_id))
 					{
-						$updated++;
-						$output .= "<br />student for applicationid $appid - " . $incomingdata['person']['vorname'] . " " . $incomingdata['person']['nachname'] . " successfully updated";
-					}
-				}
-				else
-				{
-					$output .= "<br />error when updating student for applicationid $appid - " . $incomingdata['person']['vorname'] . " " . $incomingdata['person']['nachname'];
-				}
-			}
-			else
-			{
-				if ($incoming['inmappingtable'] === true)
-					$output .= "<br /><br />prestudent for applicationid $appid " . $incomingdata['person']['vorname'] . " " . $incomingdata['person']['nachname'] . " exists in mapping table but not in fhcomplete - adding";
+						$result = $this->MoappidzuordnungModel->update(
+							array('mo_applicationid' => $appid, 'prestudent_id' => $prestudent_id, 'studiensemester_kurzbz' => $studiensemester),
+							array('updateamum' => 'NOW()')
+						);
 
-				$prestudent_id = $this->syncfrommobilityonlinelib->saveIncoming($incomingdata);
-
-				$saveIncomingOutput = $this->syncfrommobilityonlinelib->getOutput();
-
-				$output .= $saveIncomingOutput;
-
-				if (isset($prestudent_id) && is_numeric($prestudent_id))
-				{
-					$result = $this->MoappidzuordnungModel->insert(
-						array('mo_applicationid' => $appid, 'prestudent_id' => $prestudent_id, 'studiensemester_kurzbz' => $studiensemester, 'insertamum' => 'NOW()')
-					);
-
-					if (hasData($result))
-					{
-						$added++;
-						$output .= "<br />student for applicationid $appid - " . $incomingdata['person']['vorname']." ".$incomingdata['person']['nachname'] . " successfully added";
+						if (hasData($result))
+						{
+							$updated++;
+							$syncoutput .= "<br /><i class='fa fa-check text-success'></i> student for applicationid $appid - ".
+								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." successfully updated";
+						}
 					}
 					else
-						$output .= "<br />mapping entry in db could not be added student for applicationid $appid - " . $incomingdata['person']['vorname']." ".$incomingdata['person']['nachname'];
+					{
+						$syncoutput .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when updating student for applicationid $appid - "
+							.$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']."</span>";
+					}
 				}
 				else
 				{
-					$output .= "<br />error when adding student for applicationid $appid - " . $incomingdata['person']['vorname']." ".$incomingdata['person']['nachname'];
+					$prestudent_id = $this->syncfrommobilityonlinelib->saveIncoming($incomingdata);
+
+					$saveIncomingOutput = $this->syncfrommobilityonlinelib->getOutput();
+
+					$syncoutput .= $saveIncomingOutput;
+
+					if (isset($prestudent_id) && is_numeric($prestudent_id))
+					{
+						$result = $this->MoappidzuordnungModel->insert(
+							array('mo_applicationid' => $appid, 'prestudent_id' => $prestudent_id, 'studiensemester_kurzbz' => $studiensemester, 'insertamum' => 'NOW()')
+						);
+
+						if (hasData($result))
+						{
+							$added++;
+							$syncoutput .= "<br /><i class='fa fa-check text-success'></i> student for applicationid $appid - ".
+								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." successfully added";
+						}
+						else
+							$syncoutput .= "<br /><span class='text-danger'><i class='fa fa-times'></i> mapping entry in db could not be added student for applicationid $appid - ".
+								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']."</span>";
+					}
+					else
+					{
+						$syncoutput .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when adding student for applicationid $appid - ".
+							$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']."</span>";
+					}
 				}
 			}
-		}
-		$output .= '<br /><br />-----------------------------------------------';
-		$output .= "<br />MOBILITY ONLINE INCOMINGS SYNC FINISHED <br />$added incomings added, $updated incomings updated";
+			$syncoutput .= "</div><div class='text-center'><br />-----------------------------------------------";
+			$syncoutput .= "<br />MOBILITY ONLINE INCOMINGS SYNC FINISHED <br />$added incomings added, $updated incomings updated</div>";
 
-		$this->outputJsonSuccess($output);
+		}
+		$this->outputJsonSuccess($syncoutput);
 	}
 
 	/**
@@ -166,7 +167,7 @@ class MobilityOnlineIncoming extends Auth_Controller
 	 */
 	public function checkMoidsInFhc()
 	{
-		$moids = $this->input->get('moids');
+		$moids = $this->input->post('moids');
 
 		$moidsresult = array();
 
@@ -202,7 +203,6 @@ class MobilityOnlineIncoming extends Auth_Controller
 	public function getIncomingJson()
 	{
 		$studiensemester = $this->input->get('studiensemester');
-		$json = null;
 		$incomingdata = $this->_getIncoming($studiensemester);
 
 		$this->outputJsonSuccess($incomingdata);
@@ -211,7 +211,7 @@ class MobilityOnlineIncoming extends Auth_Controller
 	/**
 	 * Gets incomings for a studiensemester
 	 * @param $studiensemester
-	 * @return array|bool array with applications on success, false otherwise
+	 * @return array with applications
 	 */
 	private function _getIncoming($studiensemester)
 	{
@@ -226,9 +226,7 @@ class MobilityOnlineIncoming extends Auth_Controller
 
 		$appids = $this->MoGetAppModel->getApplicationIds($appobj);
 
-		if ($appids === false)
-			return false;
-		elseif (is_null($appids))
+		if (!isset($appids))
 		{
 			return array();
 		}

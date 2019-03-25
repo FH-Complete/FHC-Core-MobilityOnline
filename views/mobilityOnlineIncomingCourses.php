@@ -8,6 +8,7 @@
 			'bootstrap' => true,
 			'fontawesome' => true,
 			'sbadmintemplate' => true,
+			'dialoglib' => true,
 			'ajaxlib' => true,
 			'tablesorter' => true,
 			'navigationwidget' => true,

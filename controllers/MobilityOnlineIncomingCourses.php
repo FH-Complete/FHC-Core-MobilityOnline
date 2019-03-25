@@ -14,10 +14,10 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 	{
 		parent::__construct(
 			array(
-				'index' => 'admin:rw',
-				'getIncomingCoursesJson' => 'admin:r',
-				'updateLehreinheitAssignment' => 'admin:rw',
-				'getCourseAssignments' => 'admin:r'
+				'index' => 'inout/incoming:rw',
+				'getIncomingCoursesJson' => 'inout/incoming:r',
+				'updateLehreinheitAssignment' => 'inout/incoming:rw',
+				'getCourseAssignments' => 'inout/incoming:r'
 			)
 		);
 

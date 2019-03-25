@@ -8,6 +8,7 @@
 			'bootstrap' => true,
 			'fontawesome' => true,
 			'sbadmintemplate' => true,
+			'dialoglib' => true,
 			'ajaxlib' => true,
 			'navigationwidget' => true,
 			'customJSs' => array('public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineCourses.js'),
@@ -49,7 +50,7 @@
 							<div class="text-center">
 								<h4>FH-Complete Courses</h4>
 								<br />
-								<button class="btn btn-default" id="syncbtn"><i class="fa fa-refresh"></i>&nbsp;Synchronise Courses</button>
+								<button class="btn btn-default" id="lvsyncbtn"><i class="fa fa-refresh"></i>&nbsp;Synchronise Courses</button>
 								<br />
 								<h4>
 									<span id="lvhead">
@@ -62,11 +63,11 @@
 							</div>
 						</div>
 					</div>
-					<div class="col-xs-7 text-center">
+					<div class="col-xs-7">
 						<div class="well well-sm wellminheight">
-							<h4>synchronisation output:</h4>
-							<div id="syncoutput" class="panel panel-body">
-								-
+							<h4 class="text-center">synchronisation output:</h4>
+							<div id="lvsyncoutput" class="panel panel-body">
+								<div class="text-center">-</div>
 							</div>
 						</div>
 					</div>

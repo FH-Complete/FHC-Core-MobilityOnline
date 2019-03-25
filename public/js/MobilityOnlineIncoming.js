@@ -12,13 +12,13 @@ $(document).ready(function()
 			function()
 			{
 				var studiensemester = $(this).val();
-				$("#syncoutput").text('-');
+				$("#incomingsyncoutput").text('-');
 				MobilityOnlineIncoming.getIncoming(studiensemester);
 			}
 		);
 
 		//init sync
-		$("#syncbtn").click(
+		$("#incomingsyncbtn").click(
 			function()
 			{
 				var incomingelem = $("#incomings input[type=checkbox]:checked");
@@ -102,6 +102,7 @@ var MobilityOnlineIncoming = {
 							var chkbxstring, stgnotsettxt, errorclass, newicon;
 							chkbxstring = stgnotsettxt = errorclass = "";
 
+							// show errors in tooltip if sync not possible
 							if (hasError)
 							{
 								errorclass = " class='inactive' data-toggle='tooltip' title='";
@@ -151,8 +152,12 @@ var MobilityOnlineIncoming = {
 					}
 					else
 					{
-						$("#syncoutput").text("No incomings found!");
+						$("#incomingsyncoutput").html("<div class='text-center'>No incomings found!</div>");
 					}
+				},
+				errorCallback: function()
+				{
+					$("#incomingsyncoutput").html("<div class='text-center'>error occured while getting incomings!</div>");
 				}
 			}
 		);
@@ -167,13 +172,15 @@ var MobilityOnlineIncoming = {
 			{
 				successCallback: function (data, textStatus, jqXHR)
 				{
-					if (!FHC_AjaxClient.hasData(data))
-						$("#syncoutput").text("error occured while syncing!");
-					else
+					if (FHC_AjaxClient.hasData(data))
 					{
-						$("#syncoutput").html(data.retval);
+						$("#incomingsyncoutput").html(data.retval);
 						MobilityOnlineIncoming.refreshInFhcColumn();
 					}
+				},
+				errorCallback: function()
+				{
+					$("#incomingsyncoutput").html("<div class='text-center'>error occured while syncing!</div>");
 				}
 			}
 		);
@@ -190,7 +197,7 @@ var MobilityOnlineIncoming = {
 			}
 		);
 
-		FHC_AjaxClient.ajaxCallGet(
+		FHC_AjaxClient.ajaxCallPost(
 			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/checkMoidsInFhc',
 			{
 				"moids": moids
@@ -198,9 +205,7 @@ var MobilityOnlineIncoming = {
 			{
 				successCallback: function (data, textStatus, jqXHR)
 				{
-					if (!FHC_AjaxClient.hasData(data))
-						alert("error when refreshing FHC column!");
-					else
+					if (FHC_AjaxClient.hasData(data))
 					{
 						for (var incoming in data.retval)
 						{
@@ -221,6 +226,10 @@ var MobilityOnlineIncoming = {
 							}
 						}
 					}
+				},
+				errorCallback: function()
+				{
+					FHC_DialogLib.alertError("error when refreshing FHC column!");
 				}
 			}
 		);

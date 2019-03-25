@@ -10,7 +10,6 @@ $(document).ready(function()
 			function()
 			{
 				var studiensemester = $(this).val();
-				$("#syncoutput").text('-');
 				MobilityOnlineIncomingCourses.getIncomingCourses(studiensemester);
 			}
 		);
@@ -62,6 +61,10 @@ var MobilityOnlineIncomingCourses = {
 						$("#fhcles").text("-");
 						$("#incomingprestudents").html("<tr align='center'><td colspan='5'>No incomings with courses found!</td></tr>");
 					}
+				},
+				errorCallback: function()
+				{
+					$("#incomingprestudents").html("<tr align='center'><td colspan='5'>Error when getting incomings</td></tr>");
 				}
 			}
 		);
@@ -108,7 +111,13 @@ var MobilityOnlineIncomingCourses = {
 					}
 
 					messageel.html(data.retval);
-
+				},
+				errorCallback: function()
+				{
+					var messageel = $("#message");
+					messageel.removeClass("text-success");
+					messageel.addClass("text-danger");
+					$("#message").html("Error when changing Lehreinheit assignments!");
 				}
 			}
 		)
@@ -151,6 +160,11 @@ var MobilityOnlineIncomingCourses = {
 						}
 						MobilityOnlineIncomingCourses._printIncomingPrestudents(MobilityOnlineIncomingCourses.incomingCourses);
 					}
+				},
+				errorCallback: function()
+				{
+					FHC_DialogLib.alertError("error when refreshing course assignments!");
+
 				}
 			}
 		)
