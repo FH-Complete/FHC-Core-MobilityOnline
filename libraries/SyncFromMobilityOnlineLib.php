@@ -82,18 +82,21 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		{
 			foreach ($fhctable as $value)
 			{
-				// find mobility online application data fields
-				foreach ($moapp->applicationDataElements as $element)
+				if (isset($moapp->applicationDataElements))
 				{
-					if ($element->elementName === $value)
+					// find mobility online application data fields
+					foreach ($moapp->applicationDataElements as $element)
 					{
-						if (in_array($element->elementName, $comboboxvaluefields) && isset($element->comboboxFirstValue))
+						if ($element->elementName === $value)
 						{
-							$moapp->$value = $element->comboboxFirstValue;
-						}
-						else
-						{
-							$moapp->$value = $element->elementValue;
+							if (in_array($element->elementName, $comboboxvaluefields) && isset($element->comboboxFirstValue))
+							{
+								$moapp->$value = $element->comboboxFirstValue;
+							}
+							else
+							{
+								$moapp->$value = $element->elementValue;
+							}
 						}
 					}
 				}
@@ -151,6 +154,12 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		}
 
 		// Studiengang
+
+		//get all study fields to find right field by id
+		//$institutions = $this->ci->MoGetMaModel->getStudyFieldsOfInstitution(151449);
+
+		//var_dump($institutions); die();
+
 		/*$mostg = $moapp->{$fieldmappings['studiengang_kz']};
 		$this->ci->load->model('organisation/Studiengang_model', 'StudiengangModel');
 

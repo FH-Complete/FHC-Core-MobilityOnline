@@ -166,7 +166,8 @@ var MobilityOnlineIncoming = {
 	{
 		FHC_AjaxClient.ajaxCallPost(
 			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/syncIncomings',
-			{	"incomings": JSON.stringify(incomings),
+			{
+				"incomings": JSON.stringify(incomings),
 				"studiensemester": studiensemester
 			},
 			{
@@ -175,7 +176,7 @@ var MobilityOnlineIncoming = {
 					if (FHC_AjaxClient.hasData(data))
 					{
 						$("#incomingsyncoutput").html(data.retval);
-						MobilityOnlineIncoming.refreshInFhcColumn();
+						MobilityOnlineIncoming.refreshIncomingsSyncStatus();
 					}
 				},
 				errorCallback: function()
@@ -185,7 +186,10 @@ var MobilityOnlineIncoming = {
 			}
 		);
 	},
-	refreshInFhcColumn: function()
+	/**
+	 * Refreshes status (infhc, not in fhc) of incomings
+	 */
+	refreshIncomingsSyncStatus: function()
 	{
 		var moidsel = $("#incomings input[name='incoming[]']");
 		var moids = [];
@@ -207,14 +211,37 @@ var MobilityOnlineIncoming = {
 				{
 					if (FHC_AjaxClient.hasData(data))
 					{
-						for (var incoming in data.retval)
+						for (var moid in data.retval)
 						{
-							var incomingobj = data.retval[incoming];
-							var infhciconel = $("#infhcicon_" + incoming);
-							var infhcel = $("#infhc_" + incoming);
+							var prestudent_id = data.retval[moid];
+							var infhc = $.isNumeric(prestudent_id);
+
+							// refresh JS array
+							for (var incoming in MobilityOnlineIncoming.incomings)
+							{
+								var incomingobj = MobilityOnlineIncoming.incomings[incoming];
+
+								if (incomingobj.moid === parseInt(moid))
+								{
+									if (infhc)
+									{
+										incomingobj.infhc = true;
+										incomingobj.prestudent_id = prestudent_id;
+									}
+									else
+									{
+										incomingobj.infhc = false;
+									}
+									break;
+								}
+							}
+
+							// refresh Incomings Table "in FHC" field
+							var infhciconel = $("#infhcicon_" + moid);
+							var infhcel = $("#infhc_" + moid);
 
 							infhciconel.removeClass();
-							if (incomingobj === true)
+							if (infhc)
 							{
 								infhcel.val("1");
 								infhciconel.addClass("fa fa-check");

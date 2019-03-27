@@ -163,7 +163,7 @@ class MobilityOnlineIncoming extends Auth_Controller
 
 	/**
 	 * Checks for each mobility online application id in an array if the application is saved in FH-Complete
-	 * returns array with Mobility Online applicationIds and true/false for each (in FHC or not)
+	 * returns array with Mobility Online applicationIds and prestudent_id/null for each
 	 */
 	public function checkMoidsInFhc()
 	{
@@ -181,16 +181,16 @@ class MobilityOnlineIncoming extends Auth_Controller
 				$prestudent = $this->PrestudentModel->load($prestudent_id);
 				if (hasData($prestudent))
 				{
-					$moidsresult[$moid] = true;
+					$moidsresult[$moid] = $prestudent_id;
 				}
 				else
 				{
-					$moidsresult[$moid] = false;
+					$moidsresult[$moid] = null;
 				}
 			}
 			else
 			{
-				$moidsresult[$moid] = false;
+				$moidsresult[$moid] = null;
 			}
 		}
 
