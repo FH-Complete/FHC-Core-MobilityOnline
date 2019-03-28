@@ -1,7 +1,6 @@
 /**
  * javascript file for Mobility Online incoming sync
  */
-const FULL_URL = FHC_JS_DATA_STORAGE_OBJECT.app_root + FHC_JS_DATA_STORAGE_OBJECT.ci_router + "/"+FHC_JS_DATA_STORAGE_OBJECT.called_path;
 
 $(document).ready(function()
 	{
@@ -39,7 +38,7 @@ $(document).ready(function()
 			}
 		);
 
-		//select all incoming checkboxes link
+		//select all incoming checkboxes
 		$("#selectallincomings").click(
 			function()
 			{
@@ -54,7 +53,7 @@ $(document).ready(function()
 			}
 		);
 
-		//select incoming checkboxes which are not in fhcomplete db yet
+		//select incoming checkboxes which are not in FHC yet
 		$("#selectnewincomings").click(
 			function()
 			{

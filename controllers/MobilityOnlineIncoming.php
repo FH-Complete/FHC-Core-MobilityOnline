@@ -92,12 +92,14 @@ class MobilityOnlineIncoming extends Auth_Controller
 					$syncoutput .= "<br />";
 				$first = false;
 
-				if ($incoming['infhc'] === true)
+				$infhccheck_prestudent_id = $this->_checkMoIdInFhc($appid);
+
+				if (isset($infhccheck_prestudent_id) && is_numeric($infhccheck_prestudent_id))
 				{
 					$syncoutput .= "<br />prestudent ".("for applicationid $appid ").$incomingdata['person']['vorname'].
 						" ".$incomingdata['person']['nachname']." already exists in fhcomplete - updating";
 
-					$prestudent_id = $this->syncfrommobilityonlinelib->saveIncoming($incomingdata, $incoming['prestudent_id']);
+					$prestudent_id = $this->syncfrommobilityonlinelib->saveIncoming($incomingdata, $infhccheck_prestudent_id);
 
 					$saveIncomingOutput = $this->syncfrommobilityonlinelib->getOutput();
 
@@ -171,27 +173,9 @@ class MobilityOnlineIncoming extends Auth_Controller
 
 		$moidsresult = array();
 
-		$this->PrestudentModel->addSelect('prestudent_id');
 		foreach ($moids as $moid)
 		{
-			$appidzuordnung = $this->MoappidzuordnungModel->loadWhere(array('mo_applicationid' => $moid));
-			if (hasData($appidzuordnung))
-			{
-				$prestudent_id = $appidzuordnung->retval[0]->prestudent_id;
-				$prestudent = $this->PrestudentModel->load($prestudent_id);
-				if (hasData($prestudent))
-				{
-					$moidsresult[$moid] = $prestudent_id;
-				}
-				else
-				{
-					$moidsresult[$moid] = null;
-				}
-			}
-			else
-			{
-				$moidsresult[$moid] = null;
-			}
+			$moidsresult[$moid] = $this->_checkMoIdInFhc($moid);
 		}
 
 		$this->outputJsonSuccess($moidsresult);
@@ -260,7 +244,6 @@ class MobilityOnlineIncoming extends Auth_Controller
 			$fhcobj_extended->moid = $appid;
 
 			$fhcobj_extended->infhc = false;
-			$fhcobj_extended->inmappingtable = false;
 
 			$errors = $this->syncfrommobilityonlinelib->fhcObjHasError($fhcobj, 'application');
 			$fhcobj_extended->error = $errors->error;
@@ -268,8 +251,6 @@ class MobilityOnlineIncoming extends Auth_Controller
 
 			if (hasData($zuordnung))
 			{
-				$fhcobj_extended->inmappingtable = true;
-
 				$prestudent_id = $zuordnung->retval[0]->prestudent_id;
 
 				$this->load->model('crm/Prestudent_model', 'PrestudentModel');
@@ -287,5 +268,34 @@ class MobilityOnlineIncoming extends Auth_Controller
 		}
 
 		return $incomings;
+	}
+
+	/**
+	 * Checks for a mobility online application id in an array if the application is saved in FH-Complete
+	 * returns prestudent_id if in FHC, null otherwise
+	 * @param $moid
+	 * @return number|null
+	 */
+	private function _checkMoIdInFhc($moid)
+	{
+		$this->PrestudentModel->addSelect('prestudent_id');
+		$appidzuordnung = $this->MoappidzuordnungModel->loadWhere(array('mo_applicationid' => $moid));
+		if (hasData($appidzuordnung))
+		{
+			$prestudent_id = $appidzuordnung->retval[0]->prestudent_id;
+			$prestudent = $this->PrestudentModel->load($prestudent_id);
+			if (hasData($prestudent))
+			{
+				 return $prestudent_id;
+			}
+			else
+			{
+				return null;
+			}
+		}
+		else
+		{
+			return null;
+		}
 	}
 }

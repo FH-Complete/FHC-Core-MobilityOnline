@@ -164,7 +164,6 @@ var MobilityOnlineIncomingCourses = {
 				errorCallback: function()
 				{
 					FHC_DialogLib.alertError("error when refreshing course assignments!");
-
 				}
 			}
 		)
@@ -178,20 +177,15 @@ var MobilityOnlineIncomingCourses = {
 	_printIncomingPrestudents: function(incomingscourses)
 	{
 		$("#incomingprestudents").empty();
+		$("#incomingprestudentstbl").trigger("destroy");
 
 		var totalAssigned = 0, totalLvsInFhc = 0;
 
 		for (var person in incomingscourses)
 		{
 			var prestudentobj = incomingscourses[person];
-			var tablerowstring = "";
+			var tablerowstring = "<tr>";
 
-			tablerowstring += "<tr>" +
-				"<td class='text-center'>" +
-				"<button class='btn btn-default btn-sm' id='lezuw_"+prestudentobj.prestudent_id+"'>" +
-				"<i class='fa fa-edit'></i>" +
-				"</button>" +
-				"</td>";
 			tablerowstring += "<td>"+prestudentobj.nachname+", "+prestudentobj.vorname+"</td>" +
 				"<td>"+prestudentobj.email+"</td>";
 
@@ -235,7 +229,7 @@ var MobilityOnlineIncomingCourses = {
 
 			if (assignedCount < lvsInFhc)
 			{
-				tablerowstring += "&nbsp;<i class ='fa fa-times text-danger'></i>";
+				tablerowstring += "&nbsp;<i class ='fa fa-exclamation text-danger'></i>";
 			}
 			else
 			{
@@ -246,6 +240,13 @@ var MobilityOnlineIncomingCourses = {
 				tablerowstring += "<br /><span class='text-danger'>"+notInMo+" not in MobilityOnline</span>";
 
 			tablerowstring += "</td>";
+
+			tablerowstring +=
+				"<td class='text-center'>" +
+				"<button class='btn btn-default btn-sm' id='lezuw_"+prestudentobj.prestudent_id+"'>" +
+				"<i class='fa fa-edit'></i>" +
+				"</button>" +
+				"</td>";
 
 			tablerowstring += "</tr>";
 
@@ -259,8 +260,8 @@ var MobilityOnlineIncomingCourses = {
 		$("#totalCoursesAssigned").text(totalAssigned);
 		$("#totalCoursesFhc").text(totalLvsInFhc);
 
-		var headers = {headers: { 0: { sorter: false, filter: false}}};
-		Tablesort.addTablesorter("incomingprestudentstbl", [[1, 0], [2, 0]], ["filter"], 2, headers);
+		var headers = {headers: { 3: { sorter: false, filter: false}}};
+		Tablesort.addTablesorter("incomingprestudentstbl", [[0, 0], [1, 0]], ["filter"], 2, headers);
 	},
 	/**
 	 * Prints courses from in Mobility Online and courses in fhcomplete
@@ -309,7 +310,7 @@ var MobilityOnlineIncomingCourses = {
 			var textclass = 'fa fa-check text-success';
 
 			if (assignedCount <= 0)
-				textclass = 'fa fa-times text-danger';
+				textclass = 'fa fa-exclamation text-danger';
 
 			if ($.isNumeric(lvobj.lehrveranstaltung.lehrveranstaltung_id))
 				status = "<i class='"+textclass+"' id='courselestatus_"+lvobj.lehrveranstaltung.lehrveranstaltung_id+"'></i>" +
@@ -317,7 +318,7 @@ var MobilityOnlineIncomingCourses = {
 					" assigned";
 			else
 			{
-				status = "<i class='fa fa-times text-danger' id='courselestatus_"+lvobj.lehrveranstaltung.lehrveranstaltung_id+"'></i> not in FHC";
+				status = "<i class='fa fa-exclamation text-danger' id='courselestatus_"+lvobj.lehrveranstaltung.lehrveranstaltung_id+"'></i> not in FHC";
 			}
 
 			tablerowstring += "<td>"+ status +"</td>";
@@ -393,7 +394,7 @@ var MobilityOnlineIncomingCourses = {
 		$("#allfhcles").html(fhclvhtml);
 
 		$("#backtoincomings").click(
-				MobilityOnlineIncomingCourses._toggleIncomingCoursesView
+			MobilityOnlineIncomingCourses._toggleIncomingCoursesView
 		);
 
 		$("#save").off("click");

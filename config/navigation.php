@@ -3,7 +3,6 @@
 // Add Menu-Entry to Main Page
 $config['navigation_header']['*']['Personen']['children']['MobilityOnline'] = array(
 	'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineCourses'),
-	'icon' => 'exchange',
 	'description' => 'MobilityOnline Sync',
 	'expand' => false
 );

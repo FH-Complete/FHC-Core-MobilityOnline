@@ -60,10 +60,10 @@
 								<table class="table table-bordered table-condensed table-vertical-center" id="incomingprestudentstbl">
 									<thead>
 										<tr>
-											<th class="text-center">Assign courses</th>
 											<th class="text-center">Name</th>
 											<th class="text-center">E-Mail</th>
 											<th class="text-center">Courses assigned</th>
+											<th class="text-center">Assign courses</th>
 										</tr>
 									</thead>
 									<tbody id="incomingprestudents">
