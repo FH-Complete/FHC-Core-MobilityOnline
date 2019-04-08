@@ -50,7 +50,7 @@ class MobilityOnlineCourses extends Auth_Controller
 		if (isError($currsemdata))
 			show_error($currsemdata->retval);
 
-		$lvdata = $this->LehrveranstaltungModel->getLvsWithIncomings($currsemdata->retval[0]->studiensemester_kurzbz);
+		$lvdata = $this->LehrveranstaltungModel->getLvsWithIncomingPlaces($currsemdata->retval[0]->studiensemester_kurzbz);
 
 		if (isError($lvdata))
 			show_error($lvdata->retval);
@@ -72,24 +72,23 @@ class MobilityOnlineCourses extends Auth_Controller
 	public function syncLvs()
 	{
 		$studiensemester = $this->input->post('studiensemester');
-		$added = $updated = $deleted = 0;
-		$syncoutput = '';
+		$results = array('added' => 0, 'updated' => 0, 'deleted' => 0, 'errors' => 0, 'syncoutput' => '');
 
 		$coursesPerSemester = array();
 
-		$lvs = $this->LehrveranstaltungModel->getLvsWithIncomings($studiensemester);
+		$lvs = $this->LehrveranstaltungModel->getLvsWithIncomingPlaces($studiensemester);
 
 		if (!hasData($lvs))
 		{
-			$syncoutput .= "No lvs found for sync! Aborting.";
+			$results['syncoutput'] .= "No lvs found for sync! Aborting.";
 		}
 		else
 		{
 			$lvcount = count($lvs->retval);
 
-			$syncoutput .= "<div class='text-center'>MOBILITY ONLINE COURSES SYNC start. $lvcount lvs to sync.";
-			$syncoutput .= '<br/>-----------------------------------------------</div>';
-			$syncoutput .= '<div class="lvsyncoutputtext">';
+			$results['syncoutput'] .= "<div class='text-center'>MOBILITY ONLINE COURSES SYNC start. $lvcount lvs to sync.";
+			$results['syncoutput'] .= '<br/>-----------------------------------------------</div>';
+			$results['syncoutput'] .= '<div class="lvsyncoutputtext">';
 
 			foreach ($lvs->retval as $lv)
 			{
@@ -104,12 +103,12 @@ class MobilityOnlineCourses extends Auth_Controller
 				$zuordnung = $this->MolvidzuordnungModel->loadWhere(array('lehrveranstaltung_id' => $lvid, 'studiensemester_kurzbz' => $studiensemester));
 
 				if ($first)
-					$syncoutput .= "<br />";
+					$results['syncoutput'] .= "<br />";
 				$first = false;
 
 				if (hasData($zuordnung))
 				{
-					$syncoutput .= "<p>lv $lvid - ".$course['courseName']." already exists in Mobility Online - updating";
+					$results['syncoutput'] .= "<p>lv $lvid - ".$course['courseName']." already exists in Mobility Online - updating";
 
 					$zuordnung = $zuordnung->retval[0];
 
@@ -124,13 +123,14 @@ class MobilityOnlineCourses extends Auth_Controller
 
 						if (hasData($result))
 						{
-							$updated++;
-							$syncoutput .= "<br /><i class='fa fa-check text-success'></i> lv $lvid - ".$course['courseName']." successfully updated</p>";
+							$results['updated']++;
+							$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> lv $lvid - ".$course['courseName']." successfully updated</p>";
 						}
 					}
 					else
 					{
-						$syncoutput .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when updating lv $lvid - ".$course['courseName']."</span></p>";
+						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when updating lv $lvid - ".$course['courseName']."</span></p>";
+						$results['errors']++;
 					}
 				}
 				else
@@ -145,15 +145,16 @@ class MobilityOnlineCourses extends Auth_Controller
 
 						if (hasData($result))
 						{
-							$added++;
-							$syncoutput .= "<p><i class='fa fa-check text-success'></i> lv $lvid - ".$course['courseName']." successfully added</p>";
+							$results['added']++;
+							$results['syncoutput'] .= "<p><i class='fa fa-check text-success'></i> lv $lvid - ".$course['courseName']." successfully added</p>";
 						}
 						else
-							$syncoutput .= "<p><span class='text-danger'><i class='fa fa-times'></i> mapping entry in db could not be added for course $lvid - ".$course['courseName']."</span></p>";
+							$results['syncoutput'] .= "<p><span class='text-danger'><i class='fa fa-times'></i> mapping entry in db could not be added for course $lvid - ".$course['courseName']."</span></p>";
 					}
 					else
 					{
-						$syncoutput .= "<p><span class='text-danger'><i class='fa fa-times text-danger'></i> error when adding lv $lvid - ".$course['courseName']."</span></p>";
+						$results['syncoutput'] .= "<p><span class='text-danger'><i class='fa fa-times text-danger'></i> error when adding lv $lvid - ".$course['courseName']."</span></p>";
+						$results['errors']++;
 					}
 				}
 			}
@@ -173,23 +174,24 @@ class MobilityOnlineCourses extends Auth_Controller
 				}
 				if (!$found)
 				{
-					$syncoutput .= '<p>course with id '.$zo->lehrveranstaltung_id.' not present in fhcomplete, removing from MobilityOnline';
+					$results['syncoutput'] .= '<p>course with id '.$zo->lehrveranstaltung_id.' not present in fhcomplete, removing from MobilityOnline';
 					$this->MoSetMaModel->removeCoursePerSemesterByCourseID($zo->mo_lvid);
 					$result = $this->MolvidzuordnungModel->delete(array('lehrveranstaltung_id' => $zo->lehrveranstaltung_id, 'studiensemester_kurzbz' => $zo->studiensemester_kurzbz));
 					if (hasData($result))
 					{
-						$deleted++;
-						$syncoutput .= "<br /><i class='fa fa-check text-success'></i> course with id ".$zo->lehrveranstaltung_id." successfully deleted";
+						$results['deleted']++;
+						$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> course with id ".$zo->lehrveranstaltung_id." successfully deleted";
 					}
-					$syncoutput .= "</p>";
+					$results['syncoutput'] .= "</p>";
 				}
 			}
-			$syncoutput .= "</div>";
-			$syncoutput .= '<div class="text-center">-----------------------------------------------';
-			$syncoutput .= "<br />MOBILITY ONLINE COURSES SYNC FINISHED <br />$added lvs added, $updated lvs updated, $deleted lvs deleted</div>";
+			$results['syncoutput'] .= '</div>';
+			$results['syncoutput'] .= '<div class="text-center">-----------------------------------------------';
+			$results['syncoutput'] .= "<br />MOBILITY ONLINE COURSES SYNC FINISHED <br />".$results['added']." added, "
+				.$results['updated']." updated, ".$results['deleted']." deleted, ".$results['errors']." errors</div>";
 		}
 
-		$this->outputJsonSuccess($syncoutput);
+		$this->outputJsonSuccess($results);
 	}
 
 	/**
@@ -238,7 +240,7 @@ class MobilityOnlineCourses extends Auth_Controller
 	{
 		$studiensemester = $this->input->get('studiensemester');
 
-		$lvdata = $this->LehrveranstaltungModel->getLvsWithIncomings($studiensemester);
+		$lvdata = $this->LehrveranstaltungModel->getLvsWithIncomingPlaces($studiensemester);
 
 		if (isSuccess($lvdata))
 			$this->outputJsonSuccess($lvdata->retval);

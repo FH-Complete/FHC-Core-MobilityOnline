@@ -153,49 +153,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			$moapp->{$aktemappings['inhalt']} = base64_encode($photo[0]->{$aktemappings['inhalt']});
 		}
 
-		// Studiengang
-
-		//get all study fields to find right field by id
-		//$institutions = $this->ci->MoGetMaModel->getStudyFieldsOfInstitution(151449);
-
-		//var_dump($institutions); die();
-
-		/*$mostg = $moapp->{$fieldmappings['studiengang_kz']};
-		$this->ci->load->model('organisation/Studiengang_model', 'StudiengangModel');
-
-		$fhcstudiengaenge = $this->ci->StudiengangModel->load();
-
-		if (hasData($fhcstudiengaenge))
-		{
-			foreach ($fhcstudiengaenge->retval as $fhcstg)
-			{
-				// try to get nation by text
-				if ($fhcstg->bezeichnung === $mostg)
-				{
-					$moapp->{$fieldmappings['studiengang_kz']} = $fhcstg->studiengang_kz;
-					break;
-				}
-			}
-		}*/
-
-		// Sprache
-		/*		$mosprache = $person['sprache'];
-				$this->ci->load->model('system/Sprache_model', 'SpracheModel');
-
-				$fhcsprachen = $this->ci->SpracheModel->load();
-
-				if (hasData($fhcsprachen))
-				{
-					foreach ($fhcsprachen->retval as $fhcsprache)
-					{
-						// try to get nation by text
-						if ($fhcsprache->sprache === $mosprache)
-						{
-							break;
-						}
-					}
-				}*/
-
 		$fhcobj = $this->convertToFhcFormat($moapp, 'application');
 
 		$fhcobj['pipelineStatus'] = 'not set';
@@ -265,7 +222,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
-	 * Fills fhccourse with necessary fhcomplete data, adds Lehreinheiten to the course
+	 * Fills fhccourse with necessary data before displaying, adds Lehreinheiten to the course
 	 * @param $lehrveranstaltung_id
 	 * @param $uid
 	 * @param $studiensemester_kurzbz
@@ -273,16 +230,78 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 */
 	public function fillFhcCourse($lehrveranstaltung_id, $uid, $studiensemester_kurzbz, &$fhccourse)
 	{
-		$this->ci->LehrveranstaltungModel->addSelect('lehrveranstaltung_id, tbl_lehrveranstaltung.bezeichnung AS lvbezeichnung, typ, tbl_studiengang.kurzbz AS studiengang_kurzbz');
-		$this->ci->LehrveranstaltungModel->addJoin('public.tbl_studiengang', 'studiengang_kz');
-		$lvresult = $this->ci->LehrveranstaltungModel->load($lehrveranstaltung_id);
+		$this->ci->LehrveranstaltungModel->addSelect('lehrveranstaltung_id, tbl_lehrveranstaltung.bezeichnung AS lvbezeichnung');
+
+		$lvresult = $this->ci->LehrveranstaltungModel->loadWhere(
+			array(
+				'tbl_lehrveranstaltung.lehrveranstaltung_id' => $lehrveranstaltung_id
+			)
+		);
 
 		if (hasData($lvresult))
 		{
 			$lv = $lvresult->retval[0];
 			$fhccourse['lehrveranstaltung']['lehrveranstaltung_id'] = $lv->lehrveranstaltung_id;
 			$fhccourse['lehrveranstaltung']['fhcbezeichnung'] = $lv->lvbezeichnung;
-			$fhccourse['studiengang']['kuerzel'] = mb_strtoupper($lv->typ . $lv->studiengang_kurzbz);
+
+
+			//get studiengäng(e) and semester for LV
+			$this->ci->LehrveranstaltungModel->addSelect('tbl_studiengang.studiengang_kz, tbl_studiengang.typ, tbl_studiengang.kurzbz AS studiengang_kurzbz, tbl_studiengang.bezeichnung, tbl_studienplan_lehrveranstaltung.semester');
+			$this->ci->LehrveranstaltungModel->addJoin('lehre.tbl_studienplan_lehrveranstaltung', 'lehrveranstaltung_id', 'LEFT');
+			$this->ci->LehrveranstaltungModel->addJoin('lehre.tbl_studienplan', 'studienplan_id', 'LEFT');
+			$this->ci->LehrveranstaltungModel->addJoin('lehre.tbl_studienplan_semester', 'studienplan_id', 'LEFT');
+			$this->ci->LehrveranstaltungModel->addJoin('lehre.tbl_studienordnung', 'studienordnung_id', 'LEFT');
+			$this->ci->LehrveranstaltungModel->addJoin('public.tbl_studiengang', 'tbl_studienordnung.studiengang_kz = tbl_studiengang.studiengang_kz', 'LEFT');
+
+			$lvdataresult = $this->ci->LehrveranstaltungModel->loadWhere(
+				array(
+					'tbl_lehrveranstaltung.lehrveranstaltung_id' => $lehrveranstaltung_id,
+					'tbl_studienplan_semester.studiensemester_kurzbz' => $studiensemester_kurzbz
+				)
+			);
+
+			$fhccourse['studiengaenge'] = array();
+			$fhccourse['ausbildungssemester'] = array();
+
+			if (hasData($lvdataresult))
+			{
+				foreach ($lvdataresult->retval as $lvdata)
+				{
+					$found = false;
+					foreach ($fhccourse['studiengaenge'] as $studiengangobj)
+					{
+						if ($studiengangobj->studiengang_kz == $lvdata->studiengang_kz)
+						{
+							$found = true;
+							break;
+						}
+					}
+
+					if (!$found)
+					{
+						$studiengang = new StdClass();
+						$studiengang->studiengang_kz = $lvdata->studiengang_kz;
+						$studiengang->kuerzel = mb_strtoupper($lvdata->typ . $lvdata->studiengang_kurzbz);
+						$studiengang->bezeichnung = $lvdata->bezeichnung;
+						$fhccourse['studiengaenge'][] = $studiengang;
+					}
+
+					$found = false;
+					foreach ($fhccourse['ausbildungssemester'] as $ausbildungssemobj)
+					{
+						if ($ausbildungssemobj == $lvdata->semester)
+						{
+							$found = true;
+							break;
+						}
+					}
+
+					if (!$found)
+					{
+						$fhccourse['ausbildungssemester'][] = $lvdata->semester;
+					}
+				}
+			}
 
 			if (isset($fhccourse['lehrveranstaltung']['lehrveranstaltung_id']) &&
 				is_numeric($fhccourse['lehrveranstaltung']['lehrveranstaltung_id']))

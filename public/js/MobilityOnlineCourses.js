@@ -62,7 +62,7 @@ var MobilityOnlineCourses = {
 						{
 							var lv = data.retval[i];
 							$("#lvs").append("<p>" + lv.studiengang_kuerzel + " " + lv.orgform_kurzbz + " - "
-								+ lv.bezeichnung + " " + lv.lehrform_kurzbz + " - " + lv.lehrveranstaltung_id + "</p>");
+								+ lv.lv_bezeichnung + " " + lv.lehrform_kurzbz + " - " + lv.lehrveranstaltung_id + "</p>");
 						}
 					}
 					else
@@ -90,7 +90,12 @@ var MobilityOnlineCourses = {
 				{
 					if (FHC_AjaxClient.hasData(data))
 					{
-						$("#lvsyncoutput").html(data.retval);
+						var syncdata = data.retval;
+						$("#lvsyncoutput").html(syncdata.syncoutput);
+						var infotext = "Sync completed. " + syncdata.added + " added,<br />" + syncdata.updated +
+							" updated, " + syncdata.deleted + " deleted,<br />" +
+							"<span "+(syncdata.errors > 0 ? "class='text-danger'" : "") + ">" + syncdata.errors + " errors</span>";
+						FHC_DialogLib.alertInfo(infotext);
 					}
 					FHC_AjaxClient.hideVeil();
 				},

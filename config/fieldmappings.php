@@ -102,12 +102,12 @@ $config['fieldmappings']['incomingcourse']['lehrveranstaltung'] = array(
 	'mobezeichnung' => 'hostCourseName',
 );
 
-$config['fieldmappings']['incomingcourse']['studiengang'] = array(
+$config['fieldmappings']['incomingcourse']['mostudiengang'] = array(
 	'bezeichnung' => 'studyFieldDescription'
 );
 
 $config['fieldmappings']['course'] = array(
-	'bezeichnung' => 'courseName',
+	'lv_bezeichnung' => 'courseName',
 	'studienjahr_kurzbz' => array('name' => 'academicYear', 'type' => 'description'),
 	'studiensemester_kurzbz' => 'semester',
 	'semester' => 'semesterNr',

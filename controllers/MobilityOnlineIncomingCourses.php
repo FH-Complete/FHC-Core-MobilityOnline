@@ -15,7 +15,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 		parent::__construct(
 			array(
 				'index' => 'inout/incoming:rw',
-				'getIncomingCoursesJson' => 'inout/incoming:r',
+				'getIncomingWithCoursesJson' => 'inout/incoming:r',
 				'updateLehreinheitAssignment' => 'inout/incoming:rw',
 				'getCourseAssignments' => 'inout/incoming:r'
 			)
@@ -71,7 +71,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 	/**
 	 * Gets incomings for a studiensemester and outputs json
 	 */
-	public function getIncomingCoursesJson()
+	public function getIncomingWithCoursesJson()
 	{
 		$studiensemester = $this->input->get('studiensemester');
 		$incomingdata = $this->_getIncomingWithCourses($studiensemester);
@@ -211,13 +211,11 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 						foreach ($courses as $course)
 						{
 							$fhclv = $this->syncfrommobilityonlinelib->mapMoIncomingCourseToLv($course, $studiensemester, $prestudentobj->uid);
-							if (isset($fhclv))
+
+							if (!$course->deleted && isset($fhclv))
 								$prestudentobj->lvs[] = $fhclv;
 						}
 					}
-
-					//sort courses alphabetically
-					usort($prestudentobj->lvs, array($this, '_cmpCourses'));
 
 					$additionalCourses = $this->LehrveranstaltungModel->getLvsByStudent($prestudentobj->uid, $studiensemester);
 
@@ -246,6 +244,10 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 						}
 					}
 
+					//sort courses alphabetically
+					usort($prestudentobj->lvs, array($this, '_cmpCourses'));
+					usort($prestudentobj->nonMoLvs, array($this, '_cmpCourses'));
+
 					$prestudents[] = $prestudentobj;
 				}
 			}
@@ -261,12 +263,27 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 	 */
 	private function _cmpCourses($a, $b)
 	{
-		$amobez = strtolower($a['lehrveranstaltung']['mobezeichnung']);
-		$bmobez = strtolower($b['lehrveranstaltung']['mobezeichnung']);
-
-		if ($amobez == $bmobez)
+		if (!isset($a['lehrveranstaltung']['mobezeichnung']) && !isset($b['lehrveranstaltung']['mobezeichnung']))
+		{
 			return 0;
+		}
+		elseif (!isset($a['lehrveranstaltung']['mobezeichnung']))
+		{
+			return -1;
+		}
+		elseif (!isset($b['lehrveranstaltung']['mobezeichnung']))
+		{
+			return 1;
+		}
+		else
+		{
+			$amobez = strtolower($a['lehrveranstaltung']['mobezeichnung']);
+			$bmobez = strtolower($b['lehrveranstaltung']['mobezeichnung']);
 
-		return $amobez > $bmobez ? 1 : -1;
+			if ($amobez == $bmobez)
+				return 0;
+
+			return $amobez > $bmobez ? 1 : -1;
+		}
 	}
 }

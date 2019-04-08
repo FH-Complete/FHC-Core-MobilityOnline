@@ -37,4 +37,27 @@ class Mogetmasterdata_model extends Mobilityonlineapi_model
 		else
 			return null;
 	}
+
+	/**
+	 * Get study fields of an institution
+	 * @param $parameters search parameters
+	 * @return array|null
+	 */
+	public function getStudyFieldsOfInstitution($institutionid)
+	{
+		if (!is_array($institutionid))
+			$institutionid = array('institutionID' => $institutionid);
+
+		$success = $this->performCall('getStudyFieldsOfInstitution', $institutionid);
+
+		if (isset($success->return))
+		{
+			if (is_array($success->return) || !is_object($success->return))
+				return $success->return;
+			else
+				return array($success->return);
+		}
+		else
+			return null;
+	}
 }

@@ -73,7 +73,7 @@ class MobilityOnlineIncoming extends Auth_Controller
 
 		if (empty($incomings) || !is_array($incomings) || $studcount <= 0)
 		{
-			$syncoutput .= "No incomings found for sync! aborting.";
+			$syncoutput .= "<div class='text-center'>No incomings found for sync! aborting.</div>";
 		}
 		else
 		{
@@ -157,7 +157,7 @@ class MobilityOnlineIncoming extends Auth_Controller
 				}
 			}
 			$syncoutput .= "</div><div class='text-center'><br />-----------------------------------------------";
-			$syncoutput .= "<br />MOBILITY ONLINE INCOMINGS SYNC FINISHED <br />$added incomings added, $updated incomings updated</div>";
+			$syncoutput .= "<br />MOBILITY ONLINE INCOMINGS SYNC FINISHED <br />$added added, $updated updated</div>";
 
 		}
 		$this->outputJsonSuccess($syncoutput);

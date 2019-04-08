@@ -44,7 +44,7 @@ var MobilityOnlineIncomingCourses = {
 	getIncomingCourses: function(studiensemester)
 	{
 		FHC_AjaxClient.ajaxCallGet(
-			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/getIncomingCoursesJson',
+			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/getIncomingWithCoursesJson',
 			{"studiensemester": studiensemester},
 			{
 				successCallback: function(data, textStatus, jqXHR)
@@ -365,7 +365,20 @@ var MobilityOnlineIncomingCourses = {
 				if ($.isNumeric(nonmolvobj.lehrveranstaltung.lehrveranstaltung_id))
 				{
 					numLvs++;
-					fhclvhtml += MobilityOnlineIncomingCourses._getLehrveranstaltungHtml(nonmolvobj);
+
+					var assigned = false;
+
+					for (var lehreinheit in nonmolvobj.lehreinheiten)
+					{
+						if (nonmolvobj.lehreinheiten[lehreinheit].directlyAssigned)
+						{
+							assigned = true;
+							break;
+						}
+					}
+					if (assigned)
+						fhclvhtml += MobilityOnlineIncomingCourses._getLehrveranstaltungHtml(nonmolvobj);
+
 					if (nonmolvobj.lehreinheiten.length > 0)
 						hasLes = true;
 				}
@@ -427,7 +440,23 @@ var MobilityOnlineIncomingCourses = {
 	{
 		var fhclvhtml = "<div class='panel panel-default'>";
 		fhclvhtml += "<div class='panel-heading fhclvpanelheading'>";
-		fhclvhtml += "" + lehrveranstaltungobj.lehrveranstaltung.fhcbezeichnung + "";
+		fhclvhtml += "" + lehrveranstaltungobj.lehrveranstaltung.fhcbezeichnung +
+			 " | ";
+
+		for (var stg in lehrveranstaltungobj.studiengaenge)
+		{
+			var stgobj = lehrveranstaltungobj.studiengaenge[stg];
+			fhclvhtml += (" " + stgobj.kuerzel);
+		}
+
+		for (var sem in lehrveranstaltungobj.ausbildungssemester)
+		{
+			var semobj = lehrveranstaltungobj.ausbildungssemester[sem];
+			fhclvhtml += " " + semobj;
+		}
+
+		fhclvhtml += " <span class='pull-right'>lvid "+lehrveranstaltungobj.lehrveranstaltung.lehrveranstaltung_id+"</span>";
+
 		fhclvhtml += "</div><div class='panel-body fhclvpanel'>";
 
 		for (var le in lehrveranstaltungobj.lehreinheiten)
@@ -445,7 +474,7 @@ var MobilityOnlineIncomingCourses = {
 		var checked = lehreinheitobj.directlyAssigned === true ? "checked": '';
 		fhcleshtml += "<div class='checkbox'><input type='checkbox' class='lehreinheitinput' id='lecheckbox_"+lehreinheitobj.lehreinheit_id+"' "+checked+">";
 		fhcleshtml += "<input type='hidden' class='lehrveranstaltunginput' value="+lehrveranstaltungobj.lehrveranstaltung.lehrveranstaltung_id+">";
-		fhcleshtml += lehreinheitobj.lehrform_kurzbz + " " + lehrveranstaltungobj.studiengang.kuerzel;
+		fhcleshtml += lehreinheitobj.lehrform_kurzbz;
 
 		for (var legr in lehreinheitobj.lehreinheitgruppen)
 		{
@@ -460,7 +489,8 @@ var MobilityOnlineIncomingCourses = {
 			}
 			else
 			{
-				fhcleshtml += " "+(legrobj.semester == null ? "" : legrobj.semester);
+				fhcleshtml += " " + legrobj.studiengang_kuerzel;
+				fhcleshtml += (legrobj.semester == null ? "" : legrobj.semester);
 				fhcleshtml += (legrobj.verband == null ? "" : legrobj.verband);
 				fhcleshtml += (legrobj.gruppe == null ? "" : legrobj.gruppe);
 			}
