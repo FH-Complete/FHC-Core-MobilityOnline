@@ -54,6 +54,7 @@ $config['valuemappings']['frommo']['anrede'] = array(
 
 $config['valuemappings']['frommo']['studiengang_kz'] = array(
 	'Biomedical Engineering' => 227,
+	'Campus International' => 10006,
 	'Elektronik' => 254,
 	'Elektronik/Wirtschaft' => 255,
 	'Embedded Systems' => 297,
