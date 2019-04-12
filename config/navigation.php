@@ -4,7 +4,8 @@
 $config['navigation_header']['*']['Personen']['children']['MobilityOnline'] = array(
 	'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineCourses'),
 	'description' => 'MobilityOnline Sync',
-	'expand' => false
+	'expand' => false,
+	'requiredPermissions' => 'inout/incoming:rw'
 );
 
 // Add Side-Menu-Entry to Extension Page
