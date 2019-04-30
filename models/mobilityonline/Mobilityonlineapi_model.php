@@ -4,7 +4,7 @@ if (! defined('BASEPATH')) exit('No direct script access allowed');
 /**
  * Manages interaction with Mobility Online API
  */
-class Mobilityonlineapi_model extends FHC_Model
+class Mobilityonlineapi_model extends CI_Model
 {
 	private $_mobilityonline_config;
 	private $_soapClient;
