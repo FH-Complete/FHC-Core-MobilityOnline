@@ -17,7 +17,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 				'index' => 'inout/incoming:rw',
 				'getIncomingWithCoursesJson' => 'inout/incoming:r',
 				'updateLehreinheitAssignment' => 'inout/incoming:rw',
-				'getCourseAssignments' => 'inout/incoming:r'
+				'getFhcCourses' => 'inout/incoming:r'
 			)
 		);
 
@@ -148,35 +148,30 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 	}
 
 	/**
-	 * Gets direct course assignments for a user and an array of lehreinheitids.
-	 * Returns array with lvids and their directly assigned leids
+	 * Gets fhcomplete courses (with lehreinheiten)
+	 * for a certain user in a studiensemester for certain lvids.
 	 */
-	public function getCourseAssignments()
+	public function getFhcCourses()
 	{
-		$ledata = $this->input->post('ledata');
+		$lvids = $this->input->post('lvids');
 		$uid = $this->input->post('uid');
+		$studiensemester = $this->input->post('studiensemester');
+		$fhccourses = array();
 
-		$result = array();
+		if (!isset($studiensemester) || !isset($uid))
+			$this->outputJsonError("Parameters missing");
 
-		if (isset($ledata) && is_array($ledata))
+		if (isset($lvids) && is_array($lvids))
 		{
-			foreach ($ledata as $le)
+			foreach ($lvids as $lvid)
 			{
-				$lv = key($le);
-				$le = $le[$lv];
-				$groupAssignments = $this->LehreinheitgruppeModel->getDirectGroupAssignment($uid, $le);
-
-				if (!isset($result[$lv]))
-					$result[$lv] = array();
-
-				if (hasData($groupAssignments))
-				{
-					$result[$lv][] = $le;
-				}
+				$fhclv = array();
+				$this->syncfrommobilityonlinelib->fillFhcCourse($lvid, $uid, $studiensemester, $fhclv);
+				$fhccourses[] = $fhclv;
 			}
 		}
 
-		$this->outputJsonSuccess($result);
+		$this->outputJsonSuccess($fhccourses);
 	}
 
 	/**
@@ -219,6 +214,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 
 					$additionalCourses = $this->LehrveranstaltungModel->getLvsByStudent($prestudentobj->uid, $studiensemester);
 
+					//additional courses in fhcomplete, but not in MobilityOnline
 					if (hasData($additionalCourses))
 					{
 						foreach ($additionalCourses->retval as $additionalCourse)

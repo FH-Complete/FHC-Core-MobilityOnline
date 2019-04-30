@@ -11,7 +11,7 @@ $(document).ready(function()
 			function()
 			{
 				var studiensemester = $(this).val();
-				$("#incomingsyncoutput").text('-');
+				$("#incomingsyncoutput").html("<div class='text-center'>-</div>");
 				MobilityOnlineIncoming.getIncoming(studiensemester);
 			}
 		);
@@ -85,9 +85,10 @@ var MobilityOnlineIncoming = {
 			{
 				successCallback: function(data, textStatus, jqXHR)
 				{
+					$("#incomings").empty();
+
 					if (FHC_AjaxClient.hasData(data))
 					{
-						$("#incomings").empty();
 						var incomings = data.retval;
 						MobilityOnlineIncoming.incomings = incomings;
 

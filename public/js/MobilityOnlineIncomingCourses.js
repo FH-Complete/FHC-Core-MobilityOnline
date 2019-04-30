@@ -87,22 +87,20 @@ var MobilityOnlineIncomingCourses = {
 						messageel.removeClass("text-danger");
 						messageel.addClass("text-success");
 
-						var checkboxes = $("#allfhcles .checkbox");
-						var ledata = [];
+						var lvidelements = $("#allfhcles .lehrveranstaltunginput");
+						var lvids = [];
 
-						checkboxes.each(
+						lvidelements.each(
 							function()
 							{
-								var idstr = $(this).find(".lehreinheitinput").prop("id");
-								var lehreinheit_id = idstr.substr(idstr.indexOf("_") + 1);
-								var lehrveranstaltung_id = $(this).find(".lehrveranstaltunginput").val();
-								var le = {};
-								le[lehrveranstaltung_id] = lehreinheit_id;
-								ledata.push(le);
+								var lehrveranstaltung_id = $(this).val();
+								lvids.push(lehrveranstaltung_id);
 							}
 						);
 
-						MobilityOnlineIncomingCourses.refreshCourseAssignments(ledata, lehreinheitassignments[0].uid)
+						var studiensemester = $("#studiensemester").val();
+
+						MobilityOnlineIncomingCourses.refreshCourseAssignments(lvids, lehreinheitassignments[0].uid, studiensemester)
 					}
 					else
 					{
@@ -125,17 +123,18 @@ var MobilityOnlineIncomingCourses = {
 	/**
 	 * Gets course assignments for a user, refreshes directlyAssigned fields in global assignments object
 	 * Updates numbers in html views accordingly
-	 * @param ledata array, contains lehreinheited for which data has to refreshed,
-	 * each entry has form lvid:lehreinheitid
+	 * @param lvids array, contains lehrveranstaltungen for which data has to refreshed
 	 * @param uid user for which lehreinheitassignments should be refreshed
+	 * @param studiensemester
 	 */
-	refreshCourseAssignments: function(ledata, uid)
+	refreshCourseAssignments: function(lvids, uid, studiensemester)
 	{
 		FHC_AjaxClient.ajaxCallPost(
-			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/getCourseAssignments',
+			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/getFhcCourses',
 			{
 				"uid": uid,
-				"ledata": ledata
+				"lvids": lvids,
+				"studiensemester": studiensemester
 			},
 			{
 				successCallback: function (data, textStatus, jqXHR)
@@ -145,13 +144,34 @@ var MobilityOnlineIncomingCourses = {
 						for (var prestudent in MobilityOnlineIncomingCourses.incomingCourses)
 						{
 							var prestudentobj = MobilityOnlineIncomingCourses.incomingCourses[prestudent];
+
 							if (prestudentobj.uid === uid)
 							{
 								for (var lvid in data.retval)
 								{
-									var leids = data.retval[lvid];
-									MobilityOnlineIncomingCourses._setDirectlyAssigned(prestudentobj.lvs, lvid, leids);
-									MobilityOnlineIncomingCourses._setDirectlyAssigned(prestudentobj.nonMoLvs, lvid, leids);
+									var lv = data.retval[lvid];
+
+									for (var oldlvid in prestudentobj.lvs)
+									{
+										var oldlv = prestudentobj.lvs[oldlvid];
+										if (oldlv != null && oldlv.lehrveranstaltung.lehrveranstaltung_id == lv.lehrveranstaltung.lehrveranstaltung_id)
+										{
+											oldlv.lehrveranstaltung.incomingsplaetze = lv.lehrveranstaltung.incomingsplaetze;
+											oldlv.lehrveranstaltung.anz_incomings = lv.lehrveranstaltung.anz_incomings;
+											oldlv.lehreinheiten = lv.lehreinheiten;
+										}
+									}
+
+									for (var oldNonMoLvid in prestudentobj.nonMoLvs)
+									{
+										var oldNonMoLv = prestudentobj.nonMoLvs[oldNonMoLvid];
+										if (oldNonMoLv != null && oldNonMoLv.lehrveranstaltung.lehrveranstaltung_id == lv.lehrveranstaltung.lehrveranstaltung_id)
+										 {
+											 oldNonMoLv.lehrveranstaltung.incomingsplaetze = lv.lehrveranstaltung.incomingsplaetze;
+											 oldNonMoLv.lehrveranstaltung.anz_incomings = lv.lehrveranstaltung.anz_incomings;
+											 oldNonMoLv.lehreinheiten = lv.lehreinheiten;
+										 }
+									}
 								}
 								MobilityOnlineIncomingCourses._printMoCourses(prestudentobj);
 								MobilityOnlineIncomingCourses._printFhcCourses(prestudentobj);
@@ -455,9 +475,26 @@ var MobilityOnlineIncomingCourses = {
 			fhclvhtml += " " + semobj;
 		}
 
+		fhclvhtml += " | ";
+
+		var coursefull = (lehrveranstaltungobj.lehrveranstaltung.anz_incomings) > parseInt(lehrveranstaltungobj.lehrveranstaltung.incomingplaetze);
+
+		if (coursefull)
+			fhclvhtml += "<span class='alert-danger'>";
+
+		fhclvhtml += lehrveranstaltungobj.lehrveranstaltung.anz_incomings + "/" +
+			lehrveranstaltungobj.lehrveranstaltung.incomingplaetze;
+
+		if (coursefull)
+			fhclvhtml += "</span>";
+
+		fhclvhtml += " incomings";
+
 		fhclvhtml += " <span class='pull-right'>lvid "+lehrveranstaltungobj.lehrveranstaltung.lehrveranstaltung_id+"</span>";
 
 		fhclvhtml += "</div><div class='panel-body fhclvpanel'>";
+
+		fhclvhtml += "<input type='hidden' class='lehrveranstaltunginput' value="+lehrveranstaltungobj.lehrveranstaltung.lehrveranstaltung_id+">";
 
 		for (var le in lehrveranstaltungobj.lehreinheiten)
 		{
@@ -473,7 +510,6 @@ var MobilityOnlineIncomingCourses = {
 		var fhcleshtml = '';
 		var checked = lehreinheitobj.directlyAssigned === true ? "checked": '';
 		fhcleshtml += "<div class='checkbox'><input type='checkbox' class='lehreinheitinput' id='lecheckbox_"+lehreinheitobj.lehreinheit_id+"' "+checked+">";
-		fhcleshtml += "<input type='hidden' class='lehrveranstaltunginput' value="+lehrveranstaltungobj.lehrveranstaltung.lehrveranstaltung_id+">";
 		fhcleshtml += lehreinheitobj.lehrform_kurzbz;
 
 		for (var legr in lehreinheitobj.lehreinheitgruppen)
@@ -531,41 +567,6 @@ var MobilityOnlineIncomingCourses = {
 				el.removeClass("hidden");
 			else
 				el.addClass("hidden");
-		}
-	},
-	/**
-	 * Marks certain Lehreinheiten from a certain lv in a given Lv array
-	 * as directlyAssigned
-	 * @param lvs
-	 * @param lvid
-	 * @param leids
-	 * @private
-	 */
-	_setDirectlyAssigned: function(lvs, lvid, leids)
-	{
-		for (var lv in lvs)
-		{
-			var lvobj = lvs[lv];
-			var found = false;
-			if ($.isNumeric(lvobj.lehrveranstaltung.lehrveranstaltung_id) &&
-				parseInt(lvobj.lehrveranstaltung.lehrveranstaltung_id) === parseInt(lvid))
-			{
-				for (var le in lvobj.lehreinheiten)
-				{
-					var leobj = lvobj.lehreinheiten[le];
-					leobj.directlyAssigned = false;
-					for (var leidx in leids)
-					{
-						var leid = leids[leidx];
-						if (parseInt(leobj.lehreinheit_id) === parseInt(leid))
-						{
-							leobj.directlyAssigned = true;
-							found = true;
-						}
-					}
-				}
-				break;
-			}
 		}
 	},
 	/**

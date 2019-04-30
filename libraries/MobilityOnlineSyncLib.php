@@ -10,7 +10,7 @@ class MobilityOnlineSyncLib
 {
 	// mapping for assigning fhcomplete field names to MobilityOnline field names
 	protected $conffieldmappings = array();
-	// Mappings of property values which are different in Mobility Online and fhc.
+	// mappings of property values which are different in Mobility Online and fhc.
 	private $_valuemappings = array();
 	// defaults for fhcomplete tables
 	private $_conffhcdefaults = array();

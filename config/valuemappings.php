@@ -110,8 +110,11 @@ $config['valuemappings']['frommo']['zgvmas_code'] = array(
 $config['valuemappings']['frommo']['zgvmanation'] = $nations;
 
 $config['valuemappings']['frommo']['mobilitaetsprogramm_code'] = array(
-	'Erasmus SMS' => '7',
-	'Erasmus SMP' => '7',
-	'Erasmus Mundus' => '7',
-	'Incoming (mit Agreement)' => '13'
+	'Erasmus SMS' => 7,
+	'Erasmus SMP' => 7,
+	'Erasmus Mundus' => 7,
+	'Erasmus (Studies)' => 7,
+	'Incoming (mit Agreement)' => 13,
+	'Incoming (with Bilateral Agreement or Free Mover)' => 201,
+	'Free Mover' => 202
 );

@@ -230,7 +230,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 */
 	public function fillFhcCourse($lehrveranstaltung_id, $uid, $studiensemester_kurzbz, &$fhccourse)
 	{
-		$this->ci->LehrveranstaltungModel->addSelect('lehrveranstaltung_id, tbl_lehrveranstaltung.bezeichnung AS lvbezeichnung');
+		$this->ci->LehrveranstaltungModel->addSelect('lehrveranstaltung_id, tbl_lehrveranstaltung.bezeichnung AS lvbezeichnung, incoming');
 
 		$lvresult = $this->ci->LehrveranstaltungModel->loadWhere(
 			array(
@@ -243,7 +243,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			$lv = $lvresult->retval[0];
 			$fhccourse['lehrveranstaltung']['lehrveranstaltung_id'] = $lv->lehrveranstaltung_id;
 			$fhccourse['lehrveranstaltung']['fhcbezeichnung'] = $lv->lvbezeichnung;
-
+			$fhccourse['lehrveranstaltung']['incomingplaetze'] = $lv->incoming;
 
 			//get studiengäng(e) and semester for LV
 			$this->ci->LehrveranstaltungModel->addSelect('tbl_studiengang.studiengang_kz, tbl_studiengang.typ, tbl_studiengang.kurzbz AS studiengang_kurzbz, tbl_studiengang.bezeichnung, tbl_studienplan_lehrveranstaltung.semester');
@@ -303,10 +303,15 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				}
 			}
 
+			//get Lehreinheiten, number of students, directly assigned for Lv
 			if (isset($fhccourse['lehrveranstaltung']['lehrveranstaltung_id']) &&
 				is_numeric($fhccourse['lehrveranstaltung']['lehrveranstaltung_id']))
 			{
 				$fhccourse['lehreinheiten'] = $this->ci->LehreinheitModel->getLesForLv($fhccourse['lehrveranstaltung']['lehrveranstaltung_id'], $studiensemester_kurzbz, false);
+
+				$anz_incomings = 0;
+
+				$incoming_prestudent_ids = array();
 
 				foreach ($fhccourse['lehreinheiten'] as $lehreinheit)
 				{
@@ -319,6 +324,20 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					if (isSuccess($students))
 					{
 						$anz_teilnehmer = count($students->retval);
+
+						foreach ($students->retval as $student)
+						{
+							if (!in_array($student->prestudent_id, $incoming_prestudent_ids))
+							{
+								$lastStatus = $this->ci->PrestudentstatusModel->getLastStatus($student->prestudent_id, $studiensemester_kurzbz, 'Incoming');
+
+								if (hasData($lastStatus))
+								{
+									$incoming_prestudent_ids[] = $student->prestudent_id;
+									$anz_incomings++;
+								}
+							}
+						}
 					}
 
 					$lehreinheit->anz_teilnehmer = $anz_teilnehmer;
@@ -328,6 +347,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					if (hasData($directlyassigned))
 						$lehreinheit->directlyAssigned = true;
 				}
+
+				$fhccourse['lehrveranstaltung']['anz_incomings'] = $anz_incomings;
 			}
 		}
 	}
