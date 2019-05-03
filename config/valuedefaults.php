@@ -56,11 +56,6 @@ $config['fhcdefaults']['application']['kontaktmail'] = array(
 	'zustellung' => true
 );
 
-/*$config['fhcdefaults']['application']['kontakttel'] = array(
-	'kontakttyp' => 'telefon',
-	'zustellung' => true
-);*/
-
 $config['fhcdefaults']['application']['kontaktnotfall'] = array(
 	'kontakttyp' => 'notfallkontakt',
 	'zustellung' => false

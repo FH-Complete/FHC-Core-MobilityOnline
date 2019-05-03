@@ -14,6 +14,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	private $_debugmode = false;
 	// user saved in db insertvon, updatevon fields
 	const IMPORTUSER = 'mo_import';
+	// stati in application cycle, for displaying last status, in chronological order
 	private $_pipelinestati = array(
 		'is_mail_best_bew',
 		'is_registriert',
@@ -110,39 +111,32 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$mozgvnation = isset($prestudentmappings['zgvnation']) && isset($moapp->{$prestudentmappings['zgvnation']}) ? $moapp->{$prestudentmappings['zgvnation']} : null;
 		$mozgvmanation = isset($prestudentmappings['zgvmanation']) && isset($moapp->{$prestudentmappings['zgvmanation']}) ? $moapp->{$prestudentmappings['zgvmanation']} : null;
 
+		$monations = array(
+			$personmappings['staatsbuergerschaft'] => $monation,
+			$bisiomappings['nation_code'] => $mobisionation,
+			$prestudentmappings['zgvnation'] => $mozgvnation,
+			$prestudentmappings['zgvmanation'] => $mozgvmanation
+		);
+
 		$fhcnations = $this->ci->NationModel->load();
 
 		if (hasData($fhcnations))
 		{
 			foreach ($fhcnations->retval as $fhcnation)
 			{
-				// try to get nation by bezeichnung
-				if ($fhcnation->kurztext === $monation || $fhcnation->langtext === $monation || $fhcnation->engltext === $monation)
+				// trying to get nations by bezeichnung
+				foreach ($monations as $configbez => $moonation)
 				{
-					$moapp->{$personmappings['staatsbuergerschaft']} = $fhcnation->nation_code;
-				}
-
-				// try to get nation by bezeichnung
-				if ($fhcnation->kurztext === $mobisionation || $fhcnation->langtext === $mobisionation || $fhcnation->engltext === $mobisionation)
-				{
-					$moapp->{$bisiomappings['nation_code']} = $fhcnation->nation_code;
+					if ($fhcnation->kurztext === $moonation || $fhcnation->langtext === $moonation || $fhcnation->engltext === $moonation)
+					{
+						if (isset($moapp->{$configbez}))
+							$moapp->{$configbez} = $fhcnation->nation_code;
+					}
 				}
 
 				if ($fhcnation->kurztext === $moaddrnation || $fhcnation->langtext === $moaddrnation || $fhcnation->engltext === $moaddrnation)
 				{
 					$moaddr->{$adressemappings['nation']} = $fhcnation->nation_code;
-				}
-
-				if ($fhcnation->kurztext === $mozgvnation || $fhcnation->langtext === $mozgvnation || $fhcnation->engltext === $mozgvnation)
-				{
-					if (isset($moapp->{$prestudentmappings['zgvnation']}))
-						$moapp->{$prestudentmappings['zgvnation']} = $fhcnation->nation_code;
-				}
-
-				if ($fhcnation->kurztext === $mozgvmanation || $fhcnation->langtext === $mozgvmanation || $fhcnation->engltext === $mozgvmanation)
-				{
-					if (isset($moapp->{$prestudentmappings['zgvmanation']}))
-						$moapp->{$prestudentmappings['zgvmanation']} = $fhcnation->nation_code;
 				}
 			}
 		}
@@ -222,11 +216,11 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
-	 * Fills fhccourse with necessary data before displaying, adds Lehreinheiten to the course
+	 * Fills fhccourse with necessary data before displaying, adds Lehreinheiten to the course.
 	 * @param $lehrveranstaltung_id
-	 * @param $uid
+	 * @param $uid for getting group assignments or lehreinheiten
 	 * @param $studiensemester_kurzbz
-	 * @param $fhccourse
+	 * @param $fhccourse to be filled
 	 */
 	public function fillFhcCourse($lehrveranstaltung_id, $uid, $studiensemester_kurzbz, &$fhccourse)
 	{

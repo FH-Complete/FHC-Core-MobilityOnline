@@ -70,7 +70,6 @@ $config['fieldmappings']['application']['bisio'] = array(
 	'von' => 'bew_dat_von',
 	'bis' => 'bew_dat_bis',
 	'universitaet' => 'inst_id_heim_name',
-	//'zweck_code' => 'aust_prog_id',
 	'nation_code' => 'lcd_id_gast',
 	'mobilitaetsprogramm_code' => 'aust_prog_id'
 );

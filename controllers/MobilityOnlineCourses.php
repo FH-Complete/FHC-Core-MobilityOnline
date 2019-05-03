@@ -15,7 +15,7 @@ class MobilityOnlineCourses extends Auth_Controller
 			array(
 			'index' => 'inout/incoming:rw',
 			'syncLvs' => 'inout/incoming:rw',
-			'deleteLvs' => 'inout/incoming:rw',
+			'deleteLvs' => 'admin:rw',
 			'getLvsJson' => 'inout/incoming:rw'
 			)
 		);
@@ -71,10 +71,11 @@ class MobilityOnlineCourses extends Auth_Controller
 	 */
 	public function syncLvs()
 	{
+		$fieldmappings = $this->config->item('fieldmappings');
+		$coursename = $fieldmappings['course']['lv_bezeichnung'];
+
 		$studiensemester = $this->input->post('studiensemester');
 		$results = array('added' => 0, 'updated' => 0, 'deleted' => 0, 'errors' => 0, 'syncoutput' => '');
-
-		$coursesPerSemester = array();
 
 		$lvs = $this->LehrveranstaltungModel->getLvsWithIncomingPlaces($studiensemester);
 
@@ -90,15 +91,11 @@ class MobilityOnlineCourses extends Auth_Controller
 			$results['syncoutput'] .= '<br/>-----------------------------------------------</div>';
 			$results['syncoutput'] .= '<div class="lvsyncoutputtext">';
 
+			$first = true;
 			foreach ($lvs->retval as $lv)
 			{
-				$coursesPerSemester[$lv->lehrveranstaltung_id] = $this->synctomobilityonlinelib->mapLvToMoLv($lv);
-			}
-
-			$first = true;
-			foreach ($coursesPerSemester as $key => $course)
-			{
-				$lvid = $key;
+				$course = $this->synctomobilityonlinelib->mapLvToMoLv($lv);
+				$lvid = $lv->lehrveranstaltung_id;
 
 				$zuordnung = $this->MolvidzuordnungModel->loadWhere(array('lehrveranstaltung_id' => $lvid, 'studiensemester_kurzbz' => $studiensemester));
 
@@ -108,7 +105,7 @@ class MobilityOnlineCourses extends Auth_Controller
 
 				if (hasData($zuordnung))
 				{
-					$results['syncoutput'] .= "<p>lv $lvid - ".$course['courseName']." already exists in Mobility Online - updating";
+					$results['syncoutput'] .= "<p>lv $lvid - ".$course[$coursename]." already exists in Mobility Online - updating";
 
 					$zuordnung = $zuordnung->retval[0];
 
@@ -124,12 +121,12 @@ class MobilityOnlineCourses extends Auth_Controller
 						if (hasData($result))
 						{
 							$results['updated']++;
-							$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> lv $lvid - ".$course['courseName']." successfully updated</p>";
+							$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> lv $lvid - ".$course[$coursename]." successfully updated</p>";
 						}
 					}
 					else
 					{
-						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when updating lv $lvid - ".$course['courseName']."</span></p>";
+						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when updating lv $lvid - ".$course[$coursename]."</span></p>";
 						$results['errors']++;
 					}
 				}
@@ -146,14 +143,14 @@ class MobilityOnlineCourses extends Auth_Controller
 						if (hasData($result))
 						{
 							$results['added']++;
-							$results['syncoutput'] .= "<p><i class='fa fa-check text-success'></i> lv $lvid - ".$course['courseName']." successfully added</p>";
+							$results['syncoutput'] .= "<p><i class='fa fa-check text-success'></i> lv $lvid - ".$course[$coursename]." successfully added</p>";
 						}
 						else
-							$results['syncoutput'] .= "<p><span class='text-danger'><i class='fa fa-times'></i> mapping entry in db could not be added for course $lvid - ".$course['courseName']."</span></p>";
+							$results['syncoutput'] .= "<p><span class='text-danger'><i class='fa fa-times'></i> mapping entry in db could not be added for course $lvid - ".$course[$coursename]."</span></p>";
 					}
 					else
 					{
-						$results['syncoutput'] .= "<p><span class='text-danger'><i class='fa fa-times text-danger'></i> error when adding lv $lvid - ".$course['courseName']."</span></p>";
+						$results['syncoutput'] .= "<p><span class='text-danger'><i class='fa fa-times text-danger'></i> error when adding lv $lvid - ".$course[$coursename]."</span></p>";
 						$results['errors']++;
 					}
 				}
@@ -200,8 +197,6 @@ class MobilityOnlineCourses extends Auth_Controller
 	 */
 	public function deleteLvs($semester)
 	{
-		$this->load->model('organisation/Studiensemester_model', 'StudiensemesterModel');
-
 		$studienjahrres = $this->StudiensemesterModel->load($semester);
 
 		if (hasData($studienjahrres))
