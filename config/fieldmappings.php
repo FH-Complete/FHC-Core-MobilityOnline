@@ -116,5 +116,5 @@ $config['fieldmappings']['course'] = array(
 	'sws' => 'numberOfLessons',
 	'ects' => 'ectsCredits',
 	'incoming' => 'freePlaces',
-	'typ' => array('name' => 'studyLevels', 'type' => 'number'),
+	'typ' => array('name' => 'studyLevels', 'type' => 'number')
 );

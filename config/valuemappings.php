@@ -9,10 +9,11 @@ $config['valuemappings']['tomo']['locale'] = array(
 	'en-US' => 'en'
 );
 
-/*$config['valuemappings']['tomo']['typ'] = array(
+$config['valuemappings']['tomo']['typ'] = array(
 	'b' => 'B',
-	'm' => 'M'
-);*/
+	'm' => 'M',
+	'e' => array('B', 'M')
+);
 
 $nations = array(
 	'Bosnien Herzegowina' => 'BSH',

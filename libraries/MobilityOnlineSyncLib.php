@@ -155,7 +155,7 @@ class MobilityOnlineSyncLib
 									if (is_integer($pattern))
 										$fhcvalue = $this->$replacement($fhcvalue);
 									//otherwise replace with regex
-									else
+									elseif (is_string($replacement))
 									{
 										//add slashes for regex
 										$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
@@ -245,7 +245,7 @@ class MobilityOnlineSyncLib
 						if (is_integer($pattern))
 							$movalue = $this->$replacement($movalue);
 						//otherwise replace with regex
-						else
+						elseif (is_string($replacement))
 						{
 							//add slashes for regex
 							$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
@@ -255,11 +255,24 @@ class MobilityOnlineSyncLib
 				}
 			}
 
-			if (isset($fhcobj->$name))
+			if (isset($fhcobj->$name) && isset($movalue))
 			{
 				// if data has to be passed to MO as array, eg array('description' => 'bla')
 				if (isset($fieldmappings[$name]['type']) && isset($fieldmappings[$name]['name']))
-					$moobj[$fieldmappings[$name]['name']] = array($fieldmappings[$name]['type'] => $movalue);
+				{
+					// if multiple data values, e.g. Studiengangtyp Bachelor and Master
+					if (is_array($movalue))
+					{
+						$moobj[$fieldmappings[$name]['name']] = array();
+
+						foreach ($movalue as $item)
+						{
+							$moobj[$fieldmappings[$name]['name']][] = array($fieldmappings[$name]['type'] => $item);
+						}
+					}
+					else
+						$moobj[$fieldmappings[$name]['name']] = array($fieldmappings[$name]['type'] => $movalue);
+				}
 				else
 				{
 					$moobj[$fieldmappings[$name]] = $movalue;
