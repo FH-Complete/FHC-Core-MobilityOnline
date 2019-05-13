@@ -115,7 +115,8 @@ $config['valuemappings']['frommo']['mobilitaetsprogramm_code'] = array(
 	'Erasmus SMP' => 7,
 	'Erasmus Mundus' => 7,
 	'Erasmus (Studies)' => 7,
-	'Incoming (mit Agreement)' => 13,
+	'Incoming (mit Agreement)' => 201,
 	'Incoming (with Bilateral Agreement or Free Mover)' => 201,
+	'Incoming (with Bilateral Agreement)' => 201,
 	'Free Mover' => 202
 );

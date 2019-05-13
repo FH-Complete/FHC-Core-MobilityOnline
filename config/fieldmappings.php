@@ -78,6 +78,7 @@ $config['fieldmappings']['address']['adresse'] = array(
 	'strasse' => 'street',
 	'plz' => 'postCode',
 	'ort' => 'city',
+	'gemeinde' => 'additionalAddressInformation',
 	'nation' => 'country'
 );
 
