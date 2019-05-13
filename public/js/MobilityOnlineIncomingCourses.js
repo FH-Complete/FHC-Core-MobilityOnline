@@ -197,6 +197,7 @@ var MobilityOnlineIncomingCourses = {
 	_printIncomingPrestudents: function(incomingscourses)
 	{
 		$("#incomingprestudents").empty();
+		//destroy tablesorter
 		$("#incomingprestudentstbl").trigger("destroy");
 
 		var totalAssigned = 0, totalLvsInFhc = 0;
@@ -311,6 +312,7 @@ var MobilityOnlineIncomingCourses = {
 		$("#lvsprestudentdata").html(prestudentdatahtml);
 
 		$("#molvs").empty();
+		//destroy tablesorter
 		$("#molvstbl").trigger("destroy");
 
 		for (var lv in moapplication.lvs)
