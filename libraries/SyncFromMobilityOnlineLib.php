@@ -785,11 +785,24 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		{
 			if (array_key_exists($table, $fhcobj))
 			{
-				foreach ($fields as $field)
+				foreach ($fields as $field => $params)
 				{
-					if (!isset($fhcobj[$table][$field]) || (!is_numeric($fhcobj[$table][$field]) && isEmptyString($fhcobj[$table][$field])))
+					$haserror = false;
+
+					if (isset($fhcobj[$table][$field]))
 					{
-						$hasError->errorMessages[] = "$table: $field missing or has no match";
+						$value = $fhcobj[$table][$field];
+						if (!is_numeric($value) && isEmptyString($value))
+							$haserror = true;
+					}
+					else
+						$haserror = true;
+
+					if ($haserror)
+					{
+						$fieldname = isset($params['name']) ? $params['name'] : ucfirst($field);
+
+						$hasError->errorMessages[] = ucfirst($table).": $fieldname missing or has no match";
 						$hasError->error = true;
 					}
 				}

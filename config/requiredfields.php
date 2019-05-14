@@ -5,14 +5,38 @@
  */
 
 $config['requiredfields']['application'] = array(
-	'person' => array('vorname', 'nachname', 'geschlecht'),
-	'prestudent' => array('studiengang_kz'),
-	'prestudentstatus' => array('studiensemester_kurzbz', 'ausbildungssemester', 'status_kurzbz'),
+	'person' => array('vorname' => array(),
+					  'nachname' => array(),
+					  'geschlecht' => array()
+	),
+	'prestudent' => array('studiengang_kz' =>
+							  array('name' => 'Studiengang')
+	),
+	'prestudentstatus' => array('studiensemester_kurzbz' =>
+									array('name' => 'Studiensemester'),
+								'ausbildungssemester' => array(),
+								'status_kurzbz' =>
+									array('name' => 'Incomingstatus')
+	),
 	'benutzer' => array(),
-	'student' => array('semester', 'verband'),
-	'studentlehrverband' => array('semester', 'verband'),
-	'adresse' => array('nation', 'ort', 'strasse'),
-	'kontaktmail' => array('kontakt'),
-	'bisio' => array('von', 'bis', 'nation_code', 'mobilitaetsprogramm_code', 'zweck_code')
+	'student' => array('semester' => array(),
+					   'verband' => array()
+	),
+	'studentlehrverband' => array('semester' => array(),
+								  'verband' => array()
+	),
+	'adresse' => array('nation' => array(),
+					   'ort' => array(),
+					   'strasse' => array()
+	),
+	'kontaktmail' => array('kontakt' => array('name' => 'E-Mail-Adresse')
+	),
+	'bisio' => array('von' => array('name' => 'Aufenthalt von'),
+					 'bis' => array('name' => 'Aufenthalt bis'),
+					 'nation_code' => array('name' => 'Nation'),
+					 'mobilitaetsprogramm_code' =>
+						 array('name' => 'Austauschprogramm'),
+					 'zweck_code' =>
+						 array('name' => 'Aufenthaltszweck')
+	)
 );
-
