@@ -52,6 +52,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 		$this->ci->load->model('codex/bisio_model', 'BisioModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetmasterdata_model', 'MoGetMaModel');
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Molvidzuordnung_model', 'MolvidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MobilityonlinefhcModel');
 	}
@@ -169,6 +170,21 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$fhcaddr = $this->convertToFhcFormat($moaddr, 'address');
 
 		$fhcobj = array_merge($fhcobj, $fhcaddr);
+
+		// courses
+		$fhcobj['mocourses'] = array();
+		$courses = $this->ci->MoGetAppModel->getCoursesOfApplication($moapp->applicationID);
+
+		if (is_array($courses))
+		{
+			foreach ($courses as $course)
+			{
+				$coursedata = new stdClass();
+				$coursedata->number = $course->hostCourseNumber;
+				$coursedata->name = $course->hostCourseName;
+				$fhcobj['mocourses'][] = $coursedata;
+			}
+		}
 
 		return $fhcobj;
 	}

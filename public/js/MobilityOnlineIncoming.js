@@ -108,20 +108,32 @@ var MobilityOnlineIncoming = {
 							if (hasError)
 							{
 								errorclass = " class='inactive' data-toggle='tooltip' title='";
-								var first = true;
+								var firstmsg = true;
 								for (var i in incomingobj.errorMessages)
 								{
-									var coma = '';
-									if (!first)
-										coma = ', ';
-									errorclass += coma + incomingobj.errorMessages[i];
-									first = false;
+									if (!firstmsg)
+										errorclass += ', ';
+									errorclass += incomingobj.errorMessages[i];
+									firstmsg = false;
 								}
 								errorclass += "'";
 							}
 							else
 							{
 								chkbxstring = "<input type='checkbox' value='" + incomingobj.moid + "' name='incoming[]'>";
+							}
+
+							// courses from MobilityOnline
+							var coursesstring = '';
+							var firstcourse = true;
+
+							for (var courseidx in incomingdata.mocourses)
+							{
+								var course = incomingdata.mocourses[courseidx];
+								if (!firstcourse)
+									coursesstring += ' | ';
+								coursesstring += course.number + ': ' + course.name;
+								firstcourse = false;
 							}
 
 							if (incomingobj.infhc)
@@ -139,6 +151,7 @@ var MobilityOnlineIncoming = {
 								"<td>" + person.nachname + ", " + person.vorname + "</td>" +
 								"<td>" + incomingdata.kontaktmail.kontakt + "</td>" +
 								"<td>" + incomingdata.pipelineStatusDescription + "</td>" +
+								"<td>" + coursesstring + "</td>" +
 								"<td class='text-center'>" + newicon + "</td>" +
 								"</tr>"
 							);
@@ -148,7 +161,7 @@ var MobilityOnlineIncoming = {
 							);
 							MobilityOnlineIncoming._refreshIncomingNumber();
 						}
-						var headers = {headers: { 0: { sorter: false, filter: false}, 4: {sorter: false, filter: false} }};
+						var headers = {headers: { 0: { sorter: false, filter: false}, 5: {sorter: false, filter: false} }};
 
 						Tablesort.addTablesorter("incomingstbl", [[1, 0], [2, 0]], ["filter"], 2, headers);
 					}

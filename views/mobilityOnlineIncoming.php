@@ -33,7 +33,7 @@
 					</div>
 				</div>
 				<div class="row text-center">
-					<div class="col-xs-4 col-xs-offset-4 form-group">
+					<div class="col-xs-4 col-xs-offset-6 form-group">
 						<label>Studiensemester</label>
 						<select class="form-control" name="studiensemester" id="studiensemester">
 							<?php
@@ -48,7 +48,7 @@
 					</div>
 				</div>
 				<div class="row">
-					<div class="col-xs-5">
+					<div class="col-xs-4">
 						<div class="well well-sm wellminheight">
 							<h4 class="text-center">synchronisation output:</h4>
 							<div id="incomingsyncoutput" class="panel panel-body">
@@ -56,7 +56,7 @@
 							</div>
 						</div>
 					</div>
-					<div class="col-xs-7">
+					<div class="col-xs-8">
 						<div class="well well-sm wellminheight">
 							<div class="text-center">
 								<h4><span id="lvhead">&nbsp;MobilityOnline Incomings</span></h4>
@@ -80,6 +80,7 @@
 											<th class="text-center">Name</th>
 											<th class="text-center">E-Mail</th>
 											<th class="text-center">Last Status</th>
+											<th class="text-center">Courses</th>
 											<th class="text-center">in FHC</th>
 										</tr>
 									</thead>
