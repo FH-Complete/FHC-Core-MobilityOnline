@@ -86,8 +86,6 @@ var MobilityOnlineIncoming = {
 				successCallback: function(data, textStatus, jqXHR)
 				{
 					$("#incomings").empty();
-					//destroy tablesorter
-					$("#incomingstbl").trigger("destroy");
 
 					if (FHC_AjaxClient.hasData(data))
 					{
