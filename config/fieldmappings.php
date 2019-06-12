@@ -37,7 +37,6 @@ $config['fields']['course'] = array(
 $config['fieldmappings']['application']['person'] = array(
 	'vorname' => $config['fields']['application'][0],
 	'nachname' => $config['fields']['application'][1],
-	'svnr' => 'socialSecurityNumber',
 	'staatsbuergerschaft' => 'lcd_id_nat',
 	'geschlecht' => 'bew_geschlecht',
 	'anrede' => 'bew_geschlecht',

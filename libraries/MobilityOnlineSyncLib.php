@@ -52,9 +52,6 @@ class MobilityOnlineSyncLib
 		'anmerkung' => array(
 			0 => 'replaceEmpty'
 		),
-		'svnr' => array(
-			0 => 'replaceEmpty'//social security number cannot be empty string
-		),
 		'zgvnation' => array(
 			0 => 'replaceEmpty'
 		),
