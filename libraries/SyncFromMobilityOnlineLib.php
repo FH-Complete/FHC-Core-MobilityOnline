@@ -108,7 +108,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		// Nation
 		$monation = $moapp->{$personmappings['staatsbuergerschaft']};
 		$mobisionation = $moapp->{$bisiomappings['nation_code']};
-		$moaddrnation = isset($moaddr) ? $moaddr->{$adressemappings['nation']}->description : null;
+		$moaddrnation = isset($moaddr) ? $moaddr->{$adressemappings['nation']['name']}->description : null;
 		$mozgvnation = isset($prestudentmappings['zgvnation']) && isset($moapp->{$prestudentmappings['zgvnation']}) ? $moapp->{$prestudentmappings['zgvnation']} : null;
 		$mozgvmanation = isset($prestudentmappings['zgvmanation']) && isset($moapp->{$prestudentmappings['zgvmanation']}) ? $moapp->{$prestudentmappings['zgvmanation']} : null;
 
@@ -137,7 +137,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 				if ($fhcnation->kurztext === $moaddrnation || $fhcnation->langtext === $moaddrnation || $fhcnation->engltext === $moaddrnation)
 				{
-					$moaddr->{$adressemappings['nation']} = $fhcnation->nation_code;
+					$moaddr->{$adressemappings['nation']['name']} = $fhcnation->nation_code;
 				}
 			}
 		}
@@ -765,7 +765,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	{
 		$searchobj = array();
 
-		$fields = $this->conffields[$objtype];
+		$fields = $this->moconffields[$objtype];
 
 		foreach ($fields as $field)
 		{
@@ -795,30 +795,106 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$hasError = new StdClass();
 		$hasError->error = false;
 		$hasError->errorMessages = array();
-		$requiredfields = $this->requiredfields[$objtype];
+		$allfields = $this->fhcconffields[$objtype];
 
-		foreach ($requiredfields as $table => $fields)
+		foreach ($allfields as $table => $fields)
 		{
 			if (array_key_exists($table, $fhcobj))
 			{
 				foreach ($fields as $field => $params)
 				{
 					$haserror = false;
+					$errortext = '';
+					$required = isset($params['required']) && $params['required'];
 
 					if (isset($fhcobj[$table][$field]))
 					{
 						$value = $fhcobj[$table][$field];
-						if (!is_numeric($value) && isEmptyString($value))
+
+						if ($required && !is_numeric($value) && isEmptyString($value))
+						{
 							$haserror = true;
+							$errortext = 'is missing';
+						}
+						else
+						{
+							// right data type?
+							$wrongdatatype = false;
+							if (isset($params['type']))
+							{
+								switch($params['type'])
+								{
+									case 'integer':
+										if (!is_numeric($value))
+										{
+											$wrongdatatype = true;
+										}
+										break;
+									case 'boolean':
+										if (!is_bool($value))
+										{
+											$wrongdatatype = true;
+										}
+										break;
+									case 'date':
+										if (!$this->_validateDate($value))
+										{
+											$wrongdatatype = true;
+										}
+										break;
+									case 'string':
+										if (!is_string($value))
+										{
+											$wrongdatatype = true;
+										}
+										break;
+								}
+							}
+							elseif (!is_string($value))
+							{
+								$wrongdatatype = true;
+							}
+							else
+							{
+								$params['type'] = 'string';
+							}
+
+							if ($wrongdatatype)
+							{
+								$haserror = true;
+								$errortext = 'has wrong data type';
+							}
+							elseif (!$haserror)
+							{
+								// right string length?
+								if ($params['type'] === 'string' && !$this->ci->MobilityonlinefhcModel->checkLength($table, $field, $value))
+								{
+									$haserror = true;
+									$errortext = "is too long ($value)";
+								}
+								// value referenced with foreign key exists?
+								elseif (isset($params['ref']))
+								{
+									$fkfield = isset($params['reffield']) ? $params['reffield'] : $field;
+									$foreignkeyexists = $this->ci->MobilityonlinefhcModel->valueExists($params['ref'], $fkfield, $value);
+
+									if (!hasData($foreignkeyexists))
+									{
+										$haserror = true;
+										$errortext = 'has no match in FHC';
+									}
+								}
+							}
+						}
 					}
-					else
+					elseif ($required)
 						$haserror = true;
 
 					if ($haserror)
 					{
 						$fieldname = isset($params['name']) ? $params['name'] : ucfirst($field);
 
-						$hasError->errorMessages[] = ucfirst($table).": $fieldname missing or has no match";
+						$hasError->errorMessages[] = ucfirst($table).": $fieldname ".$errortext;
 						$hasError->error = true;
 					}
 				}
@@ -870,5 +946,17 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$arr[$idx] = date('Y-m-d H:i:s', time());
 		$idx = $modtype.'von';
 		$arr[$idx] = self::IMPORTUSER;
+	}
+
+	/**
+	 * Checks if given date exists and is valid.
+	 * @param $date
+	 * @param string $format
+	 * @return bool
+	 */
+	private function _validateDate($date, $format = 'Y-m-d')
+	{
+		$d = DateTime::createFromFormat($format, $date);
+		return $d && $d->format($format) === $date;
 	}
 }

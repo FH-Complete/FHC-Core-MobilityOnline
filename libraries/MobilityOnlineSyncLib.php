@@ -14,10 +14,12 @@ class MobilityOnlineSyncLib
 	private $_valuemappings = array();
 	// defaults for fhcomplete tables
 	private $_conffhcdefaults = array();
-	// separate fielddefinitions
-	protected $conffields = array();
+	// fielddefinitions for error check before sync to FHC
+	protected $fhcconffields = array();
+	// fielddefinitions for search in MO
+	protected $moconffields = array();
 	// required fields for syncing
-	protected $requiredfields = array();
+	//protected $requiredfields = array();
 
 	// mo string replacements for fhc values. Numeric indices mean callback function names used for replacements.
 	private $_replacementsarrToMo = array(
@@ -61,9 +63,6 @@ class MobilityOnlineSyncLib
 		'zgvmas_code' => array(
 			0 => 'replaceEmpty'
 		),
-		'zgvmaort' => array(
-			0 => 'replaceEmpty'
-		),
 		'zgvmanation' => array(
 			0 => 'replaceEmpty'
 		),
@@ -88,14 +87,14 @@ class MobilityOnlineSyncLib
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/fieldmappings');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/valuemappings');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/valuedefaults');
-		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/requiredfields');
+		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/fields');
 
 		$this->conffieldmappings = $this->ci->config->item('fieldmappings');
 		$this->_valuemappings = $this->ci->config->item('valuemappings');
 		$this->_conffhcdefaults = $this->ci->config->item('fhcdefaults');
 		$this->_confmodefaults = $this->ci->config->item('modefaults');
-		$this->conffields = $this->ci->config->item('fields');
-		$this->requiredfields = $this->ci->config->item('requiredfields');
+		$this->fhcconffields = $this->ci->config->item('fhcfields');
+		$this->moconffields = $this->ci->config->item('mofields');
 
 		$this->_setSemesterMappings();
 		$this->_setStudienjahrMappings();
@@ -128,19 +127,34 @@ class MobilityOnlineSyncLib
 		{
 			foreach ($moobj as $name => $value)
 			{
-				$fhcindeces = array_keys($mapping, $name);
+				$fhcindeces = array();
+
+				//get all fieldmappings (string or 'name' array key match the MO name)
+				foreach ($mapping as $fhcidx => $moval)
+				{
+					if ($moval === $name || (isset($moval['name']) && $moval['name'] === $name))
+						$fhcindeces[] = $fhcidx;
+				}
+
 				$fhcvalue = $moobj->$name;
 
-				//if exists in valuemappings - take value
 				if (!empty($fhcindeces))
 				{
 					foreach ($fhcindeces as $fhcindex)
 					{
+						//if value is in object returned from MO, extract value
+						if (is_object($fhcvalue) && isset($mapping[$fhcindex]['type']))
+						{
+							$configtype = $mapping[$fhcindex]['type'];
+							$fhcvalue = $moobj->$name->$configtype;
+						}
+
+						//if exists in valuemappings - take value
 						if (!empty($valuemappings[$fhcindex])
-							&& array_key_exists($moobj->$name, $valuemappings[$fhcindex])
+							&& array_key_exists($fhcvalue, $valuemappings[$fhcindex])
 						)
 						{
-							$fhcvalue = $valuemappings[$fhcindex][$moobj->$name];
+							$fhcvalue = $valuemappings[$fhcindex][$fhcvalue];
 						}
 						else//otherwise look in replacements array
 						{

@@ -5,38 +5,9 @@
  * ['fieldmappings']['mobilityonlineobject']['fhctable'] = array('fhcfieldname' => 'mobilityonlinefieldname')
  */
 
-$config['fields']['application'] = array(
-	'firstName',
-	'lastName',
-	'secondLastName',
-	'birthday',
-	'matriculationNumber',
-	'email',
-	'applicationType',
-	'personType',
-	'exchangeProgramNumber',
-	'academicYearDescription',
-	'semesterDescription',
-	'studyFieldDescription',
-	'login'
-);
-
-$config['fields']['course'] = array(
-	'semesterDescription',
-	'applicationType',
-	'studyArea',
-	'studyField',
-	'studySubject',
-	'courseType',
-	'language',
-	'studyLevels',
-	'courseNumber',
-	'courseName'
-);
-
 $config['fieldmappings']['application']['person'] = array(
-	'vorname' => $config['fields']['application'][0],
-	'nachname' => $config['fields']['application'][1],
+	'vorname' => 'firstName',
+	'nachname' => 'lastName',
 	'staatsbuergerschaft' => 'lcd_id_nat',
 	'geschlecht' => 'bew_geschlecht',
 	'anrede' => 'bew_geschlecht',
@@ -52,7 +23,6 @@ $config['fieldmappings']['application']['prestudent'] = array(
 	'zgvnation' => 'lcd_id_bereits',
 	'zgvdatum' => 'varchar_freifeld1',
 	'zgvmas_code' => 'int_freifeld1',
-	'zgvmaort' => 'varchar_freifeld3',
 	'zgvmadatum' => 'varchar_freifeld2',
 	'zgvmanation' => 'lcd_id_bereits_2'
 );
@@ -78,7 +48,8 @@ $config['fieldmappings']['address']['adresse'] = array(
 	'plz' => 'postCode',
 	'ort' => 'city',
 	'gemeinde' => 'additionalAddressInformation',
-	'nation' => 'country'
+	//if data is returned as array, type is name of field where value is stored
+	'nation' => array('name' => 'country', 'type' => 'description')
 );
 
 $config['fieldmappings']['address']['kontakttel'] = array(

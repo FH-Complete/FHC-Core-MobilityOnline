@@ -31,10 +31,13 @@ $nations = array(
 	'Tschechische Republik' => 'TCH',
 	'United States of America' => 'USA',
 	'Vereinigte Arabische Emirate' => 'VE',
-	'Sonstige' => 'XXX'
+	'Sonstige' => 'XXX',
+	'andere' => 'XXX'
 );
 
 $config['valuemappings']['frommo']['nation_code'] = $nations;
+
+$config['valuemappings']['frommo']['nation'] = $nations;
 
 $config['valuemappings']['frommo']['staatsbuergerschaft'] = $nations;
 

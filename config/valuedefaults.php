@@ -62,7 +62,7 @@ $config['fhcdefaults']['application']['kontaktnotfall'] = array(
 );
 
 $config['fhcdefaults']['application']['bisio'] = array(
-	'zweck_code' => 1
+	'zweck_code' => '1'
 );
 
 $config['modefaults']['course']['lehrveranstaltung'] = array(
