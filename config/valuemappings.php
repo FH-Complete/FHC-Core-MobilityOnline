@@ -53,7 +53,9 @@ $config['valuemappings']['frommo']['geschlecht'] = array(
 
 $config['valuemappings']['frommo']['anrede'] = array(
 	'M' => 'Herr',
-	'W' => 'Frau'
+	'W' => 'Frau',
+	'm' => 'Herr',
+	'w' => 'Frau'
 );
 
 $config['valuemappings']['frommo']['studiengang_kz'] = array(
