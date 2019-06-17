@@ -9,7 +9,7 @@ $config['fhcdefaults']['application']['prestudent'] = array(
 	'reihungstestangetreten' => false,
 	/*'berufstaetigkeit_code' => 0,*/
 	'zgv_code' => 5,
-	'gsstudientyp_kurzbz' => 'Extern'
+	'gsstudientyp_kurzbz' => 'Intern'
 );
 
 $config['fhcdefaults']['application']['prestudentstatus'] = array(
