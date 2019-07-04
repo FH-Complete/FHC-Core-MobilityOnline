@@ -67,7 +67,7 @@ var MobilityOnlineCourses = {
 					}
 					else
 					{
-							$("#lvs").html("<p>" + (data.retval ? data.retval : "error when getting courses") + "</p>");
+						$("#lvs").html("<p>" + (data.retval ? data.retval : "error when getting courses") + "</p>");
 					}
 				},
 				errorCallback: function(jqXHR, textStatus, errorThrown)

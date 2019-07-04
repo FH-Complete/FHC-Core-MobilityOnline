@@ -375,8 +375,7 @@ var MobilityOnlineIncomingCourses = {
 		// (e.g. when course assignment gets deleted in MobilityOnline)
 		if (fhcprestudent.nonMoLvs.length > 0)
 		{
-			fhclvhtml += "<hr><strong>In FH-Complete, but not in MobilityOnline:</strong><br /><br />";
-
+			var first = true;
 			for (var nomolv in fhcprestudent.nonMoLvs)
 			{
 				var nonmolvobj = fhcprestudent.nonMoLvs[nomolv];
@@ -395,7 +394,12 @@ var MobilityOnlineIncomingCourses = {
 						}
 					}
 					if (assigned)
+					{
+						if (first)
+							fhclvhtml += "<hr><strong>In FH-Complete, but not in MobilityOnline:</strong><br /><br />";
 						fhclvhtml += MobilityOnlineIncomingCourses._getLehrveranstaltungHtml(nonmolvobj);
+						first = false;
+					}
 
 					if (nonmolvobj.lehreinheiten.length > 0)
 						hasLes = true;
