@@ -1,6 +1,7 @@
 <?php
 
 /**
+ * Functionality for syncing incomings from MobilityOnline to fhcomplete
  */
 class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 {

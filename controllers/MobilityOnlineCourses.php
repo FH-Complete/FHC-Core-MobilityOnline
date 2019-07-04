@@ -62,7 +62,7 @@ class MobilityOnlineCourses extends Auth_Controller
 	}
 
 	/**
-	 * Syncs Lehrveranstaltungen to MobilityOnline, i.e. adds Lvs from fhcomplete to Mobility Online
+	 * Syncs courses to MobilityOnline, i.e. adds Lvs from fhcomplete to Mobility Online
 	 * and removes Lvs not present in fhcomplete anymore
 	 */
 	public function syncLvs()
@@ -75,7 +75,7 @@ class MobilityOnlineCourses extends Auth_Controller
 	}
 
 	/**
-	 * Deletes Lehrveranstaltungen of a given Semester From MobilityOnline
+	 * Deletes courses of a given Semester From MobilityOnline
 	 * @param $studiensemester
 	 */
 	public function deleteLvs($studiensemester)
@@ -84,7 +84,7 @@ class MobilityOnlineCourses extends Auth_Controller
 	}
 
 	/**
-	 * Gets Lehrveranstaltungen which need to be synced to MobilityOnline and outputs as Json
+	 * Gets courses which need to be synced to MobilityOnline and outputs as Json
 	 */
 	public function getLvsJson()
 	{

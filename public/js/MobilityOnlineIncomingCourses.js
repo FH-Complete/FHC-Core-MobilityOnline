@@ -123,7 +123,7 @@ var MobilityOnlineIncomingCourses = {
 	/**
 	 * Gets course assignments for a user, refreshes directlyAssigned fields in global assignments object
 	 * Updates numbers in html views accordingly
-	 * @param lvids array, contains lehrveranstaltungen for which data has to refreshed
+	 * @param lvids array, contains courses for which data has to refreshed
 	 * @param uid user for which lehreinheitassignments should be refreshed
 	 * @param studiensemester
 	 */

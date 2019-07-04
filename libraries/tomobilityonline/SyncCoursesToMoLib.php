@@ -1,6 +1,7 @@
 <?php
 
 /**
+ * Functionality for syncing courses to MobilityOnline
  */
 class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 {
