@@ -8,73 +8,15 @@ if (! defined('BASEPATH')) exit('No direct script access allowed');
  */
 class MobilityOnlineSyncLib
 {
+	protected $mobilityonline_config;
+	protected $debugmode = false;
+
 	// mapping for assigning fhcomplete field names to MobilityOnline field names
 	protected $conffieldmappings = array();
 	// mappings of property values which are different in Mobility Online and fhc.
-	private $_valuemappings = array();
-	// defaults for fhcomplete tables
-	private $_conffhcdefaults = array();
-	// fielddefinitions for error check before sync to FHC
-	protected $fhcconffields = array();
-	// fielddefinitions for search in MO
+	protected $valuemappings = array();
+
 	protected $moconffields = array();
-	// required fields for syncing
-	//protected $requiredfields = array();
-
-	// mo string replacements for fhc values. Numeric indices mean callback function names used for replacements.
-	private $_replacementsarrToMo = array(
-		'studiensemester_kurzbz' => array(
-			0 => 'mapSemesterToMo'
-		),
-		'studienjahr_kurzbz' => array(
-			0 => 'mapStudienjahrToMo'
-		),
-		'lehrform_kurzbz' => array(
-			'^ILV.*$' => 'LV',
-			'^SE.*$' => 'SE',
-			'^VO.*$' => 'VO',
-			'^(?!(ILV|SE|VO)).*$' => 'LV'
-		)
-	);
-
-	// fhc string replacements for mo values
-	private $_replacementsarrToFHC = array(
-		'gebdatum' => array(
-			0 => 'mapDateToFhc'
-		),
-		'von' => array(
-			0 => 'mapDateToFhc'
-		),
-		'bis' => array(
-			0 => 'mapDateToFhc'
-		),
-		'studiengang_kz' => array(
-			'.+' => ''//empty string if no studiengang
-		),
-		'anmerkung' => array(
-			0 => 'replaceEmpty'
-		),
-		'zgvnation' => array(
-			0 => 'replaceEmpty'
-		),
-		'zgvdatum' => array(
-			0 => 'mapDateToFhc'
-		),
-		'zgvmas_code' => array(
-			0 => 'replaceEmpty'
-		),
-		'zgvmanation' => array(
-			0 => 'replaceEmpty'
-		),
-		'zgvmadatum' => array(
-			0 => 'mapDateToFhc'
-		)/*,
-		'lehrveranstaltung_id' => array(
-			//extracting lvid from MobilityOnline coursenumber, assuming format id_orgform_ausbildungssemester,
-			//e.g. 35408_VZ_2sem
-			'(\d+)_(.*)' => '$1'
-		)*/
-	);
 
 	/**
 	 * MobilityOnlineSyncLib constructor.
@@ -84,224 +26,21 @@ class MobilityOnlineSyncLib
 	{
 		$this->ci =& get_instance();
 
+		$this->mobilityonline_config = $this->ci->config->item('FHC-Core-MobilityOnline');
+		$this->debugmode = isset($this->mobilityonline_config['debugmode']) &&
+			$this->mobilityonline_config['debugmode'] === true;
+
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/fieldmappings');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/valuemappings');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/valuedefaults');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/fields');
 
 		$this->conffieldmappings = $this->ci->config->item('fieldmappings');
-		$this->_valuemappings = $this->ci->config->item('valuemappings');
-		$this->_conffhcdefaults = $this->ci->config->item('fhcdefaults');
-		$this->_confmodefaults = $this->ci->config->item('modefaults');
-		$this->fhcconffields = $this->ci->config->item('fhcfields');
+		$this->valuemappings = $this->ci->config->item('valuemappings');
 		$this->moconffields = $this->ci->config->item('mofields');
 
 		$this->_setSemesterMappings();
 		$this->_setStudienjahrMappings();
-	}
-
-	/**
-	 * Converts MobilityOnline object to fhcomplete object
-	 * Uses only fields defined in fieldmappings config
-	 * Uses 1. valuemappings in configs, 2. valuemappings in _replacementsarrToFHC otherwise
-	 * Also uses fhc valuedefaults to fill fhcobject
-	 * takes unmodified MobilityOnline value if field not found in valuemappings
-	 * @param $moobj MobilityOnline object as received from API
-	 * @param $objtype type of object, e.g. application
-	 * @return array with fhcomplete fields and values
-	 */
-	protected function convertToFhcFormat($moobj, $objtype)
-	{
-		if (!isset($moobj))
-			return array();
-
-		$defaults = isset($this->_conffhcdefaults[$objtype]) ? $this->_conffhcdefaults[$objtype] : array();
-		$valuemappings = $this->_valuemappings['frommo'];
-
-		// cases where value is different format in MO than in FHC -> valuemappings in config
-		$fhcobj = array();
-		$fhcvalue = null;
-
-		$moobjfieldmappings = $this->conffieldmappings[$objtype];
-		foreach ($moobjfieldmappings as $fhctable => $mapping)
-		{
-			foreach ($moobj as $name => $value)
-			{
-				$fhcindeces = array();
-
-				//get all fieldmappings (string or 'name' array key match the MO name)
-				foreach ($mapping as $fhcidx => $moval)
-				{
-					if ($moval === $name || (isset($moval['name']) && $moval['name'] === $name))
-						$fhcindeces[] = $fhcidx;
-				}
-
-				$fhcvalue = $moobj->$name;
-
-				if (!empty($fhcindeces))
-				{
-					foreach ($fhcindeces as $fhcindex)
-					{
-						//if value is in object returned from MO, extract value
-						if (is_object($fhcvalue) && isset($mapping[$fhcindex]['type']))
-						{
-							$configtype = $mapping[$fhcindex]['type'];
-							$fhcvalue = $moobj->$name->$configtype;
-						}
-
-						//if exists in valuemappings - take value
-						if (!empty($valuemappings[$fhcindex])
-							&& array_key_exists($fhcvalue, $valuemappings[$fhcindex])
-						)
-						{
-							$fhcvalue = $valuemappings[$fhcindex][$fhcvalue];
-						}
-						else//otherwise look in replacements array
-						{
-							if (isset($this->_replacementsarrToFHC[$fhcindex]))
-							{
-								foreach ($this->_replacementsarrToFHC[$fhcindex] as $pattern => $replacement)
-								{
-									//if numeric index, execute callback
-									if (is_integer($pattern))
-										$fhcvalue = $this->$replacement($fhcvalue);
-									//otherwise replace with regex
-									elseif (is_string($replacement))
-									{
-										//add slashes for regex
-										$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
-										$fhcvalue = preg_replace($pattern, $replacement, $fhcvalue);
-									}
-								}
-							}
-						}
-						$fhcobj[$fhctable][$fhcindex] = $fhcvalue;
-					}
-				}
-			}
-		}
-
-		// add FHC defaults (values with no equivalent in MO)
-		foreach ($defaults as $fhckey => $fhcdefault)
-		{
-			foreach ($fhcdefault as $defaultkey => $defaultvalue)
-			{
-				if (!isset($fhcobj[$fhckey][$defaultkey]))
-					$fhcobj[$fhckey][$defaultkey] = $defaultvalue;
-			}
-		}
-
-		return $fhcobj;
-	}
-
-	/**
-	* Converts fhcomplete object to MobilityOnline object
-	* Uses only fields defined in fieldmappings config
-	* Uses 1. valuemappings in configs, 2. valuemappings in _replacementsarrToMo otherwise
-	* Also uses fhc valuedefaults to fill moobject
-	* takes unmodified fhcomplete value if field not found in valuemappings
-	* @param $fhcobj fhcomplete object as received from fhc database
-	* @param $objtype type of object, i.e. table, e.g. person
-	* @return array with MobilityOnline fields and values
-	*/
-	protected function convertToMoFormat($fhcobj, $objtype)
-	{
-		if (!isset($fhcobj))
-			return array();
-
-		$fieldmappings = isset($this->conffieldmappings[$objtype]) ? $this->conffieldmappings[$objtype] : array();
-		$defaults = $this->_confmodefaults[$objtype];
-		$valuemappings = $this->_valuemappings['tomo'];
-		$moobj = array();
-		$movalue = null;
-
-		foreach ($fhcobj as $name => $value)
-		{
-			if (!isset($fieldmappings[$name]))
-				continue;
-
-			$movalue = $fhcobj->$name;
-
-			// null value - take default if exists
-			if (!isset($value))
-			{
-				if (isset($fieldmappings[$name]['default']))
-				{
-					if (isset($fieldmappings[$name]['type']) && isset($fieldmappings[$name]['name']))
-						$moobj[$fieldmappings[$name]['name']] = array($fieldmappings[$name]['type'] => $fieldmappings[$name]['default']);
-					else
-						$moobj[$fieldmappings[$name]] = $fieldmappings[$name]['default'];
-					continue;
-				}
-				else
-				{
-					continue;
-				}
-			}
-
-			//if exists in valuemappings - take value
-			if (!empty($valuemappings[$name])
-				&& array_key_exists($fhcobj->$name, $valuemappings[$name])
-			)
-			{
-				$movalue = $valuemappings[$name][$fhcobj->$name];
-			}
-			else//otherwise look in replacements array
-			{
-				if (isset($this->_replacementsarrToMo[$name]))
-				{
-					foreach ($this->_replacementsarrToMo[$name] as $pattern => $replacement)
-					{
-						//if numeric index, execute callback
-						if (is_integer($pattern))
-							$movalue = $this->$replacement($movalue);
-						//otherwise replace with regex
-						elseif (is_string($replacement))
-						{
-							//add slashes for regex
-							$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
-							$movalue = preg_replace($pattern, $replacement, $movalue);
-						}
-					}
-				}
-			}
-
-			if (isset($fhcobj->$name) && isset($movalue))
-			{
-				// if data has to be passed to MO as array, eg array('description' => 'bla')
-				if (isset($fieldmappings[$name]['type']) && isset($fieldmappings[$name]['name']))
-				{
-					// if multiple data values, e.g. Studiengangtyp Bachelor and Master
-					if (is_array($movalue))
-					{
-						$moobj[$fieldmappings[$name]['name']] = array();
-
-						foreach ($movalue as $item)
-						{
-							$moobj[$fieldmappings[$name]['name']][] = array($fieldmappings[$name]['type'] => $item);
-						}
-					}
-					else
-						$moobj[$fieldmappings[$name]['name']] = array($fieldmappings[$name]['type'] => $movalue);
-				}
-				else
-				{
-					$moobj[$fieldmappings[$name]] = $movalue;
-				}
-			}
-		}
-
-		// add MO defaults (values with no equivalent in FHC)
-		foreach ($defaults as $default)
-		{
-			foreach ($default as $defaultkey => $defaultvalue)
-			{
-				if (!isset($moobj[$defaultkey]))
-					$moobj[$defaultkey] = $defaultvalue;
-			}
-		}
-
-		return $moobj;
 	}
 
 	/**
@@ -354,12 +93,10 @@ class MobilityOnlineSyncLib
 		{
 			foreach ($allstudiensemester->retval as $studiensemester)
 			{
-				$semobj = new StdClass();
-				$semobj->studiensemester_kurzbz = $studiensemester->studiensemester_kurzbz;
-				$convobj = $this->convertToMoFormat($semobj, 'course');
+				$mostudiensemester = $this->mapSemesterToMo($studiensemester->studiensemester_kurzbz);
 
-				$this->_valuemappings['tomo']['studiensemester_kurzbz'][$studiensemester->studiensemester_kurzbz] = $convobj[$this->conffieldmappings['course']['studiensemester_kurzbz']];
-				$this->_valuemappings['frommo']['studiensemester_kurzbz'][$convobj[$this->conffieldmappings['course']['studiensemester_kurzbz']]] = $studiensemester->studiensemester_kurzbz;
+				$this->valuemappings['tomo']['studiensemester_kurzbz'][$studiensemester->studiensemester_kurzbz] = $mostudiensemester;
+				$this->valuemappings['frommo']['studiensemester_kurzbz'][$mostudiensemester] = $studiensemester->studiensemester_kurzbz;
 			}
 		}
 	}
@@ -377,33 +114,12 @@ class MobilityOnlineSyncLib
 		{
 			foreach ($allstudienjahre->retval as $studienjahr)
 			{
-				$semobj = new StdClass();
-				$semobj->studienjahr_kurzbz = $studienjahr->studienjahr_kurzbz;
-				$convobj = $this->convertToMoFormat($semobj, 'course');
-				$mojahr = $convobj[$this->conffieldmappings['course']['studienjahr_kurzbz']['name']][$this->conffieldmappings['course']['studienjahr_kurzbz']['type']];
+				$mojahr = $this->mapStudienjahrToMo($studienjahr->studienjahr_kurzbz);
 
-				$this->_valuemappings['tomo']['studienjahr_kurzbz'][$studienjahr->studienjahr_kurzbz] = $mojahr;
-				$this->_valuemappings['frommo']['studienjahr_kurzbz'][$mojahr] = $studienjahr->studienjahr_kurzbz;
+				$this->valuemappings['tomo']['studienjahr_kurzbz'][$studienjahr->studienjahr_kurzbz] = $mojahr;
+				$this->valuemappings['frommo']['studienjahr_kurzbz'][$mojahr] = $studienjahr->studienjahr_kurzbz;
 			}
 		}
-	}
-
-	/**
-	 * Converts MobilityOnline date to fhcomplete date format
-	 * @param $modate
-	 * @return mixed
-	 */
-	private function mapDateToFhc($modate)
-	{
-		$pattern = '/^(\d{1,2}).(\d{1,2}).(\d{4})$/';
-		if (preg_match($pattern, $modate))
-		{
-			$date = DateTime::createFromFormat('d.m.Y', $modate);
-			return date_format($date, 'Y-m-d');
-			//return preg_replace('/(\d{2}).(\d{2}).(\d{4})/', '$3-$2-$1', $modate);
-		}
-		else
-			return null;
 	}
 
 	/**
@@ -411,7 +127,7 @@ class MobilityOnlineSyncLib
 	 * @param $string
 	 * @return null
 	 */
-	private function replaceEmpty($string)
+	protected function replaceEmpty($string)
 	{
 		if (isEmptyString($string))
 			return null;
