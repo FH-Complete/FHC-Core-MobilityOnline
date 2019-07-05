@@ -87,7 +87,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			return array();
 
 		$defaults = isset($this->_conffhcdefaults[$objtype]) ? $this->_conffhcdefaults[$objtype] : array();
-		$valuemappings = $this->valuemappings['frommo'];
 
 		// cases where value is different format in MO than in FHC -> valuemappings in config
 		$fhcobj = array();
@@ -107,45 +106,21 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 						$fhcindeces[] = $fhcidx;
 				}
 
-				$fhcvalue = $moobj->$name;
+				$movalue = $moobj->$name;
 
 				if (!empty($fhcindeces))
 				{
 					foreach ($fhcindeces as $fhcindex)
 					{
 						//if value is in object returned from MO, extract value
-						if (is_object($fhcvalue) && isset($mapping[$fhcindex]['type']))
+						if (is_object($movalue) && isset($mapping[$fhcindex]['type']))
 						{
 							$configtype = $mapping[$fhcindex]['type'];
-							$fhcvalue = $moobj->$name->$configtype;
+							$movalue = $moobj->$name->$configtype;
 						}
 
-						//if exists in valuemappings - take value
-						if (!empty($valuemappings[$fhcindex])
-							&& array_key_exists($fhcvalue, $valuemappings[$fhcindex])
-						)
-						{
-							$fhcvalue = $valuemappings[$fhcindex][$fhcvalue];
-						}
-						else//otherwise look in replacements array
-						{
-							if (isset($this->_replacementsarrToFHC[$fhcindex]))
-							{
-								foreach ($this->_replacementsarrToFHC[$fhcindex] as $pattern => $replacement)
-								{
-									//if numeric index, execute callback
-									if (is_integer($pattern))
-										$fhcvalue = $this->$replacement($fhcvalue);
-									//otherwise replace with regex
-									elseif (is_string($replacement))
-									{
-										//add slashes for regex
-										$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
-										$fhcvalue = preg_replace($pattern, $replacement, $fhcvalue);
-									}
-								}
-							}
-						}
+						$fhcvalue = $this->getFHCValue($fhcindex, $movalue);
+
 						$fhcobj[$fhctable][$fhcindex] = $fhcvalue;
 					}
 				}
@@ -163,6 +138,46 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		}
 
 		return $fhcobj;
+	}
+
+	/**
+	 * Gets fhcomplete value which maps to MobilityOnline value.
+	 * Looks in valuemappings and replacementarray.
+	 * @param $fhcindex name of fhcomplete field in db
+	 * @param $movalue MobilityOnline value
+	 * @return string
+	 */
+	protected function getFHCValue($fhcindex, $movalue)
+	{
+		$valuemappings = $this->valuemappings['frommo'];
+		$fhcvalue = $movalue;
+		//if exists in valuemappings - take value
+		if (!empty($valuemappings[$fhcindex])
+			&& array_key_exists($fhcvalue, $valuemappings[$fhcindex])
+		)
+		{
+			$fhcvalue = $valuemappings[$fhcindex][$fhcvalue];
+		}
+		else//otherwise look in replacements array
+		{
+			if (isset($this->_replacementsarrToFHC[$fhcindex]))
+			{
+				foreach ($this->_replacementsarrToFHC[$fhcindex] as $pattern => $replacement)
+				{
+					//if numeric index, execute callback
+					if (is_integer($pattern))
+						$fhcvalue = $this->$replacement($fhcvalue);
+					//otherwise replace with regex
+					elseif (is_string($replacement))
+					{
+						//add slashes for regex
+						$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
+						$fhcvalue = preg_replace($pattern, $replacement, $fhcvalue);
+					}
+				}
+			}
+		}
+		return $fhcvalue;
 	}
 
 	/**

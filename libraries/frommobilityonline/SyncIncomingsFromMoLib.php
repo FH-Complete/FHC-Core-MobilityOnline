@@ -670,26 +670,34 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	public function getIncoming($studiensemester)
 	{
 		$studiensemestermo = $this->mapSemesterToMo($studiensemester);
+		$semestersforsearch = array($studiensemestermo);
+		$appids = array();
 
-		$appobj = $this->getSearchObj(
-			self::MOOBJECTTYPE,
-			array('semesterDescription' => $studiensemestermo,
-				  'applicationType' => 'IN',
-				  'personType' => 'S')
-		);
+		// if Wintersemester, also search for Incomings who have entered Studienjahr as their Semester
+		$studienjahrsemestermo = $this->mapSemesterToMoStudienjahr($studiensemester);
+		if (isset($studienjahrsemestermo))
+			$semestersforsearch[] = $studienjahrsemestermo;
 
-		$appids = $this->ci->MoGetAppModel->getApplicationIds($appobj);
-
-		if (!isset($appids))
+		foreach ($semestersforsearch as $semesterforsearch)
 		{
-			return array();
+			$appobj = $this->getSearchObj(
+				self::MOOBJECTTYPE,
+				array('semesterDescription' => $semesterforsearch,
+					  'applicationType' => 'IN',
+					  'personType' => 'S')
+			);
+
+			$semappids = $this->ci->MoGetAppModel->getApplicationIds($appobj);
+
+			if (isset($semappids) && is_array($semappids))
+				$appids = array_merge($appids, $semappids);
 		}
 
 		return $this->_getIncomingByIds($appids, $studiensemester);
 	}
 
 	/**
-	 * Checks for a mobility online application id if the application is saved in FH-Complete
+	 * Checks for a mobility online application id whether the application is saved in FH-Complete
 	 * returns prestudent_id if in FHC, null otherwise
 	 * @param $moid
 	 * @return number|null

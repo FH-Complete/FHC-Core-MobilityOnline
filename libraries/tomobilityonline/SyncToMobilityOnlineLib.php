@@ -53,7 +53,6 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$fieldmappings = isset($this->conffieldmappings[$objtype]) ? $this->conffieldmappings[$objtype] : array();
 		$defaults = $this->_confmodefaults[$objtype];
-		$valuemappings = $this->valuemappings['tomo'];
 		$moobj = array();
 		$movalue = null;
 
@@ -62,7 +61,7 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 			if (!isset($fieldmappings[$name]))
 				continue;
 
-			$movalue = $fhcobj->$name;
+			$fhcvalue = $fhcobj->$name;
 
 			// null value - take default if exists
 			if (!isset($value))
@@ -73,44 +72,15 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 						$moobj[$fieldmappings[$name]['name']] = array($fieldmappings[$name]['type'] => $fieldmappings[$name]['default']);
 					else
 						$moobj[$fieldmappings[$name]] = $fieldmappings[$name]['default'];
-					continue;
 				}
-				else
-				{
-					continue;
-				}
+				continue;
 			}
 
-			//if exists in valuemappings - take value
-			if (!empty($valuemappings[$name])
-				&& array_key_exists($fhcobj->$name, $valuemappings[$name])
-			)
-			{
-				$movalue = $valuemappings[$name][$fhcobj->$name];
-			}
-			else//otherwise look in replacements array
-			{
-				if (isset($this->_replacementsarrToMo[$name]))
-				{
-					foreach ($this->_replacementsarrToMo[$name] as $pattern => $replacement)
-					{
-						//if numeric index, execute callback
-						if (is_integer($pattern))
-							$movalue = $this->$replacement($movalue);
-						//otherwise replace with regex
-						elseif (is_string($replacement))
-						{
-							//add slashes for regex
-							$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
-							$movalue = preg_replace($pattern, $replacement, $movalue);
-						}
-					}
-				}
-			}
+			$movalue = $this->getMoValue($fhcvalue, $name);
 
 			if (isset($fhcobj->$name) && isset($movalue))
 			{
-				// if data has to be passed to MO as array, eg array('description' => 'bla')
+				// if data has to be passed to MO as array, e.g. array('description' => 'bla')
 				if (isset($fieldmappings[$name]['type']) && isset($fieldmappings[$name]['name']))
 				{
 					// if multiple data values, e.g. Studiengangtyp Bachelor and Master
@@ -144,5 +114,48 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 		}
 
 		return $moobj;
+	}
+
+	/**
+	 * Gets MobilityOnline value which maps to fhcomplete value.
+	 * Looks in valuemappings and replacementarray.
+	 * @param $fhcindex name of fhcomplete field in db
+	 * @param $fhcvalue fhcomplete value
+	 * @return string
+	 */
+	protected function getMoValue($fhcindex, $fhcvalue)
+	{
+		$valuemappings = $this->valuemappings['tomo'];
+
+		$movalue = $fhcvalue;
+
+		//if exists in valuemappings - take value
+		if (!empty($valuemappings[$fhcindex])
+			&& array_key_exists($movalue, $valuemappings[$fhcindex])
+		)
+		{
+			$movalue = $valuemappings[$fhcindex][$movalue];
+		}
+		else//otherwise look in replacements array
+		{
+			if (isset($this->_replacementsarrToMo[$fhcindex]))
+			{
+				foreach ($this->_replacementsarrToMo[$fhcindex] as $pattern => $replacement)
+				{
+					//if numeric index, execute callback
+					if (is_integer($pattern))
+						$movalue = $this->$replacement($movalue);
+					//otherwise replace with regex
+					elseif (is_string($replacement))
+					{
+						//add slashes for regex
+						$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
+						$movalue = preg_replace($pattern, $replacement, $movalue);
+					}
+				}
+			}
+		}
+
+		return $movalue;
 	}
 }

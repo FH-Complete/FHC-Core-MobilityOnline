@@ -8,6 +8,9 @@ if (! defined('BASEPATH')) exit('No direct script access allowed');
  */
 class MobilityOnlineSyncLib
 {
+	const WINTERSEMESTER_PREFIX = 'WS';
+	const SOMMERSEMESTER_PREFIX = 'SS';
+
 	protected $mobilityonline_config;
 	protected $debugmode = false;
 
@@ -54,12 +57,31 @@ class MobilityOnlineSyncLib
 
 		$year = substr($studiensemester_kurzbz, -4, 4);
 
-		$mosem = preg_replace('/WS\d{4}/', 'Wintersemester '
-			.$year.'/'.($year+1), $mosem);
+		$mosem = preg_replace('/'.self::WINTERSEMESTER_PREFIX.'\d{4}/', 'Wintersemester '.
+			$year.'/'.($year + 1), $mosem);
 
-		$mosem = str_replace('SS', 'Sommersemester ', $mosem);
+		$mosem = str_replace(self::SOMMERSEMESTER_PREFIX, 'Sommersemester ', $mosem);
 
 		return $mosem;
+	}
+
+	/**
+	 * Converts fhc studiensemester to Studienjahr MobilityOnline format
+	 * (when Incoming give Studienjahr instead of semester)- e.g. Studienjahr 2018/2019
+	 * @param $studiensemester_kurzbz
+	 * @return null|string
+	 */
+	public function mapSemesterToMoStudienjahr($studiensemester_kurzbz)
+	{
+		$studienjahrsemestermo = null;
+
+		if (strstr($studiensemester_kurzbz, self::WINTERSEMESTER_PREFIX))
+		{
+			$semesteryear = substr($studiensemester_kurzbz, 2, 4);
+			$studienjahrsemestermo = str_replace(self::WINTERSEMESTER_PREFIX, 'Studienjahr ', $studiensemester_kurzbz).'/'.(++$semesteryear);
+		}
+
+		return $studienjahrsemestermo;
 	}
 
 	/**
@@ -97,6 +119,11 @@ class MobilityOnlineSyncLib
 
 				$this->valuemappings['tomo']['studiensemester_kurzbz'][$studiensemester->studiensemester_kurzbz] = $mostudiensemester;
 				$this->valuemappings['frommo']['studiensemester_kurzbz'][$mostudiensemester] = $studiensemester->studiensemester_kurzbz;
+
+				//special case: instead of Studiensemester Incoming has Studienjahr in Mobility Online -> map with Wintersemester!
+				$mostudienjahrassemester = $this->mapSemesterToMoStudienjahr($studiensemester->studiensemester_kurzbz);
+				if (isset($mostudienjahrassemester))
+					$this->valuemappings['frommo']['studiensemester_kurzbz'][$mostudienjahrassemester] = $studiensemester->studiensemester_kurzbz;
 			}
 		}
 	}
