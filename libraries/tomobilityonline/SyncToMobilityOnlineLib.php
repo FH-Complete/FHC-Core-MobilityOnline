@@ -76,7 +76,7 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 				continue;
 			}
 
-			$movalue = $this->getMoValue($fhcvalue, $name);
+			$movalue = $this->getMoValue($name, $fhcvalue);
 
 			if (isset($fhcobj->$name) && isset($movalue))
 			{
