@@ -22,6 +22,8 @@ class MobilityOnlineIncoming extends Auth_Controller
 		);
 
 		$this->load->model('organisation/Studiensemester_model', 'StudiensemesterModel');
+		$this->load->model('organisation/Studiengang_model', 'StudiengangModel');
+		$this->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MoFhcModel');
 		$this->load->library('extensions/FHC-Core-MobilityOnline/MobilityOnlineSyncLib');
 		$this->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/SyncFromMobilityOnlineLib');
 		$this->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/SyncIncomingsFromMoLib');
@@ -46,10 +48,13 @@ class MobilityOnlineIncoming extends Auth_Controller
 		if (isError($currsemdata))
 			show_error($currsemdata->retval);
 
+		$studiengaenge = $this->MoFhcModel->getStudiengaenge();
+
 		$this->load->view('extensions/FHC-Core-MobilityOnline/mobilityOnlineIncoming',
 			array(
 				'semester' => $studiensemesterdata->retval,
-				'currsemester' => $currsemdata->retval
+				'currsemester' => $currsemdata->retval,
+				'studiengaenge' => $studiengaenge->retval
 			)
 		);
 	}
@@ -94,7 +99,8 @@ class MobilityOnlineIncoming extends Auth_Controller
 	public function getIncomingJson()
 	{
 		$studiensemester = $this->input->get('studiensemester');
-		$incomingdata = $this->syncincomingsfrommolib->getIncoming($studiensemester);
+		$studiengang_kz = $this->input->get('studiengang_kz');
+		$incomingdata = $this->syncincomingsfrommolib->getIncoming($studiensemester, $studiengang_kz);
 
 		$this->outputJsonSuccess($incomingdata);
 	}

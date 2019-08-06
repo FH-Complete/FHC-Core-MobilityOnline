@@ -36,6 +36,7 @@ class MobilityOnlineSyncLib
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/fieldmappings');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/valuemappings');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/valuedefaults');
+		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/values');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/fields');
 
 		$this->conffieldmappings = $this->ci->config->item('fieldmappings');

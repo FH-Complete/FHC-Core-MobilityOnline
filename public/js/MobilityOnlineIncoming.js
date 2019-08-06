@@ -4,15 +4,16 @@
 
 $(document).ready(function()
 	{
-		MobilityOnlineIncoming.getIncoming($("#studiensemester").val());
+		MobilityOnlineIncoming.getIncoming($("#studiensemester").val(), $("#studiengang_kz").val());
 
-		// change displayed lvs when Studiensemester selected
-		$("#studiensemester").change(
+		// get Incomings when Dropdown selected
+		$("#studiensemester,#studiengang_kz").change(
 			function()
 			{
-				var studiensemester = $(this).val();
+				var studiensemester = $("#studiensemester").val();
+				var studiengang_kz = $("#studiengang_kz").val();
 				$("#incomingsyncoutput").html("<div class='text-center'>-</div>");
-				MobilityOnlineIncoming.getIncoming(studiensemester);
+				MobilityOnlineIncoming.getIncoming(studiensemester, studiengang_kz);
 			}
 		);
 
@@ -77,11 +78,17 @@ $(document).ready(function()
 
 var MobilityOnlineIncoming = {
 	incomings: null,
-	getIncoming: function(studiensemester)
+	getIncoming: function(studiensemester, studiengang_kz)
 	{
+		if (studiensemester == null || studiensemester === "" || studiengang_kz == null || (!$.isNumeric(studiengang_kz) && studiengang_kz !== "all"))
+			return;
+
 		FHC_AjaxClient.ajaxCallGet(
 			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/getIncomingJson',
-			{"studiensemester": studiensemester},
+			{
+				"studiensemester": studiensemester,
+				"studiengang_kz": studiengang_kz
+			},
 			{
 				successCallback: function(data, textStatus, jqXHR)
 				{
