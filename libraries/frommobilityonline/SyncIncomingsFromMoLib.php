@@ -1,5 +1,11 @@
 <?php
 
+if (! defined('BASEPATH')) exit('No direct script access allowed');
+
+require_once('include/'.EXT_FKT_PATH.'/generateuid.inc.php');
+require_once('include/functions.inc.php');
+require_once('include/tw/generateZahlungsreferenz.inc.php');
+
 /**
  * Functionality for syncing incomings from MobilityOnline to fhcomplete
  */
@@ -31,6 +37,8 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('crm/prestudent_model', 'PrestudentModel');
 		$this->ci->load->model('crm/prestudentstatus_model', 'PrestudentstatusModel');
 		$this->ci->load->model('crm/student_model', 'StudentModel');
+		$this->ci->load->model('crm/konto_model', 'KontoModel');
+		$this->ci->load->model('crm/buchungstyp_model', 'BuchungstypModel');
 		$this->ci->load->model('education/lehrveranstaltung_model', 'LehrveranstaltungModel');
 		$this->ci->load->model('education/lehreinheit_model', 'LehreinheitModel');
 		$this->ci->load->model('education/studentlehrverband_model', 'StudentlehrverbandModel');
@@ -311,6 +319,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$adresse = $incoming['adresse'];
 		$kontaktmail = $incoming['kontaktmail'];
 		$bisio = $incoming['bisio'];
+		$konto = $incoming['konto'];
 
 		// optional
 		$akte = isset($incoming['akte']) ? $incoming['akte'] : array();
@@ -641,6 +650,15 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 						$bisioresult = $this->ci->BisioModel->insert($bisio);
 						$this->log('insert', $bisioresult, 'bisio');
 					}
+
+					// Buchungen
+					if (count($studiensemarr) > 0)
+					{
+						$konto['person_id'] = $person_id;
+						$this->stamp('insert', $konto);
+						$konto['studiensemester_kurzbz'] = $studiensemarr[0];
+						$this->_saveBuchungen($konto);
+					}
 				}
 			}
 		}
@@ -659,6 +677,72 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			$this->ci->db->trans_commit();
 			return $prestudent_id_res;
+		}
+	}
+
+	/**
+	 * Saves Kontobuchungen, adds data like Betrag, Buchungsverweis, Zahlungsreferenz.
+	 * Saves Gegenbuchung if Buchungsbetrag is 0.
+	 * @param $konto Kontoobject, received after MO -> FHC mapping
+	 */
+	private function _saveBuchungen($konto)
+	{
+		$kontoToInsert = $konto;
+		foreach ($konto['buchungstyp_kurzbz'] as $buchungstyp_kurzbz)
+		{
+			$buchungstypres = $this->ci->BuchungstypModel->load($buchungstyp_kurzbz);
+
+			if (hasData($buchungstypres))
+			{
+				$checkbuchungres = $this->ci->KontoModel->loadWhere(
+					array(
+						'buchungstyp_kurzbz' => $buchungstyp_kurzbz,
+						'studiensemester_kurzbz' => $konto['studiensemester_kurzbz'],
+						'person_id' => $konto['person_id'],
+						'studiengang_kz' => $konto['studiengang_kz']
+					)
+				);
+
+				if (isSuccess($checkbuchungres) && !hasData($checkbuchungres))
+				{
+					$buchungstyp = $buchungstypres->retval[0];
+					$kontoToInsert['buchungstyp_kurzbz'] = $buchungstyp_kurzbz;
+
+					if (isset($konto['betrag'][$buchungstyp_kurzbz]))
+						$kontoToInsert['betrag'] = $konto['betrag'][$buchungstyp_kurzbz];
+					else
+						$kontoToInsert['betrag'] = $buchungstyp->standardbetrag;
+
+					if (isset($konto['buchungstext'][$buchungstyp_kurzbz]))
+						$kontoToInsert['buchungstext'] = $konto['buchungstext'][$buchungstyp_kurzbz];
+					else
+						$kontoToInsert['buchungstext'] = '';
+
+					$kontoToInsert['buchungsdatum'] = date('Y-m-d');
+
+					$kontoinsertres = $this->ci->KontoModel->insert($kontoToInsert);
+
+					if (hasData($kontoinsertres))
+					{
+						$kontoinsertid = $kontoinsertres->retval;
+						// Zahlungsreferenz generieren
+						$zahlungsref = generateZahlungsreferenz($konto['studiengang_kz'], $kontoinsertid);
+
+						$zahlungsrefres = $this->ci->KontoModel->update($kontoinsertid, array('zahlungsreferenz' => $zahlungsref));
+
+						if (hasData($zahlungsrefres) && isset($konto['betrag'][$buchungstyp_kurzbz])
+							&& $konto['betrag'][$buchungstyp_kurzbz] == 0)
+						{
+							// Gegenbuchung wenn 0 Betrag
+							$gegenbuchung = $kontoToInsert;
+							$gegenbuchung['mahnspanne'] = 0;
+							$gegenbuchung['buchungsnr_verweis'] = $kontoinsertid;
+							$gegenbuchung['zahlungsreferenz'] = $zahlungsref;
+							$this->ci->KontoModel->insert($gegenbuchung);
+						}
+					}
+				}
+			}
 		}
 	}
 
