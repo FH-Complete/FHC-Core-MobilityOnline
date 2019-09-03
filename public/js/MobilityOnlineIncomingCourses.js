@@ -3,13 +3,11 @@
  */
 $(document).ready(function()
 	{
-		MobilityOnlineIncomingCourses.getIncomingCourses($("#studiensemester").val());
-
-		// change displayed courses when Studiensemester selected
-		$("#studiensemester").change(
+		// change displayed courses when button clicked
+		$("#showincomingsbtn").click(
 			function()
 			{
-				var studiensemester = $(this).val();
+				var studiensemester = $("#studiensemester").val();
 				MobilityOnlineIncomingCourses.getIncomingCourses(studiensemester);
 			}
 		);

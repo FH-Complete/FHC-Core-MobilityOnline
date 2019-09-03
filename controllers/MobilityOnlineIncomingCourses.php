@@ -41,23 +41,15 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 		if (isError($studiensemesterdata))
 			show_error($studiensemesterdata->retval);
 
-		$currsemdata = $this->StudiensemesterModel->getLastOrAktSemester(0);
+		$currsemdata = $this->StudiensemesterModel->getAktOrNextSemester();
 
 		if (isError($currsemdata))
 			show_error($currsemdata->retval);
 
-		$prestudents = array();
-
-		if (hasData($currsemdata))
-		{
-			$prestudents = $this->syncincomingcoursesfrommolib->getIncomingWithCourses($currsemdata->retval[0]->studiensemester_kurzbz);
-		}
-
 		$this->load->view('extensions/FHC-Core-MobilityOnline/mobilityOnlineIncomingCourses',
 			array(
 				'semester' => $studiensemesterdata->retval,
-				'currsemester' => $currsemdata->retval,
-				'prestudents' => $prestudents
+				'currsemester' => $currsemdata->retval
 			)
 		);
 	}

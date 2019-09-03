@@ -35,16 +35,21 @@
 				<div class="row text-center" id="studiensemesterinput">
 					<div class="col-xs-4 col-xs-offset-4 form-group">
 						<label>Studiensemester</label>
-						<select class="form-control" name="studiensemester" id="studiensemester">
-							<?php
-							foreach ($semester as $sem):
-								$selected = $sem->studiensemester_kurzbz === $currsemester[0]->studiensemester_kurzbz ? ' selected=""' : '';
-								?>
-								<option value="<?php echo $sem->studiensemester_kurzbz ?>"<?php echo $selected ?>>
-									<?php echo $sem->studiensemester_kurzbz ?>
-								</option>
-							<?php endforeach; ?>
-						</select>
+						<div class="input-group">
+							<select class="form-control" name="studiensemester" id="studiensemester">
+								<?php
+								foreach ($semester as $sem):
+									$selected = $sem->studiensemester_kurzbz === $currsemester[0]->studiensemester_kurzbz ? ' selected=""' : '';
+									?>
+									<option value="<?php echo $sem->studiensemester_kurzbz ?>"<?php echo $selected ?>>
+										<?php echo $sem->studiensemester_kurzbz ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
+						<span class="input-group-btn">
+							<button class="btn btn-default" id="showincomingsbtn">Show synchronised Incomings</button>
+						</span>
+						</div>
 					</div>
 				</div>
 				<div class="row" id="incomingprestudentsrow">
