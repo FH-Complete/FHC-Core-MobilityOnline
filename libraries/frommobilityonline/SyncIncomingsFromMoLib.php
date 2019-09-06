@@ -656,8 +656,11 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 					{
 						$konto['person_id'] = $person_id;
 						$this->stamp('insert', $konto);
-						$konto['studiensemester_kurzbz'] = $studiensemarr[0];
-						$this->_saveBuchungen($konto);
+						foreach ($studiensemarr as $studiensem)
+						{
+							$konto['studiensemester_kurzbz'] = $studiensem;
+							$this->_saveBuchungen($konto);
+						}
 					}
 				}
 			}
