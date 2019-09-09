@@ -78,6 +78,26 @@ class Mobilityonlinefhc_model extends DB_Model
 	}
 
 	/**
+	 * Gets Studiengaenge from FHC which are used in MobilityOnline.
+	 * Used types and Studiengaenge are configured in values config.
+	 * @return mixed
+	 */
+	public function getStudiengaenge()
+	{
+		$valuesconfig = $this->config->item('values');
+
+		$qry = "SELECT studiengang_kz, tbl_studiengang.bezeichnung, tbl_studiengang.typ, tbl_studiengangstyp.bezeichnung AS typbezeichnung,
+       			UPPER(tbl_studiengang.typ::varchar(1) || tbl_studiengang.kurzbz) as kuerzel
+				FROM public.tbl_studiengang
+				JOIN public.tbl_studiengangstyp USING (typ)
+				WHERE aktiv
+				AND (typ IN ? OR studiengang_kz IN ?)
+			  	ORDER BY kuerzel, tbl_studiengang.bezeichnung, studiengang_kz";
+
+		return $this->execQuery($qry, array($valuesconfig['studiengangtypentosync'], $valuesconfig['studiengaengetosync']));
+	}
+
+	/**
 	 * Checks if a table column value exists in fhcomplete database
 	 * @param $table
 	 * @param $field

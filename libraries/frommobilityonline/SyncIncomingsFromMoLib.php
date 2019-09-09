@@ -13,15 +13,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 {
 	const MOOBJECTTYPE = 'application';
 
-	// stati in application cycle, for displaying last status, in chronological order
-	private $_pipelinestati = array(
-		'is_mail_best_bew',
-		'is_registriert',
-		'is_mail_best_reg',
-		'is_pers_daten_erf',
-		'is_abgeschlossen'
-	);
-
 	public function __construct()
 	{
 		parent::__construct();
@@ -248,11 +239,13 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$fhcobj['pipelineStatusDescription'] = 'no Status set';
 
 		// add last status
-		for ($i = count($this->_pipelinestati) - 1; $i >= 0; $i--)
+		$valuesconfig = $this->ci->config->item('values');
+		$pipelinestati = $valuesconfig['pipelinestati'];
+		for ($i = count($pipelinestati) - 1; $i >= 0; $i--)
 		{
 			foreach ($moapp->nonUsedApplicationDataElements as $element)
 			{
-				if ($element->elementName === $this->_pipelinestati[$i] && $element->elementValueBoolean === true)
+				if ($element->elementName === $pipelinestati[$i] && $element->elementValueBoolean === true)
 				{
 					$fhcobj['pipelineStatus'] = $element->elementName;
 					$fhcobj['pipelineStatusDescription'] = $element->elementDescription;
@@ -754,11 +747,15 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * @param $studiensemester
 	 * @return array with applications
 	 */
-	public function getIncoming($studiensemester)
+	public function getIncoming($studiensemester, $studiengang_kz = null)
 	{
 		$studiensemestermo = $this->mapSemesterToMo($studiensemester);
 		$semestersforsearch = array($studiensemestermo);
+		$searcharrays = array();
 		$appids = array();
+
+		$stgvaluemappings = $this->valuemappings['frommo']['studiengang_kz'];
+		$mostgname = $this->conffieldmappings['incomingcourse']['mostudiengang']['bezeichnung'];
 
 		// if Wintersemester, also search for Incomings who have entered Studienjahr as their Semester
 		$studienjahrsemestermo = $this->mapSemesterToMoStudienjahr($studiensemester);
@@ -767,11 +764,32 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		foreach ($semestersforsearch as $semesterforsearch)
 		{
+			$searcharray = array('semesterDescription' => $semesterforsearch,
+							   'applicationType' => 'IN',
+							   'personType' => 'S');
+
+			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
+			{
+				foreach ($stgvaluemappings as $mobez => $stg_kz)
+				{
+					if ($stg_kz === (int)$studiengang_kz)
+					{
+						$searcharray[$mostgname] = $mobez;
+						$searcharrays[] = $searcharray;
+					}
+				}
+			}
+			else
+			{
+				$searcharrays[] = $searcharray;
+			}
+		}
+
+		foreach ($searcharrays as $searcharray)
+		{
 			$appobj = $this->getSearchObj(
 				self::MOOBJECTTYPE,
-				array('semesterDescription' => $semesterforsearch,
-					  'applicationType' => 'IN',
-					  'personType' => 'S')
+				$searcharray
 			);
 
 			$semappids = $this->ci->MoGetAppModel->getApplicationIds($appobj);
