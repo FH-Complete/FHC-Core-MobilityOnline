@@ -29,6 +29,7 @@ class MobilityOnlineSyncLib
 	{
 		$this->ci =& get_instance();
 
+		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/config');
 		$this->mobilityonline_config = $this->ci->config->item('FHC-Core-MobilityOnline');
 		$this->debugmode = isset($this->mobilityonline_config['debugmode']) &&
 			$this->mobilityonline_config['debugmode'] === true;
