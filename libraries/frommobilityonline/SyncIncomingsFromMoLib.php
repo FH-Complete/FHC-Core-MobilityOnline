@@ -314,334 +314,95 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$bisio = $incoming['bisio'];
 		$konto = $incoming['konto'];
 
-		// optional
+		// optional fields
 		$akte = isset($incoming['akte']) ? $incoming['akte'] : array();
 		$kontaktnotfall = isset($incoming['kontaktnotfall']) ? $incoming['kontaktnotfall'] : array();
 		$kontakttel = isset($incoming['kontakttel']) ? $incoming['kontakttel'] : array();
 
 		$studiensemester = $prestudentstatus['studiensemester_kurzbz'];
-
 		$prestudentstatus['studiensemester_kurzbz'] = $studiensemester;
+
+		// add prestudentstatus for semester saved in MO
+		$studiensemarr = array($studiensemester);
+
+		$studiensemesterres = $this->ci->StudiensemesterModel->getByDate($bisio['von'], $bisio['bis']);
+
+		// add Studiensemester for each semester in the time span of von - bis date
+		if (hasData($studiensemesterres))
+		{
+			foreach ($studiensemesterres->retval as $semester)
+			{
+				$studiensemester_kurzbz = $semester->studiensemester_kurzbz;
+				if (!in_array($studiensemester_kurzbz, $studiensemarr))
+					$studiensemarr[] = $studiensemester_kurzbz;
+			}
+		}
 
 		// Start DB transaction
 		$this->ci->db->trans_begin();
 
-		$prestudentcheckresp = isset($prestudent_id) && is_numeric($prestudent_id) ? $this->ci->PrestudentModel->load($prestudent_id) : null;
-
-		$update = hasData($prestudentcheckresp);
-
-		// person
-		// update if prestudent already exists, insert otherwise
-		if ($update)
-		{
-			$person_id = $prestudentcheckresp->retval[0]->person_id;
-			$this->stamp('update', $person);
-			$personresponse = $this->ci->PersonModel->update($person_id, $person);
-			$this->log('update', $personresponse, 'person');
-		}
-		else
-		{
-			$this->stamp('insert', $person);
-			$personresponse = $this->ci->PersonModel->insert($person);
-			if (isSuccess($personresponse))
-			{
-				$person_id = $personresponse->retval;
-			}
-			$this->log('insert', $personresponse, 'person');
-		}
+		$person_id = $this->_savePerson($prestudent_id, $person);
 
 		if (isset($person_id) && is_numeric($person_id))
 		{
 			// adresse
+			$this->_saveAdresse($person_id, $adresse);
 
-			// insert if there is no Heimatadresse
-			$heimataddrresp = $this->ci->AdresseModel->loadWhere(array('person_id' => $person_id, 'heimatadresse' => true));
-
-			if (isSuccess($heimataddrresp) && !hasData($heimataddrresp))
-			{
-				$adresse['person_id'] = $person_id;
-				$this->stamp('insert', $adresse);
-				$addrresp = $this->ci->AdresseModel->insert($adresse);
-				$this->log('insert', $addrresp, 'adresse');
-			}
 			// kontakt
-			$kontaktmailresp = $this->ci->KontaktModel->loadWhere(array('person_id' => $person_id, 'kontakttyp' => $kontaktmail['kontakttyp']));
+			$kontakte = array(
+				array(
+					'kontaktobj' => $kontaktmail,
+					'table' => 'mailkontakt'
+				),
+				array(
+					'kontaktobj' => $kontakttel,
+					'table' => 'telefonkontakt'
+				),
+				array(
+					'kontaktobj' => $kontaktnotfall,
+					'table' => 'notfallkontakt'
+				)
+			);
 
-			$mailfound = false;
-			if (hasData($kontaktmailresp))
+			foreach ($kontakte as $kontakt)
 			{
-				foreach ($kontaktmailresp->retval as $kontakt)
-				{
-					if ($kontakt->kontakt === $kontaktmail['kontakt'])
-					{
-						$mailfound = true;
-						break;
-					}
-				}
+				$this->_saveKontakt($person_id, $kontakt['kontaktobj'], $kontakt['table']);
 			}
 
-			if (isSuccess($kontaktmailresp) && !$mailfound)
-			{
-				$kontaktmail['person_id'] = $person_id;
-				$this->stamp('insert', $kontaktmail);
-				$kontaktinsresp = $this->ci->KontaktModel->insert($kontaktmail);
-				$this->log('insert', $kontaktinsresp, 'mailkontakt');
-			}
-
-			$kontakttelresp = $this->ci->KontaktModel->loadWhere(array('person_id' => $person_id, 'kontakttyp' => $kontakttel['kontakttyp']));
-
-			if (!empty($kontakttel['kontakt']))
-			{
-				$telfound = false;
-				if (hasData($kontakttelresp))
-				{
-					foreach ($kontakttelresp->retval as $kontakt)
-					{
-						if ($kontakt->kontakt === $kontakttel['kontakt'])
-						{
-							$telfound = true;
-							break;
-						}
-					}
-				}
-
-				if (isSuccess($kontakttelresp) && !$telfound)
-				{
-					$kontakttel['person_id'] = $person_id;
-					$this->stamp('insert', $kontakttel);
-					$kontaktinsresp = $this->ci->KontaktModel->insert($kontakttel);
-					$this->log('insert', $kontaktinsresp, 'telefonkontakt');
-				}
-			}
-
-			$kontaktnfresp = $this->ci->KontaktModel->loadWhere(array('person_id' => $person_id, 'kontakttyp' => $kontaktnotfall['kontakttyp']));
-
-			if (!empty($kontaktnotfall['kontakt']))
-			{
-				$nfkfound = false;
-				if (hasData($kontaktnfresp))
-				{
-					foreach ($kontaktnfresp->retval as $kontakt)
-					{
-						if ($kontakt->kontakt === $kontaktnotfall['kontakt'])
-						{
-							$nfkfound = true;
-							break;
-						}
-					}
-				}
-
-				if (isSuccess($kontaktnfresp) && !$nfkfound)
-				{
-					$kontaktnotfall['person_id'] = $person_id;
-					$this->stamp('insert', $kontaktnotfall);
-					$kontaktinsresp = $this->ci->KontaktModel->insert($kontaktnotfall);
-					$this->log('insert', $kontaktinsresp, 'notfallkontakt');
-				}
-			}
-
-			if (isset($akte['dokument_kurzbz']))
-			{
-				// lichtbild - akte
-				$aktecheckresp = $this->ci->AkteModel->loadWhere(array('person_id' => $person_id, 'dokument_kurzbz' => $akte['dokument_kurzbz']));
-
-				if (isSuccess($aktecheckresp))
-				{
-					if (hasData($aktecheckresp))
-					{
-						if ($this->debugmode)
-						{
-							$this->output .= '<br />lichtbild already exists, akte_id ' .$aktecheckresp->retval[0]->akte_id;
-						}
-					}
-					else
-					{
-						$akte['person_id'] = $person_id;
-						$akte['titel'] = 'Lichtbild_' . $person_id;
-						$this->stamp('insert', $akte);
-						$akteresp = $this->ci->AkteModel->insert($akte);
-						$this->log('insert', $akteresp, 'akte');
-					}
-				}
-			}
+			// lichtbild - akte
+			$this->_saveLichtbild($person_id, $akte);
 
 			// prestudent
 			$prestudent['person_id'] = $person_id;
-			if ($update)
-			{
-				$this->stamp('update', $prestudent);
-				$prestudentresponse = $this->ci->PrestudentModel->update($prestudent_id, $prestudent);
+			$prestudent_id_res = $this->_savePrestudent($prestudent_id, $prestudent);
 
-				$this->log('update', $prestudentresponse, 'prestudent');
-			}
-			else
-			{
-				$this->stamp('insert', $prestudent);
-				$prestudentresponse = $this->ci->PrestudentModel->insert($prestudent);
-				$this->log('insert', $prestudentresponse, 'prestudent');
-			}
-
-			$prestudent_id_res = isset($prestudentresponse->retval) ? $prestudentresponse->retval : null;
 			if (isset($prestudent_id_res) && is_numeric($prestudent_id_res))
 			{
 				// prestudentstatus
-				$prestudentstatus['prestudent_id'] = $prestudent_id_res;
+				$prestudent['prestudent_id'] = $prestudentstatus['prestudent_id'] = $prestudent_id_res;
 
-				$studiensemarr = array($studiensemester);
+				$this->_savePrestudentStatus($studiensemarr, $prestudentstatus);
 
-				// add prestudentstatus for semester saved in MO
-				$studiensemesterres = $this->ci->StudiensemesterModel->getByDate($incoming['bisio']['von'], $incoming['bisio']['bis']);
+				// benutzer
+				$matrikelnr = $this->ci->StudentModel->generateMatrikelnummer($prestudent['studiengang_kz'], $studiensemester);
+				$benutzerrespuid = $this->_saveBenutzer($matrikelnr, $prestudent, $benutzer);
 
-				// add prestudentstatus for each semester in the time span of von - bis date
-				if (hasData($studiensemesterres))
+				if (!isEmptyString($benutzerrespuid))
 				{
-					foreach ($studiensemesterres->retval as $semester)
+					$studentuidresp = $this->_saveStudent($benutzerrespuid, $matrikelnr, $prestudent, $student);
+
+					if (!isEmptyString($studentuidresp))
 					{
-						$studiensemester_kurzbz = $semester->studiensemester_kurzbz;
-						if (!in_array($studiensemester_kurzbz, $studiensemarr))
-							$studiensemarr[] = $studiensemester_kurzbz;
-					}
-				}
+						// studentlehrverband
+						$studentlehrverband['student_uid'] = $benutzerrespuid;
+						$studentlehrverband['studiengang_kz'] = $prestudent['studiengang_kz'];
+						$studentlehrverband['semester'] = $prestudentstatus['ausbildungssemester'];
 
-				foreach ($studiensemarr as $semester)
-				{
-					$lastStatus = $this->ci->PrestudentstatusModel->getLastStatus($prestudent_id_res, $semester);
-					if (isSuccess($lastStatus) && (!hasData($lastStatus) || $lastStatus->retval[0]->status_kurzbz !== 'Incoming'))
-					{
-						$prestudentstatus['studiensemester_kurzbz'] = $semester;
-						$prestudentstatus['datum'] = date('Y-m-d', time());
-						$this->stamp('insert', $prestudentstatus);
-						$prestudentstatusresponse = $this->ci->PrestudentstatusModel->insert($prestudentstatus);
-						$this->log('insert', $prestudentstatusresponse, 'prestudentstatus');
-					}
-				}
-			}
+						$this->_saveStudentlehrverband($studiensemarr, $studentlehrverband);
 
-			// benutzer
-			$matrikelnr = $this->ci->StudentModel->generateMatrikelnummer($prestudent['studiengang_kz'], $studiensemester);
-			$this->ci->StudentModel->addOrder('insertamum');
-			$benutzerstudcheckresp = $this->ci->StudentModel->loadWhere(array('prestudent_id' => $prestudent_id_res));
-			$benutzercheckresp = success('success');
-
-			if (isSuccess($benutzerstudcheckresp))
-			{
-				if (hasData($benutzerstudcheckresp))
-				{
-					$benutzer['uid'] = $benutzerstudcheckresp->retval[0]->student_uid;
-					if ($this->debugmode)
-					{
-						$this->output .= "<br />benutzer for student $prestudent_id_res already exists, uid " .$benutzer['uid'];
-					}
-				}
-				else
-				{
-					$benutzer['person_id'] = $person_id;
-					$jahr = mb_substr($matrikelnr, 0, 2);
-					$stg = mb_substr($matrikelnr, 3, 4);
-
-					$stgres = $this->ci->StudiengangModel->load($stg);
-
-					if (hasData($stgres))
-					{
-						$stg_bez = $stgres->retval[0]->kurzbz;
-						$stg_typ = $stgres->retval[0]->typ;
-						$benutzer['uid'] = generateUID($stg_bez, $jahr, $stg_typ, $matrikelnr);
-
-						//check for existing benutzer
-						$benutzercheckresp = $this->ci->BenutzerModel->loadWhere(array('uid' => $benutzer['uid']));
-
-						if (hasData($benutzercheckresp))
-						{
-							$this->output .= "<br />benutzer with uid ".$benutzer['uid']." already exists";
-						}
-						elseif (isSuccess($benutzercheckresp))
-						{
-							$benutzer['aktivierungscode'] = generateActivationKey();
-							$this->stamp('insert', $benutzer);
-							$benutzerinscheckresp = $this->ci->BenutzerModel->insert($benutzer);
-							$this->log('insert', $benutzerinscheckresp, 'benutzer');
-						}
-					}
-				}
-			}
-
-			if (isSuccess($benutzerstudcheckresp) && isSuccess($benutzercheckresp)
-				&& isset($prestudent_id_res) && is_numeric($prestudent_id_res))
-			{
-				// student
-				$student['student_uid'] = $benutzer['uid'];
-				$student['prestudent_id'] = $prestudent_id_res;
-				$student['studiengang_kz'] = $prestudent['studiengang_kz'];
-
-				$studentcheckresp = $this->ci->StudentModel->load(array($student['student_uid']));
-
-				if (isSuccess($studentcheckresp))
-				{
-					if (hasData($studentcheckresp))
-					{
-						$this->stamp('update', $student);
-						$studentresponse = $this->ci->StudentModel->update(array($student['student_uid']), $student);
-						$this->log('update', $studentresponse, 'student');
-					}
-					else
-					{
-						$student['matrikelnr'] = $matrikelnr;
-						$this->stamp('insert', $student);
-						$studentresponse = $this->ci->StudentModel->insert($student);
-						$this->log('insert', $studentresponse, 'student');
-					}
-				}
-
-				if (isSuccess($studentresponse))
-				{
-					// studentlehrverband
-					$studentlehrverband['student_uid'] = $benutzer['uid'];
-					$studentlehrverband['studiengang_kz'] = $prestudent['studiengang_kz'];
-					$studentlehrverband['semester'] = $prestudentstatus['ausbildungssemester'];
-
-					if (hasData($studiensemesterres))
-					{
-						foreach ($studiensemarr as $semester)
-						{
-							$studentlehrverband['studiensemester_kurzbz'] = $semester;
-							$studenlehrverbandcheckresp = $this->ci->StudentlehrverbandModel->load(array('student_uid' => $studentlehrverband['student_uid'], 'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']));
-							if (isSuccess($studenlehrverbandcheckresp))
-							{
-								if (hasData($studenlehrverbandcheckresp))
-								{
-									$this->stamp('update', $studentlehrverband);
-									$studentlehrverbandresponse = $this->ci->StudentlehrverbandModel->update(array('student_uid' => $studentlehrverband['student_uid'], 'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']), $studentlehrverband);
-									$this->log('update', $studentlehrverbandresponse, 'studentlehrverband');
-								}
-								else
-								{
-									$this->stamp('insert', $studentlehrverband);
-									$studentlehrverbandresponse = $this->ci->StudentlehrverbandModel->insert($studentlehrverband);
-									$this->log('insert', $studentlehrverbandresponse, 'studentlehrverband');
-								}
-							}
-						}
-					}
-				}
-
-				// bisio
-				$bisio['student_uid'] = $benutzer['uid'];
-
-				$bisiocheckresp = $this->ci->BisioModel->loadWhere(array('student_uid' => $bisio['student_uid']));
-
-				if (isSuccess($bisiocheckresp))
-				{
-					if (hasData($bisiocheckresp))
-					{
-						$this->stamp('update', $bisio);
-						$bisioresult = $this->ci->BisioModel->update($bisiocheckresp->retval[0]->bisio_id, $bisio);
-						$this->log('update', $bisioresult, 'bisio');
-					}
-					else
-					{
-						$this->stamp('insert', $bisio);
-						$bisioresult = $this->ci->BisioModel->insert($bisio);
-						$this->log('insert', $bisioresult, 'bisio');
+						// bisio
+						$bisio['student_uid'] = $benutzerrespuid;
+						$this->_saveBisio($bisio);
 					}
 
 					// Buchungen
@@ -673,72 +434,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			$this->ci->db->trans_commit();
 			return $prestudent_id_res;
-		}
-	}
-
-	/**
-	 * Saves Kontobuchungen, adds data like Betrag, Buchungsverweis, Zahlungsreferenz.
-	 * Saves Gegenbuchung if Buchungsbetrag is 0.
-	 * @param $konto Kontoobject, received after MO -> FHC mapping
-	 */
-	private function _saveBuchungen($konto)
-	{
-		$kontoToInsert = $konto;
-		foreach ($konto['buchungstyp_kurzbz'] as $buchungstyp_kurzbz)
-		{
-			$buchungstypres = $this->ci->BuchungstypModel->load($buchungstyp_kurzbz);
-
-			if (hasData($buchungstypres))
-			{
-				$checkbuchungres = $this->ci->KontoModel->loadWhere(
-					array(
-						'buchungstyp_kurzbz' => $buchungstyp_kurzbz,
-						'studiensemester_kurzbz' => $konto['studiensemester_kurzbz'],
-						'person_id' => $konto['person_id'],
-						'studiengang_kz' => $konto['studiengang_kz']
-					)
-				);
-
-				if (isSuccess($checkbuchungres) && !hasData($checkbuchungres))
-				{
-					$buchungstyp = $buchungstypres->retval[0];
-					$kontoToInsert['buchungstyp_kurzbz'] = $buchungstyp_kurzbz;
-
-					if (isset($konto['betrag'][$buchungstyp_kurzbz]))
-						$kontoToInsert['betrag'] = $konto['betrag'][$buchungstyp_kurzbz];
-					else
-						$kontoToInsert['betrag'] = $buchungstyp->standardbetrag;
-
-					if (isset($konto['buchungstext'][$buchungstyp_kurzbz]))
-						$kontoToInsert['buchungstext'] = $konto['buchungstext'][$buchungstyp_kurzbz];
-					else
-						$kontoToInsert['buchungstext'] = '';
-
-					$kontoToInsert['buchungsdatum'] = date('Y-m-d');
-
-					$kontoinsertres = $this->ci->KontoModel->insert($kontoToInsert);
-
-					if (hasData($kontoinsertres))
-					{
-						$kontoinsertid = $kontoinsertres->retval;
-						// Zahlungsreferenz generieren
-						$zahlungsref = generateZahlungsreferenz($konto['studiengang_kz'], $kontoinsertid);
-
-						$zahlungsrefres = $this->ci->KontoModel->update($kontoinsertid, array('zahlungsreferenz' => $zahlungsref));
-
-						if (hasData($zahlungsrefres) && isset($konto['betrag'][$buchungstyp_kurzbz])
-							&& $konto['betrag'][$buchungstyp_kurzbz] == 0)
-						{
-							// Gegenbuchung wenn 0 Betrag
-							$gegenbuchung = $kontoToInsert;
-							$gegenbuchung['mahnspanne'] = 0;
-							$gegenbuchung['buchungsnr_verweis'] = $kontoinsertid;
-							$gegenbuchung['zahlungsreferenz'] = $zahlungsref;
-							$this->ci->KontoModel->insert($gegenbuchung);
-						}
-					}
-				}
-			}
 		}
 	}
 
@@ -883,5 +578,462 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		return $incomings;
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// Private methods for saving an incoming
+
+	/**
+	 * Inserts person or updates an existing one, if prestudent for person already exists.
+	 * @param $prestudent_id
+	 * @param $person
+	 * @return int|null person_id of inserted/updated person
+	 */
+	private function _savePerson($prestudent_id, $person)
+	{
+		$person_id = null;
+		$prestudentcheckresp = isset($prestudent_id) && is_numeric($prestudent_id) ? $this->ci->PrestudentModel->load($prestudent_id) : null;
+
+		$update = hasData($prestudentcheckresp);
+
+		// update if prestudent already exists, insert otherwise
+		if ($update)
+		{
+			$person_id = $prestudentcheckresp->retval[0]->person_id;
+			$this->stamp('update', $person);
+			$personresponse = $this->ci->PersonModel->update($person_id, $person);
+			$this->log('update', $personresponse, 'person');
+		}
+		else
+		{
+			$this->stamp('insert', $person);
+			$personresponse = $this->ci->PersonModel->insert($person);
+			if (isSuccess($personresponse))
+			{
+				$person_id = $personresponse->retval;
+			}
+			$this->log('insert', $personresponse, 'person');
+		}
+
+		return $person_id;
+	}
+
+	/**
+	 * Inserts Adresse for a person.
+	 * @param $person_id
+	 * @param $adresse
+	 * @return int|null adresse_id of inserted adresse, null if adresse already exists
+	 */
+	private function _saveAdresse($person_id, $adresse)
+	{
+		$adresse_id = null;
+		// insert if there is no Heimatadresse
+		$heimataddrresp = $this->ci->AdresseModel->loadWhere(array('person_id' => $person_id, 'heimatadresse' => true));
+
+		if (isSuccess($heimataddrresp) && !hasData($heimataddrresp))
+		{
+			$adresse['person_id'] = $person_id;
+			$this->stamp('insert', $adresse);
+			$addrresp = $this->ci->AdresseModel->insert($adresse);
+			$adresse_id = $addrresp->retval;
+			$this->log('insert', $addrresp, 'adresse');
+		}
+
+		return $adresse_id;
+	}
+
+	/**
+	 * Inserts Kontakt for a person.
+	 * @param $person_id
+	 * @param $kontakt
+	 * @param $table
+	 * @return int|null kontakt_id of inserted kontakt, null if Kontakt with given type already exists
+	 */
+	private function _saveKontakt($person_id, $kontakt, $table)
+	{
+		$kontakt_id = null;
+
+		if (isset($kontakt['kontakttyp']) && !isEmptyString($kontakt['kontakttyp']))
+		{
+			$kontaktresp = $this->ci->KontaktModel->loadWhere(array('person_id' => $person_id, 'kontakttyp' => $kontakt['kontakttyp']));
+
+			if (!empty($kontakt['kontakt']))
+			{
+				$kontaktfound = false;
+				if (hasData($kontaktresp))
+				{
+					foreach ($kontaktresp->retval as $ktkt)
+					{
+						if ($ktkt->kontakt === $kontakt['kontakt'])
+						{
+							$kontaktfound = true;
+							break;
+						}
+					}
+				}
+
+				if (isSuccess($kontaktresp) && !$kontaktfound)
+				{
+					$kontakt['person_id'] = $person_id;
+					$this->stamp('insert', $kontakt);
+					$kontaktresp = $kontaktinsresp = $this->ci->KontaktModel->insert($kontakt);
+					$kontakt_id = $kontaktresp->retval;
+					$this->log('insert', $kontaktinsresp, $table);
+				}
+			}
+		}
+
+		return $kontakt_id;
+	}
+
+	/**
+	 * Inserts a Lichtbild (picture) of a person as an akte.
+	 * @param $person_id
+	 * @param $akte
+	 * @return int|null akte_id of inserted akte, null if Akte with given dokument_kurzbz already exists
+	 */
+	private function _saveLichtbild($person_id, $akte)
+	{
+		$akte_id = null;
+
+		if (isset($akte['dokument_kurzbz']) && !isEmptyString($akte['dokument_kurzbz']))
+		{
+			$aktecheckresp = $this->ci->AkteModel->loadWhere(array('person_id' => $person_id, 'dokument_kurzbz' => $akte['dokument_kurzbz']));
+
+			if (isSuccess($aktecheckresp))
+			{
+				if (hasData($aktecheckresp))
+				{
+					if ($this->debugmode)
+					{
+						$this->output .= '<br />lichtbild already exists, akte_id '.$aktecheckresp->retval[0]->akte_id;
+					}
+				}
+				else
+				{
+					$akte['person_id'] = $person_id;
+					$akte['titel'] = 'Lichtbild_'.$person_id;
+					$this->stamp('insert', $akte);
+					$akteresp = $this->ci->AkteModel->insert($akte);
+					$akte_id = $akteresp->retval;
+					$this->log('insert', $akteresp, 'akte');
+				}
+			}
+		}
+
+		return $akte_id;
+	}
+
+	/**
+	 * Inserts prestudent or updates an existing one.
+	 * @param $prestudent_id
+	 * @param $prestudent
+	 * @return int|null prestudent_id of inserted or updated prestudent is successful, null otherwise.
+ 	 */
+	private function _savePrestudent($prestudent_id, $prestudent)
+	{
+		$prestudent_id_response = null;
+		$prestudentcheckresp = isset($prestudent_id) && is_numeric($prestudent_id) ? $this->ci->PrestudentModel->load($prestudent_id) : null;
+
+		$update = hasData($prestudentcheckresp);
+
+		if ($update)
+		{
+			$this->stamp('update', $prestudent);
+			$prestudentresponse = $this->ci->PrestudentModel->update($prestudent_id, $prestudent);
+			$this->log('update', $prestudentresponse, 'prestudent');
+		}
+		else
+		{
+			$this->stamp('insert', $prestudent);
+			$prestudentresponse = $this->ci->PrestudentModel->insert($prestudent);
+			$this->log('insert', $prestudentresponse, 'prestudent');
+		}
+		$prestudent_id_response = $prestudentresponse->retval;
+
+		return $prestudent_id_response;
+	}
+
+	/**
+	 * Inserts prestudentstatus for each given Studiensemester.
+	 * @param $studiensemarr all semester, for which a prestudentstatus entry should be generated
+	 * @param $prestudentstatus
+	 * @return array containing inserted prestudentstatus primary keys
+	 */
+	private function _savePrestudentStatus($studiensemarr, $prestudentstatus)
+	{
+		$saved = array();
+
+		foreach ($studiensemarr as $semester)
+		{
+			$lastStatus = $this->ci->PrestudentstatusModel->getLastStatus($prestudentstatus['prestudent_id'], $semester);
+			if (isSuccess($lastStatus) && (!hasData($lastStatus) || $lastStatus->retval[0]->status_kurzbz !== 'Incoming'))
+			{
+				$prestudentstatus['studiensemester_kurzbz'] = $semester;
+				$prestudentstatus['datum'] = date('Y-m-d', time());
+				$this->stamp('insert', $prestudentstatus);
+				$prestudentstatusresponse = $this->ci->PrestudentstatusModel->insert($prestudentstatus);
+				if (hasData($prestudentstatusresponse))
+					$saved[] = $prestudentstatusresponse->retval;
+				$this->log('insert', $prestudentstatusresponse, 'prestudentstatus');
+			}
+		}
+
+		return $saved;
+	}
+
+	/**
+	 * Inserts benutzer and generates uid and activation key, if no benutzer already exists for given prestudent.
+	 * @param $matrikelnr for uid generation
+	 * @param $prestudent
+	 * @param $benutzer
+	 * @return string|null benutzer_uid of inserted benutzer if successful, null otherwise
+	 */
+	private function _saveBenutzer($matrikelnr, $prestudent, $benutzer)
+	{
+		$benutzerresp_uid = null;
+
+		$this->ci->StudentModel->addOrder('insertamum');
+		$benutzerstudcheckresp = $this->ci->StudentModel->loadWhere(array('prestudent_id' => $prestudent['prestudent_id']));
+
+		$benutzercheckresp = success('success');
+
+		if (isSuccess($benutzerstudcheckresp))
+		{
+			if (hasData($benutzerstudcheckresp))
+			{
+				$benutzer['uid'] = $benutzerstudcheckresp->retval[0]->student_uid;
+				if ($this->debugmode)
+				{
+					$benutzerresp_uid = $benutzer['uid'];
+					$this->output .= "<br />benutzer for student ".$prestudent['prestudent_id'] ." already exists, uid " .$benutzer['uid'];
+				}
+			}
+			else
+			{
+				$benutzer['person_id'] = $prestudent['person_id'];
+				$jahr = mb_substr($matrikelnr, 0, 2);
+				$stg = mb_substr($matrikelnr, 3, 4);
+
+				$stgres = $this->ci->StudiengangModel->load($stg);
+
+				if (hasData($stgres))
+				{
+					$stg_bez = $stgres->retval[0]->kurzbz;
+					$stg_typ = $stgres->retval[0]->typ;
+					$benutzer['uid'] = generateUID($stg_bez, $jahr, $stg_typ, $matrikelnr);
+
+					//check for existing benutzer
+					$benutzercheckresp = $this->ci->BenutzerModel->loadWhere(array('uid' => $benutzer['uid']));
+
+					if (hasData($benutzercheckresp))
+					{
+						$this->output .= "<br />benutzer with uid ".$benutzer['uid']." already exists";
+						$benutzerresp_uid = $benutzer['uid'];
+					}
+					elseif (isSuccess($benutzercheckresp))
+					{
+						$benutzer['aktivierungscode'] = generateActivationKey();
+						$this->stamp('insert', $benutzer);
+						$benutzerinscheckresp = $this->ci->BenutzerModel->insert($benutzer);
+						if (hasData($benutzerinscheckresp))
+							$benutzerresp_uid = $benutzerinscheckresp->retval['uid'];
+
+						$this->log('insert', $benutzerinscheckresp, 'benutzer');
+					}
+				}
+			}
+		}
+
+		return $benutzerresp_uid;
+	}
+
+	/**
+	 * Inserts student or updates an existing one.
+	 * @param $student_uid of existing benutzer for the student
+	 * @param $matrikelnr
+	 * @param $prestudent for retrieving prestudent_id and studiengang_kz for student
+	 * @param $student
+	 * @return string|null student_uid of inserted/updated student if successful, null otherwise
+	 */
+	private function _saveStudent($student_uid, $matrikelnr, $prestudent, $student)
+	{
+		$studentresp_uid = null;
+
+		$student['prestudent_id'] = $prestudent['prestudent_id'];
+		$student['studiengang_kz'] = $prestudent['studiengang_kz'];
+
+		$studentcheckresp = $this->ci->StudentModel->loadWhere(array('student_uid' => $student_uid));
+
+		if (isSuccess($studentcheckresp))
+		{
+			if (hasData($studentcheckresp))
+			{
+				$this->stamp('update', $student);
+				$studentresponse = $this->ci->StudentModel->update(array('student_uid' => $student_uid), $student);
+				$this->log('update', $studentresponse, 'student');
+			}
+			else
+			{
+				$student['matrikelnr'] = $matrikelnr;
+				$this->stamp('insert', $student);
+				$student['student_uid'] = $student_uid;
+				$studentresponse = $this->ci->StudentModel->insert($student);
+				$this->log('insert', $studentresponse, 'student');
+			}
+
+			$studentresp_uid = $studentresponse->retval['student_uid'];
+		}
+
+		return $studentresp_uid;
+	}
+
+	/**
+	 * Inserts studentlehrverband or updates an existing one for all given Studiensemester.
+	 * @param $studiensemarr all semester, for which a studentlehrverband entry should be generated
+	 * @param $studentlehrverband
+	 * @return array containing inserted/updated studentlehrverband primary keys
+	 */
+	private function _saveStudentlehrverband($studiensemarr, $studentlehrverband)
+	{
+		$studentlehrverbandpk = array();
+
+		if (is_array($studiensemarr))
+		{
+			foreach ($studiensemarr as $semester)
+			{
+				$studentlehrverband['studiensemester_kurzbz'] = $semester;
+				$studenlehrverbandcheckresp = $this->ci->StudentlehrverbandModel->load(array('student_uid' => $studentlehrverband['student_uid'], 'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']));
+				if (isSuccess($studenlehrverbandcheckresp))
+				{
+					if (hasData($studenlehrverbandcheckresp))
+					{
+						$this->stamp('update', $studentlehrverband);
+						$studentlehrverbandresponse = $this->ci->StudentlehrverbandModel->update(array('student_uid' => $studentlehrverband['student_uid'], 'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']), $studentlehrverband);
+						$this->log('update', $studentlehrverbandresponse, 'studentlehrverband');
+					}
+					else
+					{
+						$this->stamp('insert', $studentlehrverband);
+						$studentlehrverbandresponse = $this->ci->StudentlehrverbandModel->insert($studentlehrverband);
+						$this->log('insert', $studentlehrverbandresponse, 'studentlehrverband');
+					}
+					$studentlehrverbandpk = $studentlehrverbandresponse->retval;
+				}
+			}
+		}
+
+		return $studentlehrverbandpk;
+	}
+
+	/**
+	 * Inserts bisio for a student or updates an existing one.
+	 * @param $bisio
+	 * @return int|null bisio_id of inserted or updated bisio is successful, null otherwise.
+	 */
+	private function _saveBisio($bisio)
+	{
+		$bisiorespid = null;
+
+		$bisiocheckresp = $this->ci->BisioModel->loadWhere(array('student_uid' => $bisio['student_uid']));
+
+		if (isSuccess($bisiocheckresp))
+		{
+			if (hasData($bisiocheckresp))
+			{
+				$this->stamp('update', $bisio);
+				$bisioresult = $this->ci->BisioModel->update($bisiocheckresp->retval[0]->bisio_id, $bisio);
+				$this->log('update', $bisioresult, 'bisio');
+			}
+			else
+			{
+				$this->stamp('insert', $bisio);
+				$bisioresult = $this->ci->BisioModel->insert($bisio);
+				$this->log('insert', $bisioresult, 'bisio');
+			}
+
+			$bisiorespid = $bisioresult->retval;
+		}
+
+		return $bisiorespid;
+	}
+
+	/**
+	 * Inserts Kontobuchungen, adds data like Betrag, Buchungsverweis, Zahlungsreferenz.
+	 * Saves Gegenbuchung if Buchungsbetrag is 0.
+	 * Inserts all Buchungstypen present in the buchungstyp_kurzbz property array, if not already existing.
+	 * @param $konto
+	 * @return array containing inserted buchungsnr
+	 */
+	private function _saveBuchungen($konto)
+	{
+		$inserted_buchungen = array();
+
+		if (isset($konto['buchungstyp_kurzbz']) && !isEmptyArray($konto['buchungstyp_kurzbz']) &&
+			isset($konto['studiengang_kz']) && !isEmptyString($konto['studiengang_kz']))
+		{
+			$kontoToInsert = $konto;
+			foreach ($konto['buchungstyp_kurzbz'] as $buchungstyp_kurzbz)
+			{
+				$buchungstypres = $this->ci->BuchungstypModel->load($buchungstyp_kurzbz);
+
+				if (hasData($buchungstypres))
+				{
+					$checkbuchungres = $this->ci->KontoModel->loadWhere(
+						array(
+							'buchungstyp_kurzbz' => $buchungstyp_kurzbz,
+							'studiensemester_kurzbz' => $konto['studiensemester_kurzbz'],
+							'person_id' => $konto['person_id'],
+							'studiengang_kz' => $konto['studiengang_kz']
+						)
+					);
+
+					if (isSuccess($checkbuchungres) && !hasData($checkbuchungres))
+					{
+						$buchungstyp = $buchungstypres->retval[0];
+						$kontoToInsert['buchungstyp_kurzbz'] = $buchungstyp_kurzbz;
+
+						if (isset($konto['betrag'][$buchungstyp_kurzbz]))
+							$kontoToInsert['betrag'] = $konto['betrag'][$buchungstyp_kurzbz];
+						else
+							$kontoToInsert['betrag'] = $buchungstyp->standardbetrag;
+
+						if (isset($konto['buchungstext'][$buchungstyp_kurzbz]))
+							$kontoToInsert['buchungstext'] = $konto['buchungstext'][$buchungstyp_kurzbz];
+						else
+							$kontoToInsert['buchungstext'] = '';
+
+						$kontoToInsert['buchungsdatum'] = date('Y-m-d');
+
+						$kontoinsertres = $this->ci->KontoModel->insert($kontoToInsert);
+						$this->log('insert', $kontoinsertres, 'konto');
+
+						if (hasData($kontoinsertres))
+						{
+							$kontoinsertid = $kontoinsertres->retval;
+							// Zahlungsreferenz generieren
+							$zahlungsref = generateZahlungsreferenz($konto['studiengang_kz'], $kontoinsertid);
+
+							$zahlungsrefres = $this->ci->KontoModel->update($kontoinsertid, array('zahlungsreferenz' => $zahlungsref));
+
+							if (hasData($zahlungsrefres) && isset($konto['betrag'][$buchungstyp_kurzbz])
+								&& $konto['betrag'][$buchungstyp_kurzbz] == 0)
+							{
+								// Gegenbuchung wenn 0 Betrag
+								$gegenbuchung = $kontoToInsert;
+								$gegenbuchung['mahnspanne'] = 0;
+								$gegenbuchung['buchungsnr_verweis'] = $kontoinsertid;
+								$gegenbuchung['zahlungsreferenz'] = $zahlungsref;
+								$this->ci->KontoModel->insert($gegenbuchung);
+
+								$inserted_buchungen[] = $kontoinsertid;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return $inserted_buchungen;
 	}
 }
