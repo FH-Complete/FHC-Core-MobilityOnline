@@ -12,7 +12,8 @@ $(document).ready(function()
 			{
 				var studiensemester = $("#studiensemester").val();
 				var studiengang_kz = $("#studiengang_kz").val();
-				$("#incomingsyncoutput").html("<div class='text-center'>-</div>");
+				$("#incomingsyncoutputheading").html("");
+				$("#incomingsyncoutputtext").html("<div class='text-center'>-</div>");
 				MobilityOnlineIncoming.getIncoming(studiensemester, studiengang_kz);
 			}
 		);
@@ -35,7 +36,25 @@ $(document).ready(function()
 					}
 				);
 
-				MobilityOnlineIncoming.syncIncomings(incomings, $("#studiensemester").val());
+				var syncIncomingsFunc = function (data) {
+					if (FHC_AjaxClient.hasData(data))
+					{
+						var maxPostSize = FHC_AjaxClient.getData(data);
+						if ($.isNumeric(maxPostSize))
+						{
+							maxPostSize = (parseInt(maxPostSize));
+							$("#incomingsyncoutput div").empty();
+
+							MobilityOnlineIncoming.syncIncomings(incomings, $("#studiensemester").val(), maxPostSize);
+						}
+						else
+						{
+							FHC_DialogLib.alertError("non-numeric post max size!");
+						}
+					}
+				};
+
+				MobilityOnlineIncoming.getPostMaxSize(syncIncomingsFunc);
 			}
 		);
 
@@ -172,39 +191,65 @@ var MobilityOnlineIncoming = {
 					}
 					else
 					{
-						$("#incomingsyncoutput").html("<div class='text-center'>No incomings found!</div>");
+						$("#incomingsyncoutputtext").html("<div class='text-center'>No incomings found!</div>");
 					}
 				},
 				errorCallback: function()
 				{
-					$("#incomingsyncoutput").html("<div class='text-center'>error occured while getting incomings!</div>");
+					$("#incomingsyncoutputtext").html("<div class='text-center'>error occured while getting incomings!</div>");
 				}
 			}
 		);
 	},
-	syncIncomings: function(incomings, studiensemester)
+	syncIncomings: function(incomings, studiensemester, maxPostSize)
 	{
-		FHC_AjaxClient.ajaxCallPost(
-			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/syncIncomings',
-			{
-				"incomings": JSON.stringify(incomings),
-				"studiensemester": studiensemester
-			},
-			{
-				successCallback: function (data, textStatus, jqXHR)
+		var incomingJson = JSON.stringify(incomings);
+
+		var postlength = incomingJson.length + 3.5 * incomings.length;
+
+		if (postlength > maxPostSize)
+		{
+			var indexhalf = incomings.length / 2;
+			var incomingsPartOne = incomings.splice(0, indexhalf);
+			var incomingsPartTwo = incomings;//incomings.splice(indexhalf, incomings.length);
+			MobilityOnlineIncoming.syncIncomings(incomingsPartOne, studiensemester, maxPostSize);
+			MobilityOnlineIncoming.syncIncomings(incomingsPartTwo, studiensemester, maxPostSize);
+		}
+		else
+		{
+			FHC_AjaxClient.ajaxCallPost(
+				FHC_JS_DATA_STORAGE_OBJECT.called_path + '/syncIncomings',
 				{
-					if (FHC_AjaxClient.hasData(data))
-					{
-						$("#incomingsyncoutput").html(data.retval);
-						MobilityOnlineIncoming.refreshIncomingsSyncStatus();
-					}
+					"incomings": JSON.stringify(incomings),
+					"studiensemester": studiensemester
 				},
-				errorCallback: function()
 				{
-					$("#incomingsyncoutput").html("<div class='text-center'>error occured while syncing!</div>");
+					successCallback: function (data, textStatus, jqXHR) {
+						if (FHC_AjaxClient.hasData(data))
+						{
+							$("#incomingsyncoutputtext").append(data.retval.syncoutput);
+
+							if ($("#incomingsyncoutputheading").text().length > 0)
+							{
+								$("#noadd").text(parseInt($("#noadd").text()) + data.retval.added);
+								$("#noupdate").text(parseInt($("#noupdate").text()) + data.retval.updated);
+							}
+							else
+							{
+								$("#incomingsyncoutputheading")
+									.append("<br />MOBILITY ONLINE INCOMINGS SYNC FINISHED<br /><span id = 'noadd'>"+data.retval.added+"</span> added, <span id = 'noupdate'>"+data.retval.updated+"</span> updated</div>")
+									.append("<br />-----------------------------------------------<br />");
+							}
+							MobilityOnlineIncoming.refreshIncomingsSyncStatus();
+						}
+					},
+					errorCallback: function()
+					{
+						$("#incomingsyncoutputtext").html("<div class='text-center'>error occured while syncing!</div>");
+					}
 				}
-			}
-		);
+			);
+		}
 	},
 	/**
 	 * Refreshes status (infhc, not in fhc) of incomings
@@ -227,7 +272,7 @@ var MobilityOnlineIncoming = {
 				"moids": moids
 			},
 			{
-				successCallback: function (data, textStatus, jqXHR)
+				successCallback: function(data, textStatus, jqXHR)
 				{
 					if (FHC_AjaxClient.hasData(data))
 					{
@@ -277,6 +322,20 @@ var MobilityOnlineIncoming = {
 				errorCallback: function()
 				{
 					FHC_DialogLib.alertError("error when refreshing FHC column!");
+				}
+			}
+		);
+	},
+	getPostMaxSize: function(callback)
+	{
+		FHC_AjaxClient.ajaxCallGet(
+			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/getPostMaxSize',
+			null,
+			{
+				successCallback: callback,
+				errorCallback: function()
+				{
+					FHC_DialogLib.alertError("error when getting post max size!");
 				}
 			}
 		);

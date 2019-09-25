@@ -48,20 +48,15 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function startIncomingSync($studiensemester, $incomings)
 	{
-		$syncoutput = '';
+		$results = array('added' => 0, 'updated' => 0, 'errors' => 0, 'syncoutput' => '');
 		$studcount = count($incomings);
 
 		if (empty($incomings) || !is_array($incomings) || $studcount <= 0)
 		{
-			$syncoutput .= "<div class='text-center'>No incomings found for sync! aborting.</div>";
+			$results['syncoutput']  .= "<div class='text-center'>No incomings found for sync! aborting.</div>";
 		}
 		else
 		{
-			$added = $updated = 0;
-
-			$syncoutput .= "<div class='text-center'>MOBILITY ONLINE INCOMINGS SYNC start. $studcount incomings to sync.";
-			$syncoutput .= '<br/>-----------------------------------------------</div><div class="incomingsyncoutputtext">';
-
 			$first = true;
 			foreach ($incomings as $incoming)
 			{
@@ -69,21 +64,21 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				$appid = $incoming['moid'];
 
 				if (!$first)
-					$syncoutput .= "<br />";
+					$results['syncoutput'] .= "<br />";
 				$first = false;
 
 				$infhccheck_prestudent_id = $this->checkMoIdInFhc($appid);
 
 				if (isset($infhccheck_prestudent_id) && is_numeric($infhccheck_prestudent_id))
 				{
-					$syncoutput .= "<br />prestudent ".("for applicationid $appid ").$incomingdata['person']['vorname'].
+					$results['syncoutput'] .= "<br />prestudent ".("for applicationid $appid ").$incomingdata['person']['vorname'].
 						" ".$incomingdata['person']['nachname']." already exists in fhcomplete - updating";
 
 					$prestudent_id = $this->saveIncoming($incomingdata, $infhccheck_prestudent_id);
 
 					$saveIncomingOutput = $this->getOutput();
 
-					$syncoutput .= $saveIncomingOutput;
+					$results['syncoutput'] .= $saveIncomingOutput;
 
 					if (isset($prestudent_id) && is_numeric($prestudent_id))
 					{
@@ -94,14 +89,15 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 						if (hasData($result))
 						{
-							$updated++;
-							$syncoutput .= "<br /><i class='fa fa-check text-success'></i> student for applicationid $appid - ".
+							$results['updated']++;
+							$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> student for applicationid $appid - ".
 								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." successfully updated";
 						}
 					}
 					else
 					{
-						$syncoutput .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when updating student for applicationid $appid - "
+						$results['errors']++;
+						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when updating student for applicationid $appid - "
 							.$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']."</span>";
 					}
 				}
@@ -111,7 +107,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 					$saveIncomingOutput = $this->getOutput();
 
-					$syncoutput .= $saveIncomingOutput;
+					$results['syncoutput'] .= $saveIncomingOutput;
 
 					if (isset($prestudent_id) && is_numeric($prestudent_id))
 					{
@@ -121,25 +117,27 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 						if (hasData($result))
 						{
-							$added++;
-							$syncoutput .= "<br /><i class='fa fa-check text-success'></i> student for applicationid $appid - ".
+							$results['added']++;
+							$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> student for applicationid $appid - ".
 								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." successfully added";
 						}
 						else
-							$syncoutput .= "<br /><span class='text-danger'><i class='fa fa-times'></i> mapping entry in db could not be added student for applicationid $appid - ".
+						{
+							$results['errors']++;
+							$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> mapping entry in db could not be added student for applicationid $appid - ".
 								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']."</span>";
+						}
 					}
 					else
 					{
-						$syncoutput .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when adding student for applicationid $appid - ".
+						$results['errors']++;
+						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when adding student for applicationid $appid - ".
 							$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']."</span>";
 					}
 				}
 			}
-			$syncoutput .= "</div><div class='text-center'><br />-----------------------------------------------";
-			$syncoutput .= "<br />MOBILITY ONLINE INCOMINGS SYNC FINISHED <br />$added added, $updated updated</div>";
 		}
-		return $syncoutput;
+		return $results;
 	}
 
 	/**
@@ -230,7 +228,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// Lichtbild
 		if ($photo)
 		{
-			$moapp->{$aktemappings['inhalt']} = base64_encode($photo[0]->{$aktemappings['inhalt']});
+			$moapp->{$aktemappings['inhalt']} = $photo[0]->{$aktemappings['inhalt']};
 		}
 
 		$fhcobj = $this->convertToFhcFormat($moapp, self::MOOBJECTTYPE);

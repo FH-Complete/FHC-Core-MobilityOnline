@@ -17,7 +17,8 @@ class MobilityOnlineIncoming extends Auth_Controller
 			'index' => 'inout/incoming:rw',
 			'syncIncomings' => 'inout/incoming:rw',
 			'getIncomingJson' => 'inout/incoming:r',
-			'checkMoidsInFhc' => 'inout/incoming:r'
+			'checkMoidsInFhc' => 'inout/incoming:r',
+			'getPostMaxSize' => 'inout/incoming:r'
 			)
 		);
 
@@ -65,14 +66,23 @@ class MobilityOnlineIncoming extends Auth_Controller
 	 */
 	public function syncIncomings()
 	{
-		$incomings = $this->input->post('incomings');
 		$studiensemester = $this->input->post('studiensemester');
+		$incomings = $this->input->post('incomings');
 
 		$incomings = json_decode($incomings, true);
-
 		$syncoutput = $this->syncincomingsfrommolib->startIncomingSync($studiensemester, $incomings);
 
 		$this->outputJsonSuccess($syncoutput);
+	}
+
+	/**
+	 * Gets maximum size of post variable from php.ini so it can be checked before posting incomings.
+	 */
+	public function getPostMaxSize()
+	{
+		$max_size_res = $this->syncfrommobilityonlinelib->getPostMaxSize();
+
+		$this->outputJsonSuccess($max_size_res);
 	}
 
 	/**
@@ -84,10 +94,12 @@ class MobilityOnlineIncoming extends Auth_Controller
 		$moids = $this->input->post('moids');
 
 		$moidsresult = array();
-
-		foreach ($moids as $moid)
+		if (is_array($moids))
 		{
-			$moidsresult[$moid] = $this->syncincomingsfrommolib->checkMoIdInFhc($moid);
+			foreach ($moids as $moid)
+			{
+				$moidsresult[$moid] = $this->syncincomingsfrommolib->checkMoIdInFhc($moid);
+			}
 		}
 
 		$this->outputJsonSuccess($moidsresult);

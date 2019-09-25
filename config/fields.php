@@ -2,7 +2,7 @@
 /**
  * Fields for sync.
  * If required fields are not present in the object, sync is not possible and it is an error.
- * type (no type given - assuming string), foreign references (ref) and length in case of a string are also checked
+ * type (no type given - assuming string), foreign key references (ref) are also checked
  * "name" is display name for errors
  */
 
@@ -17,7 +17,7 @@ $config['fhcfields']['application'] = array(
 										  'type' => 'date'),
 					  'sprache' => array('ref' => 'public.tbl_sprache'),
 					  'anmerkung' => array(),
-					  'foto' => array()
+					  'foto' => array('type' => 'base64')
 	),
 	'prestudent' => array('studiengang_kz' =>
 							  array('required' => true,
@@ -75,7 +75,8 @@ $config['fhcfields']['application'] = array(
 	),
 	'kontakttel' => array('kontakt' => array('name' => 'Phone number')
 	),
-	'akte' => array('inhalt' => array('name' => 'Photodokument')
+	'akte' => array('inhalt' => array('name' => 'Photodokument',
+									  'type' => 'base64')
 	),
 	'bisio' => array('von' => array('required' => true,
 									'name' => 'Aufenthalt von',

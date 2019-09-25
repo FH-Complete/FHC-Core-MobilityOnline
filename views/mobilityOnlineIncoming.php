@@ -75,7 +75,8 @@
 						<div class="well well-sm wellminheight">
 							<h4 class="text-center">synchronisation output:</h4>
 							<div id="incomingsyncoutput" class="panel panel-body">
-								<div class="text-center">-</div>
+								<div id="incomingsyncoutputheading" class="text-center"></div>
+								<div id="incomingsyncoutputtext" class="text-center">-</div>
 							</div>
 						</div>
 					</div>

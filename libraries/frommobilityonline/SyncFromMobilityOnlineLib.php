@@ -50,7 +50,14 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		),
 		'zgvmadatum' => array(
 			0 => 'mapDateToFhc'
-		)/*,
+		),
+		'inhalt' => array(
+			0 => 'resizeBase64ImageBig'
+		),
+		'foto' => array(
+			0 => 'resizeBase64ImageSmall'
+		)
+		/*,
 		'lehrveranstaltung_id' => array(
 			//extracting lvid from MobilityOnline coursenumber, assuming format id_orgform_ausbildungssemester,
 			//e.g. 35408_VZ_2sem
@@ -93,6 +100,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$fhcvalue = null;
 
 		$moobjfieldmappings = $this->conffieldmappings[$objtype];
+
 		foreach ($moobjfieldmappings as $fhctable => $mapping)
 		{
 			foreach ($moobj as $name => $value)
@@ -219,8 +227,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
-	 * Checks if fhcomplete object has errors, like missing fields,
-	 * so it cannot be inserted in db
+	 * Checks if fhcomplete object has errors, e.g. missing fields, thus cannot be inserted in db.
 	 * @param $fhcobj
 	 * @param $objtype
 	 * @return StdClass object with properties bollean for has Error and array with errormessages
@@ -277,6 +284,10 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 											$wrongdatatype = true;
 										}
 										break;
+									case 'base64':
+										if (!base64_encode(base64_decode($value, true)) === $value)
+											$wrongdatatype = true;
+										break;
 									case 'string':
 										if (!is_string($value))
 										{
@@ -302,7 +313,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 							elseif (!$haserror)
 							{
 								// right string length?
-								if ($params['type'] === 'string' && !$this->ci->MobilityonlinefhcModel->checkLength($table, $field, $value))
+								if (($params['type'] === 'string' || $params['type'] === 'base64') &&
+									!$this->ci->MobilityonlinefhcModel->checkLength($table, $field, $value))
 								{
 									$haserror = true;
 									$errortext = "is too long ($value)";
@@ -345,7 +357,84 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
-	 * Converts MobilityOnline date to fhcomplete date format
+	 * Gets max allowed post parameter length from php_ini config.
+	 * Can be e.g. "4M" for 4 Megabyte or a number in bytes.
+	 * If no value can be retrieved from ini, own configuration value is used.
+	 * @return string|null
+	 */
+	public function getPostMaxSize()
+	{
+		$max_size_res = null;
+
+		$post_max_size = ini_get('post_max_size');
+
+		$max_size_res = $this->extractPostMaxSize($post_max_size);
+
+		if (!isset($max_size_res))
+		{
+			$config = $this->ci->config->item('FHC-Core-MobilityOnline');
+			$post_max_size = $config['post_max_size'];
+			$max_size_res = $this->extractPostMaxSize($post_max_size);
+		}
+
+		return $max_size_res;
+	}
+
+	/**
+	 * Extracts numeric post size from post_max_size string.
+	 * @param $post_max_size
+	 * @return string|null
+	 */
+	private function extractPostMaxSize($post_max_size)
+	{
+		$max_size_res = null;
+
+		if (is_numeric($post_max_size) && (int)$post_max_size > 0)
+		{
+			$max_size_res = $post_max_size;
+		}
+		else
+		{
+			$sizeregex = '/\d+([KMG])/';
+
+			if (preg_match($sizeregex ,$post_max_size))
+			{
+				preg_match_all('/\d+/', $post_max_size, $size);
+				preg_match_all('/\D+/', $post_max_size, $unit);
+				if (isset($unit[0][0]) && isset($size[0][0]))
+				{
+					$unit = $unit[0][0];
+					$size = $size[0][0];
+
+					$max_size_res = $size;
+
+					$thousands = 0;
+					switch ($unit)
+					{
+						case 'K':
+							$thousands = 1;
+							break;
+						case 'M':
+							$thousands = 2;
+							break;
+						case 'G':
+							$thousands = 3;
+							break;
+					}
+
+					for ($i = 0; $i < $thousands; $i++)
+					{
+						$max_size_res .= '000';
+					}
+				}
+			}
+		}
+
+		return $max_size_res;
+	}
+
+	/**
+	 * Converts MobilityOnline date to fhcomplete date format.
 	 * @param $modate
 	 * @return mixed
 	 */
@@ -356,14 +445,86 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		{
 			$date = DateTime::createFromFormat('d.m.Y', $modate);
 			return date_format($date, 'Y-m-d');
-			//return preg_replace('/(\d{2}).(\d{2}).(\d{4})/', '$3-$2-$1', $modate);
 		}
 		else
 			return null;
 	}
 
 	/**
-	 * Outputs success or error of a db action
+	 * Makes sure base 64 image is not bigger than thumbnail size.
+	 * @param $moimage
+	 * @return string|null
+	 */
+	private function resizeBase64ImageSmall($moimage)
+	{
+		return $this->resizeBase64Image($moimage, 101, 130);
+	}
+
+	/**
+	 * Makes sure base 64 image is not bigger than max fhc db image size.
+	 * @param $moimage
+	 * @return string|null
+	 */
+	private function resizeBase64ImageBig($moimage)
+	{
+		return $this->resizeBase64Image($moimage, 827, 1063);
+	}
+
+	/**
+	 * If $moimage width/height is greater than given width/height, crop image, otherwise encode it.
+	 * @param $moimage
+	 * @param $maxwidth
+	 * @param $maxheight
+	 * @return string|null
+	 */
+	private function resizeBase64Image($moimage, $maxwidth, $maxheight)
+	{
+		$fhcimage = null;
+
+		//groesse begrenzen
+		$width = $maxwidth;
+		$height = $maxheight;
+		$image = imagecreatefromstring(base64_decode(base64_encode($moimage)));
+
+		if ($image)
+		{
+			$uri = 'data://application/octet-stream;base64,' . base64_encode($moimage);
+			list($width_orig, $height_orig) = getimagesize($uri);
+
+			$ratio_orig = $width_orig/$height_orig;
+
+			if ($width_orig > $width || $height_orig > $height )
+			{
+				//keep proportions
+				if ($width/$height > $ratio_orig)
+				{
+					$width = $height*$ratio_orig;
+				}
+				else
+				{
+					$height = $width/$ratio_orig;
+				}
+
+				$bg = imagecreatetruecolor($width, $height);
+				imagecopyresampled($bg, $image, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
+
+				ob_start();
+				imagejpeg($bg);
+				$contents =  ob_get_contents();
+				ob_end_clean();
+
+				$fhcimage = base64_encode($contents);
+			}
+			else
+				$fhcimage = base64_encode($moimage);
+			imagedestroy($image);
+		}
+
+		return $fhcimage;
+	}
+
+	/**
+	 * Outputs success or error of a db action.
 	 * @param $modtype insert, update,...
 	 * @param $response of db action
 	 * @param $table database table
@@ -389,7 +550,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
-	 * Sets timestamp and importuser for insert/update
+	 * Sets timestamp and importuser for insert/update.
 	 * @param $modtype
 	 * @param $arr
 	 */
