@@ -201,6 +201,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$fields = $this->moconffields[$objtype];
 
+		//prefill - also non-searched fields need to be passed with null
 		foreach ($fields as $field)
 		{
 			$searchobj[$field] = null;

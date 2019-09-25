@@ -1,5 +1,7 @@
 <?php
 
+if (! defined('BASEPATH')) exit('No direct script access allowed');
+
 /**
  * Functionality for assigning courses to incomings (incoming courses) coming from MobilityOnline in fhcomplete
  */

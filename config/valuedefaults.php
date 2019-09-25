@@ -41,6 +41,10 @@ $config['fhcdefaults']['application']['akte'] = array(
 	'nachgereicht' => false
 );
 
+$config['fhcdefaults']['application']['konto'] = array(
+	'mahnspanne' => 30
+);
+
 $config['fhcdefaults']['address']['adresse'] = array(
 	'typ' => 'h',
 	'heimatadresse' => true,

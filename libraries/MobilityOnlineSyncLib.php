@@ -29,6 +29,7 @@ class MobilityOnlineSyncLib
 	{
 		$this->ci =& get_instance();
 
+		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/config');
 		$this->mobilityonline_config = $this->ci->config->item('FHC-Core-MobilityOnline');
 		$this->debugmode = isset($this->mobilityonline_config['debugmode']) &&
 			$this->mobilityonline_config['debugmode'] === true;
@@ -36,6 +37,7 @@ class MobilityOnlineSyncLib
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/fieldmappings');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/valuemappings');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/valuedefaults');
+		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/values');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/fields');
 
 		$this->conffieldmappings = $this->ci->config->item('fieldmappings');

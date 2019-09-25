@@ -1,7 +1,9 @@
 <?php
 /**
  * Contains value mappings between fhcomplete and MobilityOnline
- * array structure: ['direction']['fhcvaluefieldname']
+ * array structure depending on sync direction:
+ * ['tomo']['fhcvaluefieldname'] = array('fhcvalue' => 'mobilityonlinevalue')
+ * or ['frommo'] ['fhcvaluefieldname'] = array('mobilityonlinevalue' => 'fhcvalue')
  */
 
 $config['valuemappings']['tomo']['locale'] = array(
@@ -122,7 +124,43 @@ $config['valuemappings']['frommo']['mobilitaetsprogramm_code'] = array(
 	'Erasmus Mundus' => 7,
 	'Erasmus (Studies)' => 7,
 	'Incoming (mit Agreement)' => 201,
-	'Incoming (with Bilateral Agreement or Free Mover)' => 201,
+	//'Incoming (with Bilateral Agreement or Free Mover)' => 201,
 	'Incoming (with Bilateral Agreement)' => 201,
 	'Free Mover' => 202
+);
+
+$config['valuemappings']['frommo']['buchungstyp_kurzbz'] = array(
+	'Erasmus SMS' => array('OEH', 'Studiengebuehr'),
+	'Erasmus SMP' => array('OEH', 'Studiengebuehr'),
+	'Erasmus Mundus' => array('OEH', 'Studiengebuehr'),
+	'Erasmus (Studies)' => array('OEH', 'Studiengebuehr'),
+	'Incoming (mit Agreement)' => array('OEH', 'Studiengebuehr'),
+	//'Incoming (with Bilateral Agreement or Free Mover)' => array('OEH', 'Studiengebuehr'),
+	'Incoming (with Bilateral Agreement)' => array('OEH', 'Studiengebuehr'),
+	'Free Mover' => array('OEH', 'Studiengebuehr', 'Unkostenbeitrag')
+);
+
+// if Betrag is not set here, default from tbl_buchungstyp is used
+$config['valuemappings']['frommo']['betrag'] = array(
+	'Erasmus SMS' => array('Studiengebuehr' => 0.00),
+	'Erasmus SMP' => array('Studiengebuehr' => 0.00),
+	'Erasmus Mundus' => array('Studiengebuehr' => 0.00),
+	'Erasmus (Studies)' => array('Studiengebuehr' => 0.00),
+	'Incoming (mit Agreement)' => array('Studiengebuehr' => 0.00),
+	//'Incoming (with Bilateral Agreement or Free Mover)' => array('Studiengebuehr' => 0.00),
+	'Incoming (with Bilateral Agreement)' => array('Studiengebuehr' => 0.00)
+);
+
+$defaultbuchungen = array('OEH' => 'ÖH-Beitrag STG Semester', 'Studiengebuehr' => 'Studienbeitrag_Incoming');
+$config['valuemappings']['frommo']['buchungstext'] = array(
+	'Erasmus SMS' => $defaultbuchungen,
+	'Erasmus SMP' => $defaultbuchungen,
+	'Erasmus Mundus' => $defaultbuchungen,
+	'Erasmus (Studies)' => $defaultbuchungen,
+	'Incoming (mit Agreement)' => $defaultbuchungen,
+	//'Incoming (with Bilateral Agreement or Free Mover)' => array('Studiengebuehr' => 0),
+	'Incoming (with Bilateral Agreement)' => $defaultbuchungen,
+	'Free Mover' => array('OEH' => 'ÖH-Beitrag STG Semester',
+						  'Studiengebuehr' => 'Studienbeitrag STG Semester - Freemover',
+						  'Unkostenbeitrag' => 'Unkostenbeitrag STG Semester')
 );
