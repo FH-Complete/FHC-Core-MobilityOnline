@@ -92,11 +92,12 @@ $config['fhcfields']['application'] = array(
 						 array('required' => true,
 							   'name' => 'Austauschprogramm',
 							   'type' => 'integer',
-							   'ref' => 'bis.tbl_mobilitaetsprogramm'),
-					 'zweck_code' =>
-						 array('required' => true,
-							   'name' => 'Aufenthaltszweck',
-							   'ref' => 'bis.tbl_zweck')
+							   'ref' => 'bis.tbl_mobilitaetsprogramm')
+	),
+	'bisio_zweck' => array('zweck_code' => array('required' => true,
+												 'name' => 'Aufenthaltszweck',
+												 'type' => 'integer',
+												 'ref' => 'bis.tbl_zweck')
 	)
 );
 

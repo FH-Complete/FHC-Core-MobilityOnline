@@ -35,6 +35,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('education/studentlehrverband_model', 'StudentlehrverbandModel');
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 		$this->ci->load->model('codex/bisio_model', 'BisioModel');
+		$this->ci->load->model('codex/bisiozweck_model', 'BisioZweckModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moappidzuordnung_model', 'MoappidzuordnungModel');
@@ -310,6 +311,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$adresse = $incoming['adresse'];
 		$kontaktmail = $incoming['kontaktmail'];
 		$bisio = $incoming['bisio'];
+		$bisio_zweck = $incoming['bisio_zweck'];
 		$konto = $incoming['konto'];
 
 		// optional fields
@@ -400,7 +402,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 						// bisio
 						$bisio['student_uid'] = $benutzerrespuid;
-						$this->_saveBisio($bisio);
+						$bisio_id = $this->_saveBisio($bisio, $bisio_zweck);
+						$bisio_zweck['bisio_id'] = $bisio_id;
+						$this->_saveBisioZweck($bisio_zweck);
 					}
 
 					// Buchungen
@@ -726,7 +730,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * Inserts prestudent or updates an existing one.
 	 * @param $prestudent_id
 	 * @param $prestudent
-	 * @return int|null prestudent_id of inserted or updated prestudent is successful, null otherwise.
+	 * @return int|null prestudent_id of inserted or updated prestudent if successful, null otherwise.
  	 */
 	private function _savePrestudent($prestudent_id, $prestudent)
 	{
@@ -927,7 +931,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	/**
 	 * Inserts bisio for a student or updates an existing one.
 	 * @param $bisio
-	 * @return int|null bisio_id of inserted or updated bisio is successful, null otherwise.
+	 * @return int|null bisio_id of inserted or updated bisio if successful, null otherwise.
 	 */
 	private function _saveBisio($bisio)
 	{
@@ -954,6 +958,37 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		return $bisiorespid;
+	}
+
+	/**
+	 * Inserts bisio_zweck for a student or updates an existing one.
+	 * @param $bisio_zweck
+	 * @return int|null bisio_id and zweck_id of inserted or updated bisio_zweck if successful, null otherwise.
+	 */
+	private function _saveBisioZweck($bisio_zweck)
+	{
+		$bisio_zweckid = null;
+
+		$bisiocheckresp = $this->ci->BisioZweckModel->loadWhere(array('bisio_id' => $bisio_zweck['bisio_id']));
+
+		if (isSuccess($bisiocheckresp))
+		{
+			if (hasData($bisiocheckresp))
+			{
+				$bisio_zweckresult = $this->ci->BisioZweckModel->update(array('bisio_id' => $bisio_zweck['bisio_id']),
+					array('zweck_code' => $bisio_zweck['zweck_code']));
+				$this->log('update', $bisio_zweckresult, 'bisio_zweck');
+			}
+			else
+			{
+				$bisio_zweckresult = $this->ci->BisioZweckModel->insert($bisio_zweck);
+				$this->log('insert', $bisio_zweckresult, 'bisio_zweck');
+			}
+
+			$bisio_zweckid = $bisio_zweckresult->retval;
+		}
+
+		return $bisio_zweckid;
 	}
 
 	/**

@@ -65,7 +65,7 @@ $config['fhcdefaults']['application']['kontaktnotfall'] = array(
 	'zustellung' => false
 );
 
-$config['fhcdefaults']['application']['bisio'] = array(
+$config['fhcdefaults']['application']['bisio_zweck'] = array(
 	'zweck_code' => '1'
 );
 
