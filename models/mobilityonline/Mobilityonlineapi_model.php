@@ -20,6 +20,10 @@ class Mobilityonlineapi_model extends CI_Model
 		$this->_mobilityonline_config = $this->config->item('FHC-Core-MobilityOnline');
 	}
 
+	/**
+	 * Establisches connection with soap client
+	 * @return |null
+	 */
 	protected function setSoapClient()
 	{
 		$this->_soapClient = new SoapClient($this->_mobilityonline_config['wsdlurl'].'/'.$this->service.'?wsdl',

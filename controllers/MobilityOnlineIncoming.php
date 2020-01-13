@@ -51,6 +51,9 @@ class MobilityOnlineIncoming extends Auth_Controller
 
 		$studiengaenge = $this->MoFhcModel->getStudiengaenge();
 
+		if (isError($studiengaenge))
+			show_error($studiengaenge->retval);
+
 		$this->load->view('extensions/FHC-Core-MobilityOnline/mobilityOnlineIncoming',
 			array(
 				'semester' => $studiensemesterdata->retval,
@@ -106,7 +109,7 @@ class MobilityOnlineIncoming extends Auth_Controller
 	}
 
 	/**
-	 * Gets incomings for a studiensemester and outputs json
+	 * Gets incomings for a studiensemester and a studiengang and outputs json
 	 */
 	public function getIncomingJson()
 	{

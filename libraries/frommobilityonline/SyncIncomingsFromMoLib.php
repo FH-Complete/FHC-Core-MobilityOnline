@@ -491,7 +491,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 			$semappids = $this->ci->MoGetAppModel->getApplicationIds($appobj);
 
-			if (isset($semappids) && is_array($semappids))
+			if (!isEmptyArray($semappids))
 				$appids = array_merge($appids, $semappids);
 		}
 

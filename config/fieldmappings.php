@@ -73,7 +73,7 @@ $config['fieldmappings']['application']['konto'] = array(
 	'betrag' => 'aust_prog_id',
 	'buchungstext' => 'aust_prog_id',
 	'studiengang_kz' => 'studr_id'
-);;
+);
 
 $config['fieldmappings']['incomingcourse']['lehrveranstaltung'] = array(
 	'mobezeichnung' => 'hostCourseName',

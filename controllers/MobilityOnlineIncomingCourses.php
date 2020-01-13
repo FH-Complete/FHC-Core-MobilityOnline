@@ -46,10 +46,16 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 		if (isError($currsemdata))
 			show_error($currsemdata->retval);
 
+		$studiengaenge = $this->MoFhcModel->getStudiengaenge();
+
+		if (isError($studiengaenge))
+			show_error($studiengaenge->retval);
+
 		$this->load->view('extensions/FHC-Core-MobilityOnline/mobilityOnlineIncomingCourses',
 			array(
 				'semester' => $studiensemesterdata->retval,
-				'currsemester' => $currsemdata->retval
+				'currsemester' => $currsemdata->retval,
+				'studiengaenge' => $studiengaenge->retval
 			)
 		);
 	}
@@ -60,7 +66,8 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 	public function getIncomingWithCoursesJson()
 	{
 		$studiensemester = $this->input->get('studiensemester');
-		$incomingdata = $this->syncincomingcoursesfrommolib->getIncomingWithCourses($studiensemester);
+		$studiengang_kz = $this->input->get('studiengang_kz');
+		$incomingdata = $this->syncincomingcoursesfrommolib->getIncomingWithCourses($studiensemester, $studiengang_kz);
 
 		$this->outputJsonSuccess($incomingdata);
 	}

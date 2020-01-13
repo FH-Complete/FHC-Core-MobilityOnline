@@ -21,7 +21,7 @@ class Mobilityonlinefhc_model extends DB_Model
 	 * @param $prestudent_id
 	 * @return mixed
 	 */
-	public function getIncomingPrestudent($prestudent_id)
+	public function getIncomingPrestudent($prestudent_id, $studiengang_kz = null)
 	{
 		$valuedefaults = $this->config->item('fhcdefaults');
 		$emailbez = $valuedefaults['application']['kontaktmail']['kontakttyp'];
@@ -32,7 +32,13 @@ class Mobilityonlinefhc_model extends DB_Model
 		$this->PrestudentModel->addJoin('public.tbl_benutzer', 'person_id');
 		$this->PrestudentModel->addJoin('public.tbl_studiengang', 'studiengang_kz');
 		$this->PrestudentModel->addJoin('bis.tbl_bisio', 'uid = student_uid');
-		$prestudent = $this->PrestudentModel->load($prestudent_id);
+
+		$whereparams = array('prestudent_id' => $prestudent_id);
+
+		if (isset($studiengang_kz) && is_numeric($studiengang_kz))
+			$whereparams['studiengang_kz'] = $studiengang_kz;
+
+		$prestudent = $this->PrestudentModel->loadWhere($whereparams);
 
 		$return = error('error occured while getting prestudent');
 

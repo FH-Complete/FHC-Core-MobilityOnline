@@ -28,28 +28,49 @@
 		<div id="page-wrapper">
 			<div class="container-fluid">
 				<div class="row">
-					<div class="col-lg-12">
+					<div class="col-xs-12">
 						<h3 class="page-header text-center">MobilityOnline Incoming Courses Assignment</h3>
 					</div>
 				</div>
-				<div class="row text-center" id="studiensemesterinput">
-					<div class="col-xs-4 col-xs-offset-4 form-group">
+				<div class="row text-center" id="syncIncomingInput">
+					<div class="col-xs-2 col-xs-offset-2 form-group">
 						<label>Studiensemester</label>
-						<div class="input-group">
-							<select class="form-control" name="studiensemester" id="studiensemester">
-								<?php
-								foreach ($semester as $sem):
-									$selected = $sem->studiensemester_kurzbz === $currsemester[0]->studiensemester_kurzbz ? ' selected=""' : '';
-									?>
-									<option value="<?php echo $sem->studiensemester_kurzbz ?>"<?php echo $selected ?>>
-										<?php echo $sem->studiensemester_kurzbz ?>
-									</option>
-								<?php endforeach; ?>
-							</select>
-						<span class="input-group-btn">
-							<button class="btn btn-default" id="showincomingsbtn">Show synchronised Incomings</button>
-						</span>
-						</div>
+						<select class="form-control" name="studiensemester" id="studiensemester">
+							<?php
+							foreach ($semester as $sem):
+								$selected = $sem->studiensemester_kurzbz === $currsemester[0]->studiensemester_kurzbz ? ' selected=""' : '';
+								?>
+								<option value="<?php echo $sem->studiensemester_kurzbz ?>"<?php echo $selected ?>>
+									<?php echo $sem->studiensemester_kurzbz ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+					<div class="col-xs-3 form-group">
+						<label>Studiengang</label>
+						<select class="form-control" name="studiengang_kz" id="studiengang_kz">
+							<option value="" selected="selected">Select Studiengang...</option>';
+							<option value="all">Alle</option>
+							<?php
+							foreach ($studiengaenge as $studiengang):
+
+								if ($typ != $studiengang->typ || $typ == '')
+								{
+									if ($typ != '')
+										echo '</optgroup>';
+
+									echo '<optgroup label = "'.($studiengang->typbezeichnung !== '' ? $studiengang->typbezeichnung : $studiengang).'">';
+								}
+								$typ = $studiengang->typ;
+								?>
+								<option value="<?php echo $studiengang->studiengang_kz ?>">
+									<?php echo $studiengang->kuerzel . ' - ' . $studiengang->bezeichnung ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+					<div class="col-xs-2" id="showSyncedIncomings" style="top: 25px"> <!---->
+						<button class="btn btn-default" id="showincomingsbtn">Show synchronised Incomings</button>
 					</div>
 				</div>
 				<div class="row" id="incomingprestudentsrow">

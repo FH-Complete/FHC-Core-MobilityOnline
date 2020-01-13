@@ -86,7 +86,6 @@ $config['fhcfields']['application'] = array(
 					 				'type' => 'date'),
 					 'nation_code' => array('required' => true,
 					 						'name' => 'Nation',
-
 											'ref' => 'bis.tbl_nation'),
 					 'mobilitaetsprogramm_code' =>
 						 array('required' => true,

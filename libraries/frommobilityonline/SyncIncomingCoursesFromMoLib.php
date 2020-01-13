@@ -204,7 +204,7 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	 * @param $studiensemester
 	 * @return array with prestudents
 	 */
-	public function getIncomingWithCourses($studiensemester)
+	public function getIncomingWithCourses($studiensemester, $studiengang_kz = null)
 	{
 		$prestudents = array();
 
@@ -215,7 +215,7 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			foreach ($syncedIncomingIds->retval as $syncedIncomingId)
 			{
-				$prestudent = $this->ci->MoFhcModel->getIncomingPrestudent($syncedIncomingId->prestudent_id);
+				$prestudent = $this->ci->MoFhcModel->getIncomingPrestudent($syncedIncomingId->prestudent_id, $studiengang_kz);
 
 				if (hasData($prestudent))
 				{

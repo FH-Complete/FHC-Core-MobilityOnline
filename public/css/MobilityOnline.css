@@ -87,3 +87,7 @@ table.table-vertical-center td,th {
 .nowrap {
     white-space: nowrap;
 }
+
+#showSyncedIncomings.col-lg-2 {
+    top: 25px;
+}

@@ -8,27 +8,25 @@ $(document).ready(function()
 			function()
 			{
 				var studiensemester = $("#studiensemester").val();
-				MobilityOnlineIncomingCourses.getIncomingCourses(studiensemester);
+				var studiengang_kz = $("#studiengang_kz").val();
+				$("#studiengang_kz").parent().removeClass("has-error");
+				if (studiengang_kz === '')
+					$("#studiengang_kz").parent().addClass("has-error");
+				else
+					MobilityOnlineIncomingCourses.getIncomingCourses(studiensemester, studiengang_kz);
 			}
 		);
 
 		// make right MO courses box follow on scroll
-		var mocourseswell = $("#mocourseswell"), originalY = mocourseswell.offset().top;
-
-		var topMargin = 0;
+		var mocourseswell = $("#mocourseswell");
+		var windowheight = $(window).height();
 
 		mocourseswell.css('position', 'relative');
 
 		$(window).on('scroll', function(event) {
 			var scrollTop = $(window).scrollTop();
-
-			mocourseswell.stop(false, false).animate({
-				top: scrollTop < originalY
-					? 0
-					: scrollTop - originalY + topMargin
-			}, 100);
+			mocourseswell.css('top', scrollTop + 'px')
 		});
-
 	}
 );
 
@@ -38,12 +36,16 @@ var MobilityOnlineIncomingCourses = {
 	 * Gets incomings from MobilityOnline and fhcomplete together with
 	 * their courses assigned in MobilityOnline
 	 * @param studiensemester
+	 * @param studiengang_kz
 	 */
-	getIncomingCourses: function(studiensemester)
+	getIncomingCourses: function(studiensemester, studiengang_kz)
 	{
 		FHC_AjaxClient.ajaxCallGet(
 			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/getIncomingWithCoursesJson',
-			{"studiensemester": studiensemester},
+			{
+				"studiensemester": studiensemester,
+				"studiengang_kz": studiengang_kz
+			},
 			{
 				successCallback: function(data, textStatus, jqXHR)
 				{
@@ -553,7 +555,7 @@ var MobilityOnlineIncomingCourses = {
 		$("#message").empty();
 
 		var toToggle = [
-			$("#studiensemesterinput"),
+			$("#syncIncomingInput"),
 			$("#incomingprestudentsrow"),
 			$("#coursesassignment"),
 			$("#lvsprestudent")
