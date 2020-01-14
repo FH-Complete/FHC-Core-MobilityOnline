@@ -22,18 +22,25 @@ class Mobilityonlineapi_model extends CI_Model
 
 	/**
 	 * Establisches connection with soap client
-	 * @return |null
+	 * @return void |null
 	 */
 	protected function setSoapClient()
 	{
-		$this->_soapClient = new SoapClient($this->_mobilityonline_config['wsdlurl'].'/'.$this->service.'?wsdl',
-			array(
-				'soap_version' => $this->_mobilityonline_config['soapversion'],
-				'encoding' => $this->_mobilityonline_config['encoding'],
-				'uri' => $this->_mobilityonline_config['wsdlurl'].'/'.$this->service.'.'.$this->endpoint/*,
-				'default_socket_timeout' => $this->_mobilityonline_config['default_socket_timeout']*/
-			)
-		);
+		try
+		{
+			$this->_soapClient = new SoapClient($this->_mobilityonline_config['wsdlurl'].'/'.$this->service.'?wsdl',
+				array(
+					'soap_version' => $this->_mobilityonline_config['soapversion'],
+					'encoding' => $this->_mobilityonline_config['encoding'],
+					'uri' => $this->_mobilityonline_config['wsdlurl'].'/'.$this->service.'.'.$this->endpoint/*,
+					'default_socket_timeout' => $this->_mobilityonline_config['default_socket_timeout']*/
+				)
+			);
+		}
+		catch (SoapFault $e)
+		{
+			return;
+		}
 	}
 
 	/**
