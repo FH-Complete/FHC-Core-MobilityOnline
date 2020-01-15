@@ -529,7 +529,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Gets incomings (applications) by appids
-	 * also checks if incomings already in fhcomplete
+	 * also checks if incomings already are in fhcomplete
 	 * (prestudent_id in tbl_mo_appidzuordnung table and tbl_prestudent)
 	 * @param $appids
 	 * @param $studiensemester for check if in mapping table
@@ -547,32 +547,21 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 			$fhcobj = $this->mapMoAppToIncoming($application, $address, $lichtbild);
 
-			$zuordnung = $this->ci->MoappidzuordnungModel->loadWhere(
-				array(
-					'mo_applicationid' => $appid,
-					'studiensemester_kurzbz' => $studiensemester)
-			);
-
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appid;
-
 			$fhcobj_extended->infhc = false;
 
 			$errors = $this->fhcObjHasError($fhcobj, self::MOOBJECTTYPE);
 			$fhcobj_extended->error = $errors->error;
 			$fhcobj_extended->errorMessages = $errors->errorMessages;
 
-			if (hasData($zuordnung))
+			$found_prestudent_id = $this->checkMoIdInFhc($appid);
+
+			// mark as already in fhcomplete if prestudent is in mapping table
+			if (isset($found_prestudent_id) && is_numeric($found_prestudent_id))
 			{
-				$prestudent_id = $zuordnung->retval[0]->prestudent_id;
-
-				$prestudent_res = $this->ci->PrestudentModel->load($prestudent_id);
-
-				if (hasData($prestudent_res))
-				{
-					$fhcobj_extended->infhc = true;
-					$fhcobj_extended->prestudent_id = $prestudent_id;
-				}
+				$fhcobj_extended->infhc = true;
+				$fhcobj_extended->prestudent_id = $found_prestudent_id;
 			}
 
 			$fhcobj_extended->data = $fhcobj;

@@ -76,11 +76,15 @@ class MobilityOnlineSyncLib
 	public function mapSemesterToMoStudienjahr($studiensemester_kurzbz)
 	{
 		$studienjahrsemestermo = null;
+		$semesteryear = substr($studiensemester_kurzbz, 2, 4);
 
 		if (strstr($studiensemester_kurzbz, self::WINTERSEMESTER_PREFIX))
 		{
-			$semesteryear = substr($studiensemester_kurzbz, 2, 4);
-			$studienjahrsemestermo = str_replace(self::WINTERSEMESTER_PREFIX, 'Studienjahr ', $studiensemester_kurzbz).'/'.(++$semesteryear);
+			$studienjahrsemestermo = str_replace(self::WINTERSEMESTER_PREFIX, 'Studienjahr ', $studiensemester_kurzbz).'/'.($semesteryear + 1);
+		}
+		elseif (strstr($studiensemester_kurzbz, self::SOMMERSEMESTER_PREFIX))
+		{
+			$studienjahrsemestermo = 'Studienjahr ' . ($semesteryear - 1) . '/'. $semesteryear;
 		}
 
 		return $studienjahrsemestermo;
