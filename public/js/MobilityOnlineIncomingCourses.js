@@ -19,13 +19,13 @@ $(document).ready(function()
 
 		// make right MO courses box follow on scroll
 		var mocourseswell = $("#mocourseswell");
-		var windowheight = $(window).height();
-
 		mocourseswell.css('position', 'relative');
 
 		$(window).on('scroll', function(event) {
 			var scrollTop = $(window).scrollTop();
-			mocourseswell.css('top', scrollTop + 'px')
+			var maxScrollHeight = $("#fhcles")[0].scrollHeight;
+			if (scrollTop < maxScrollHeight)
+				mocourseswell.css('top', scrollTop + 'px');
 		});
 	}
 );
