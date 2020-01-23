@@ -234,17 +234,46 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		$fhcobj = $this->convertToFhcFormat($moapp, self::MOOBJECTTYPE);
 
+		// add all Studiensemester for Prestudentstatus
+
+		// get all semesters from MO Semesterfield
+		$allsemesters = array($fhcobj['prestudentstatus']['studiensemester_kurzbz']);
+		$mostudjahr = $this->mapSemesterToMoStudienjahr($fhcobj['prestudentstatus']['studiensemester_kurzbz']);
+
+		// WS and SS if Studienjahr given in MO
+		if ($moapp->{$prestudentstatusmappings['studiensemester_kurzbz']} === $mostudjahr)
+		{
+			$this->mapMoStudienjahrToSemester($mostudjahr);
+			$allsemesters = array_unique(array_merge($allsemesters, $this->mapMoStudienjahrToSemester($mostudjahr)));
+		}
+
+		// add Studiensemester for each semester in the stay time span of von - bis date
+		$studiensemesterres = $this->ci->StudiensemesterModel->getByDate($fhcobj['bisio']['von'], $fhcobj['bisio']['bis']);
+
+		if (hasData($studiensemesterres))
+		{
+			foreach ($studiensemesterres->retval as $semester)
+			{
+				$studiensemester_kurzbz = $semester->studiensemester_kurzbz;
+				if (!in_array($studiensemester_kurzbz, $allsemesters))
+					$allsemesters[] = $studiensemester_kurzbz;
+			}
+		}
+
+		$fhcobj['all_studiensemester_kurzbz'] = $allsemesters;
+
+		// add last MO pipeline status
 		$fhcobj['pipelineStatus'] = 'not set';
 		$fhcobj['pipelineStatusDescription'] = 'no Status set';
 
-		// add last status
 		$valuesconfig = $this->ci->config->item('values');
 		$pipelinestati = $valuesconfig['pipelinestati'];
 		for ($i = count($pipelinestati) - 1; $i >= 0; $i--)
 		{
 			foreach ($moapp->nonUsedApplicationDataElements as $element)
 			{
-				if ($element->elementName === $pipelinestati[$i] && $element->elementValueBoolean === true)
+				if (isset($element->elementName) && $element->elementName === $pipelinestati[$i]
+					&& isset($element->elementValueBoolean) && $element->elementValueBoolean === true)
 				{
 					$fhcobj['pipelineStatus'] = $element->elementName;
 					$fhcobj['pipelineStatusDescription'] = $element->elementDescription;
@@ -320,23 +349,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$kontakttel = isset($incoming['kontakttel']) ? $incoming['kontakttel'] : array();
 
 		$studiensemester = $prestudentstatus['studiensemester_kurzbz'];
-		$prestudentstatus['studiensemester_kurzbz'] = $studiensemester;
 
-		// add prestudentstatus for semester saved in MO
-		$studiensemarr = array($studiensemester);
-
-		$studiensemesterres = $this->ci->StudiensemesterModel->getByDate($bisio['von'], $bisio['bis']);
-
-		// add Studiensemester for each semester in the time span of von - bis date
-		if (hasData($studiensemesterres))
-		{
-			foreach ($studiensemesterres->retval as $semester)
-			{
-				$studiensemester_kurzbz = $semester->studiensemester_kurzbz;
-				if (!in_array($studiensemester_kurzbz, $studiensemarr))
-					$studiensemarr[] = $studiensemester_kurzbz;
-			}
-		}
+		// all semesters, one for each prestudentstatus
+		$studiensemarr = $incoming['all_studiensemester_kurzbz'];
 
 		// Start DB transaction
 		$this->ci->db->trans_begin();
@@ -440,7 +455,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Gets incomings for a studiensemester
+	 * Gets MobilityOnline incomings for a fhcomplete studiensemester
 	 * @param $studiensemester
 	 * @return array with applications
 	 */
@@ -454,7 +469,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$stgvaluemappings = $this->valuemappings['frommo']['studiengang_kz'];
 		$mostgname = $this->conffieldmappings['incomingcourse']['mostudiengang']['bezeichnung'];
 
-		// if Wintersemester, also search for Incomings who have entered Studienjahr as their Semester
+		// Also search for Incomings who have entered Studienjahr as their Semester
 		$studienjahrsemestermo = $this->mapSemesterToMoStudienjahr($studiensemester);
 		if (isset($studienjahrsemestermo))
 			$semestersforsearch[] = $studienjahrsemestermo;

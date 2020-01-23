@@ -256,7 +256,7 @@ var MobilityOnlineIncomingCourses = {
 			}
 
 			if (notInMo > 0)
-				tablerowstring += "<br /><span class='text-danger'>"+notInMo+" not in MobilityOnline</span>";
+				tablerowstring += "<br /><span class='text-danger'>"+notInMo+" in FH-Complete, but not in MobilityOnline</span>";
 
 			tablerowstring += "</td>";
 

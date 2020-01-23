@@ -208,8 +208,7 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	{
 		$prestudents = array();
 
-		$this->ci->MoappidzuordnungModel->addSelect('prestudent_id, mo_applicationid');
-		$syncedIncomingIds = $this->ci->MoappidzuordnungModel->loadWhere(array('studiensemester_kurzbz' => $studiensemester));
+		$syncedIncomingIds = $this->ci->MoappidzuordnungModel->load();
 
 		if (hasData($syncedIncomingIds))
 		{
@@ -220,6 +219,29 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 				if (hasData($prestudent))
 				{
 					$prestudentobj = $prestudent->retval;
+
+					// if semester is not the one in MobilityOnline, check semesters based on stay duration
+					if ($studiensemester !== $syncedIncomingId->studiensemester_kurzbz)
+					{
+						$prestudentstati = $this->ci->PrestudentstatusModel->load(array('prestudent_id' => $syncedIncomingId->prestudent_id));
+
+						$semFound = false;
+
+						if (hasData($prestudentstati))
+						{
+							foreach (getData($prestudentstati) as $status)
+							{
+								if ($status->studiensemester_kurzbz === $studiensemester)
+								{
+									$semFound = true;
+									break;
+								}
+							}
+						}
+
+						if (!$semFound)
+							continue;
+					}
 
 					$courses = $this->ci->MoGetAppModel->getCoursesOfApplication($syncedIncomingId->mo_applicationid);
 
