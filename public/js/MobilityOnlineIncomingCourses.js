@@ -22,10 +22,20 @@ $(document).ready(function()
 		mocourseswell.css('position', 'relative');
 
 		$(window).on('scroll', function(event) {
-			var scrollTop = $(window).scrollTop();
-			var maxScrollHeight = $("#fhcles")[0].scrollHeight;
-			if (scrollTop < maxScrollHeight)
-				mocourseswell.css('top', scrollTop + 'px');
+			if ($("#fhcles").length > 0)
+			{
+				var scrollTop = $(window).scrollTop();
+				var maxScrollHeight = $("#fhcles")[0].scrollHeight;
+				var wellheight = $("#mocourseswell")[0].scrollHeight;
+				if (wellheight < maxScrollHeight && scrollTop < maxScrollHeight)
+				{
+					var maxscreenheight = screen.height;
+					var windowheight = $(window).height();
+					var screenheightfactor = maxscreenheight / windowheight;
+					var top = scrollTop / screenheightfactor;
+					mocourseswell.css('top', top + 'px');
+				}
+			}
 		});
 	}
 );
@@ -292,6 +302,8 @@ var MobilityOnlineIncomingCourses = {
 		MobilityOnlineIncomingCourses._printMoCourses(prestudentobj.data);
 		MobilityOnlineIncomingCourses._printFhcCourses(prestudentobj.data);
 		MobilityOnlineIncomingCourses._toggleIncomingCoursesView();
+		$("#mocourseswell").css('top', '0');
+		$(window).scrollTop(0);
 	},
 	_printMoCourses: function(moapplication)
 	{
