@@ -52,6 +52,7 @@
 							<option value="" selected="selected">Select Studiengang...</option>';
 							<option value="all">Alle</option>
 							<?php
+							$typ = '';
 							foreach ($studiengaenge as $studiengang):
 
 								if ($typ != $studiengang->typ || $typ == '')
