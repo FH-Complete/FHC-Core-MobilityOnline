@@ -161,8 +161,8 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		//applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
 		$comboboxvaluefields = array($personmappings['staatsbuergerschaft'], $personmappings['sprache'], $prestudentstatusmappings['studiensemester_kurzbz'],
-									 $prestudentmappings['studiengang_kz'], $prestudentmappings['zgvmas_code'], $prestudentmappings['zgvnation'], $prestudentmappings['zgvmanation'],
-									 $bisiomappings['mobilitaetsprogramm_code'], $bisiomappings['nation_code']);
+									 $prestudentmappings['studiengang_kz'], $prestudentmappings['zgvnation'], $prestudentmappings['zgvmanation'],
+									 $bisiomappings['nation_code']);
 
 		foreach ($fieldmappings as $fhctable)
 		{

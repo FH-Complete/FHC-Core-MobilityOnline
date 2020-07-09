@@ -104,63 +104,60 @@ $config['valuemappings']['frommo']['studiengang_kz'] = array(
 $config['valuemappings']['frommo']['zgvnation'] = $nations;
 
 $config['valuemappings']['frommo']['zgvmas_code'] = array(
-	'FH-Bachelor (I)' => 1,
-	'FH-Bachelor (A)' => 2,
-	'postsek.Inland' => 3,
-	'postsek.Ausland' => 4,
-	'Uni-Bachelor (I)' => 5,
-	'Uni-Bachelor (A)' => 6,
-	'FH (I)' => 7,
-	'FH (A)' => 8,
-	'Uni (I)' => 9,
-	'Uni (A)' => 10
+	'929710' => 1, // FH-Bachelor (I)
+	'929711' => 2, // FH-Bachelor (A)
+	'929712' => 3, // postsek.Inland
+	'929713' => 4, // postsek.Ausland
+	'929714' => 5, // Uni-Bachelor (I)
+	'929715' => 6, // Uni-Bachelor (A)
+	'929716' => 7, // FH (I)
+	'929717' => 8, // FH (A)
+	'929718' => 9, // Uni (I)
+	'929719' => 10, // Uni (A)
+	'929720' => 11 // Sonstige
 );
 
 $config['valuemappings']['frommo']['zgvmanation'] = $nations;
 
 $config['valuemappings']['frommo']['mobilitaetsprogramm_code'] = array(
-	'Erasmus SMS' => 7,
-	'Erasmus SMP' => 7,
-	'Erasmus Mundus' => 7,
-	'Erasmus (Studies)' => 7,
-	'Incoming (mit Agreement)' => 201,
-	//'Incoming (with Bilateral Agreement or Free Mover)' => 201,
-	'Incoming (with Bilateral Agreement)' => 201,
-	'Free Mover' => 202
+	'685' => 7, // Erasmus (Praktikum)
+	'688' => 7, // Erasmus (Semester)
+	'681' => 7, // Erasmus (Mundus)
+	'830' => 201, // Exchange Semester (with Bilateral Agreement)
+	'682' => 202, // Free Mover
+	'946' => 18 // Marshall Plan Scholarship
+	/*	'Erasmus SMS' => 7,
+	'Erasmus SMP' => 7,*/
+	//'Erasmus (Studies)' => 7,
 );
 
 $config['valuemappings']['frommo']['buchungstyp_kurzbz'] = array(
-	'Erasmus SMS' => array('OEH', 'Studiengebuehr'),
-	'Erasmus SMP' => array('OEH', 'Studiengebuehr'),
-	'Erasmus Mundus' => array('OEH', 'Studiengebuehr'),
-	'Erasmus (Studies)' => array('OEH', 'Studiengebuehr'),
-	'Incoming (mit Agreement)' => array('OEH', 'Studiengebuehr'),
-	//'Incoming (with Bilateral Agreement or Free Mover)' => array('OEH', 'Studiengebuehr'),
-	'Incoming (with Bilateral Agreement)' => array('OEH', 'Studiengebuehr'),
-	'Free Mover' => array('OEH', 'Studiengebuehr', 'Unkostenbeitrag')
+	'685' => array('OEH', 'Studiengebuehr'),
+	'688' => array('OEH', 'Studiengebuehr'),
+	'681' => array('OEH', 'Studiengebuehr'),
+	'830' => array('OEH', 'Studiengebuehr'),
+	'682' => array('OEH', 'Studiengebuehr', 'Unkostenbeitrag'),
+	'946' => array('OEH', 'Studiengebuehr')
 );
 
 // if Betrag is not set here, default from tbl_buchungstyp is used
 $config['valuemappings']['frommo']['betrag'] = array(
-	'Erasmus SMS' => array('Studiengebuehr' => 0.00),
-	'Erasmus SMP' => array('Studiengebuehr' => 0.00),
-	'Erasmus Mundus' => array('Studiengebuehr' => 0.00),
-	'Erasmus (Studies)' => array('Studiengebuehr' => 0.00),
-	'Incoming (mit Agreement)' => array('Studiengebuehr' => 0.00),
-	//'Incoming (with Bilateral Agreement or Free Mover)' => array('Studiengebuehr' => 0.00),
-	'Incoming (with Bilateral Agreement)' => array('Studiengebuehr' => 0.00)
+	'685' => array('Studiengebuehr' => 0.00),
+	'688' => array('Studiengebuehr' => 0.00),
+	'681' => array('Studiengebuehr' => 0.00),
+	'830' => array('Studiengebuehr' => 0.00),
+	'682' => array('Studiengebuehr' => 0.00),
+	'946' => array('Studiengebuehr' => 0.00)
 );
 
 $defaultbuchungen = array('OEH' => 'ÖH-Beitrag STG Semester', 'Studiengebuehr' => 'Studienbeitrag_Incoming');
 $config['valuemappings']['frommo']['buchungstext'] = array(
-	'Erasmus SMS' => $defaultbuchungen,
-	'Erasmus SMP' => $defaultbuchungen,
-	'Erasmus Mundus' => $defaultbuchungen,
-	'Erasmus (Studies)' => $defaultbuchungen,
-	'Incoming (mit Agreement)' => $defaultbuchungen,
-	//'Incoming (with Bilateral Agreement or Free Mover)' => array('Studiengebuehr' => 0),
-	'Incoming (with Bilateral Agreement)' => $defaultbuchungen,
-	'Free Mover' => array('OEH' => 'ÖH-Beitrag STG Semester',
+	'685' => $defaultbuchungen,
+	'688' => $defaultbuchungen,
+	'681' => $defaultbuchungen,
+	'830' => $defaultbuchungen,
+	'946' => $defaultbuchungen,
+	'682' => array('OEH' => 'ÖH-Beitrag STG Semester',
 						  'Studiengebuehr' => 'Studienbeitrag STG Semester - Freemover',
 						  'Unkostenbeitrag' => 'Unkostenbeitrag STG Semester')
 );
