@@ -6,10 +6,11 @@ if (! defined('BASEPATH')) exit('No direct script access allowed');
  */
 class Mobilityonlineapi_model extends CI_Model
 {
+	protected $name = '';
 	private $_mobilityonline_config;
 	private $_soapClient;
-	protected $service = '';
-	protected $endpoint = '';
+
+	const WSDL = 'wsdl';
 
 	/**
 	 * Constructor
@@ -28,11 +29,14 @@ class Mobilityonlineapi_model extends CI_Model
 	{
 		try
 		{
-			$this->_soapClient = new SoapClient($this->_mobilityonline_config['wsdlurl'].'/'.$this->service.'?wsdl',
+			$this->_soapClient = new SoapClient($this->_mobilityonline_config['wsdlurl'].'/'.
+				$this->_mobilityonline_config['services'][$this->name]['service'].'?'.self::WSDL,
 				array(
 					'soap_version' => $this->_mobilityonline_config['soapversion'],
 					'encoding' => $this->_mobilityonline_config['encoding'],
-					'uri' => $this->_mobilityonline_config['wsdlurl'].'/'.$this->service.'.'.$this->endpoint/*,
+					'uri' => $this->_mobilityonline_config['wsdlurl'].'/'.
+						$this->_mobilityonline_config['services'][$this->name]['service'].'.'.
+						$this->_mobilityonline_config['services'][$this->name]['endpoint']/*,
 					'default_socket_timeout' => $this->_mobilityonline_config['default_socket_timeout']*/
 				)
 			);

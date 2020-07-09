@@ -6,8 +6,7 @@ if (! defined('BASEPATH')) exit('No direct script access allowed');
  */
 class Mogetmasterdata_model extends Mobilityonlineapi_model
 {
-	protected $service = 'GetMasterDataService';
-	protected $endpoint = 'GetMasterDataServiceHttpsSoap12Endpoint';
+	protected $name = 'getMasterData';
 
 	/**
 	 * Constructor
