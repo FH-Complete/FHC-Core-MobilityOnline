@@ -132,17 +132,17 @@ $config['valuemappings']['frommo']['mobilitaetsprogramm_code'] = array(
 );
 
 $config['valuemappings']['frommo']['buchungstyp_kurzbz'] = array(
-	'685' => array('OEH', 'Studiengebuehr'),
+	'685' => array('OEH', 'Studiengebuehr'), // Buchungstyp depends on mobilitaetsprogramm_code
 	'688' => array('OEH', 'Studiengebuehr'),
 	'681' => array('OEH', 'Studiengebuehr'),
 	'830' => array('OEH', 'Studiengebuehr'),
-	'682' => array('OEH', 'Studiengebuehr', 'Unkostenbeitrag'),
+	'682' => array('OEH', 'Studiengebuehr'),
 	'946' => array('OEH', 'Studiengebuehr')
 );
 
 // if Betrag is not set here, default from tbl_buchungstyp is used
 $config['valuemappings']['frommo']['betrag'] = array(
-	'685' => array('Studiengebuehr' => 0.00),
+	'685' => array('Studiengebuehr' => 0.00),// Betrag depends on mobilitaetsprogramm_code
 	'688' => array('Studiengebuehr' => 0.00),
 	'681' => array('Studiengebuehr' => 0.00),
 	'830' => array('Studiengebuehr' => 0.00),
@@ -157,7 +157,8 @@ $config['valuemappings']['frommo']['buchungstext'] = array(
 	'681' => $defaultbuchungen,
 	'830' => $defaultbuchungen,
 	'946' => $defaultbuchungen,
-	'682' => array('OEH' => 'ÖH-Beitrag STG Semester',
+	'682' => $defaultbuchungen
+	/**'682' => array('OEH' => 'ÖH-Beitrag STG Semester',
 						  'Studiengebuehr' => 'Studienbeitrag STG Semester - Freemover',
-						  'Unkostenbeitrag' => 'Unkostenbeitrag STG Semester')
+						  'Unkostenbeitrag' => 'Unkostenbeitrag STG Semester')**/
 );

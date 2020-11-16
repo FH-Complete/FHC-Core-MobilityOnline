@@ -802,16 +802,15 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->StudentModel->addOrder('insertamum');
 		$benutzerstudcheckresp = $this->ci->StudentModel->loadWhere(array('prestudent_id' => $prestudent['prestudent_id']));
 
-		$benutzercheckresp = success('success');
-
 		if (isSuccess($benutzerstudcheckresp))
 		{
 			if (hasData($benutzerstudcheckresp))
 			{
 				$benutzer['uid'] = $benutzerstudcheckresp->retval[0]->student_uid;
+				$benutzerresp_uid = $benutzer['uid'];
+
 				if ($this->debugmode)
 				{
-					$benutzerresp_uid = $benutzer['uid'];
 					$this->output .= "<br />benutzer for student ".$prestudent['prestudent_id'] ." already exists, uid " .$benutzer['uid'];
 				}
 			}

@@ -9,7 +9,7 @@ $config['FHC-Core-MobilityOnline']['encoding'] = 'utf8';
 
 $config['FHC-Core-MobilityOnline']['authority'] = 'authority';
 
-$config['FHC-Core-MobilityOnline']['debugmode'] = false;
+$config['FHC-Core-MobilityOnline']['debugmode'] = false; // gives more detailed output of sync results
 
 $config['FHC-Core-MobilityOnline']['post_max_size'] = '4M';
 
