@@ -51,6 +51,12 @@ $config['fhcdefaults']['address']['adresse'] = array(
 	'zustelladresse' => true
 );
 
+$config['fhcdefaults']['curraddress']['studienadresse'] = array(
+	'typ' => 'h',
+	'heimatadresse' => false,
+	'zustelladresse' => true
+);
+
 $config['fhcdefaults']['address']['kontakttel'] = array(
 	'kontakttyp' => 'telefon'
 );

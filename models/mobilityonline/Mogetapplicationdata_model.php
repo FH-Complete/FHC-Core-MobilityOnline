@@ -126,6 +126,23 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	}
 
 	/**
+	 * Get current (stiudium) adress of applicant
+	 * @param $appid
+	 * @return array address on success, null otherwise
+	 */
+	public function getCurrentAddress($appid)
+	{
+		$success = $this->performCall('getCurrentAddress', array('applicationID' => $appid));
+
+		if (isset($success->return))
+		{
+			return $success->return;
+		}
+		else
+			return null;
+	}
+
+	/**
 	 * Get Courses an applicant has assigned for
 	 * @param $appid
 	 * @return array courses on success, null otherwise

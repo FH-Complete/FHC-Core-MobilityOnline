@@ -148,7 +148,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * @param $photo of applicant
 	 * @return array with fhcomplete table arrays
 	 */
-	public function mapMoAppToIncoming($moapp, $moaddr = null, $photo = null)
+	public function mapMoAppToIncoming($moapp, $moaddr = null, $curraddr = null, $photo = null)
 	{
 		$fieldmappings = $this->conffieldmappings[self::MOOBJECTTYPE];
 		$personmappings = $fieldmappings['person'];
@@ -193,6 +193,8 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$monation = $moapp->{$personmappings['staatsbuergerschaft']};
 		$mobisionation = $moapp->{$bisiomappings['nation_code']};
 		$moaddrnation = isset($moaddr) ? $moaddr->{$adressemappings['nation']['name']}->description : null;
+		$curraddrnation = isset($curraddr) ? $curraddr->{$adressemappings['nation']['name']}->description : null;
+
 		$mozgvnation = isset($prestudentmappings['zgvnation']) && isset($moapp->{$prestudentmappings['zgvnation']}) ? $moapp->{$prestudentmappings['zgvnation']} : null;
 		$mozgvmanation = isset($prestudentmappings['zgvmanation']) && isset($moapp->{$prestudentmappings['zgvmanation']}) ? $moapp->{$prestudentmappings['zgvmanation']} : null;
 
@@ -222,6 +224,11 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				if ($fhcnation->kurztext === $moaddrnation || $fhcnation->langtext === $moaddrnation || $fhcnation->engltext === $moaddrnation)
 				{
 					$moaddr->{$adressemappings['nation']['name']} = $fhcnation->nation_code;
+				}
+
+				if ($fhcnation->kurztext === $curraddrnation || $fhcnation->langtext === $curraddrnation || $fhcnation->engltext === $curraddrnation)
+				{
+					$curraddr->{$adressemappings['nation']['name']} = $fhcnation->nation_code;
 				}
 			}
 		}
@@ -283,8 +290,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		$fhcaddr = $this->convertToFhcFormat($moaddr, 'address');
+		$fhccurraddr = $this->convertToFhcFormat($curraddr, 'curraddress');
 
-		$fhcobj = array_merge($fhcobj, $fhcaddr);
+		$fhcobj = array_merge($fhcobj, $fhcaddr, $fhccurraddr);
 
 		// courses
 		$fhcobj['mocourses'] = array();
@@ -338,6 +346,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$student = $incoming['student'];
 		$studentlehrverband = $incoming['studentlehrverband'];
 		$adresse = $incoming['adresse'];
+		$studienadresse = $incoming['studienadresse'];
 		$kontaktmail = $incoming['kontaktmail'];
 		$bisio = $incoming['bisio'];
 		$bisio_zweck = $incoming['bisio_zweck'];
@@ -362,6 +371,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			// adresse
 			$this->_saveAdresse($person_id, $adresse);
+			$this->_saveAdresse($person_id, $studienadresse);
 
 			// kontakt
 			$kontakte = array(
@@ -510,7 +520,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				$appids = array_merge($appids, $semappids);
 		}
 
-		return $this->_getIncomingByIds($appids, $studiensemester);
+		return $this->_getIncomingByIds($appids);
 	}
 
 	/**
@@ -550,7 +560,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * @param $studiensemester for check if in mapping table
 	 * @return array with applications
 	 */
-	private function _getIncomingByIds($appids, $studiensemester)
+	private function _getIncomingByIds($appids)
 	{
 		$incomings = array();
 
@@ -558,9 +568,11 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			$application = $this->ci->MoGetAppModel->getApplicationById($appid);
 			$address = $this->ci->MoGetAppModel->getPermanentAddress($appid);
+			$currAddress = $this->ci->MoGetAppModel->getCurrentAddress($appid);
+
 			$lichtbild = $this->ci->MoGetAppModel->getFilesOfApplication($appid, 'PASSFOTO');
 
-			$fhcobj = $this->mapMoAppToIncoming($application, $address, $lichtbild);
+			$fhcobj = $this->mapMoAppToIncoming($application, $address, $currAddress, $lichtbild);
 
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appid;
@@ -633,8 +645,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	private function _saveAdresse($person_id, $adresse)
 	{
 		$adresse_id = null;
-		// insert if there is no Heimatadresse
-		$heimataddrresp = $this->ci->AdresseModel->loadWhere(array('person_id' => $person_id, 'heimatadresse' => true));
+		// insert if there is no adress with same heimatadresse / zustelladresse values
+		$heimataddrresp = $this->ci->AdresseModel->loadWhere(array(
+				'person_id' => $person_id,
+				'heimatadresse' => $adresse['heimatadresse'],
+				'zustelladresse' => $adresse['zustelladresse']
+			));
 
 		if (isSuccess($heimataddrresp) && !hasData($heimataddrresp))
 		{
