@@ -43,7 +43,7 @@ $config['fieldmappings']['application']['bisio'] = array(
 	'mobilitaetsprogramm_code' => 'aust_prog_id'
 );
 
-$config['fieldmappings']['address']['adresse'] = array(
+$adressemapping = array(
 	'strasse' => 'street',
 	'plz' => 'postCode',
 	'ort' => 'city',
@@ -51,6 +51,9 @@ $config['fieldmappings']['address']['adresse'] = array(
 	//if data is returned as array, type is name of field where value is stored
 	'nation' => array('name' => 'country', 'type' => 'description')
 );
+
+$config['fieldmappings']['address']['adresse'] = $adressemapping;
+$config['fieldmappings']['curraddress']['studienadresse'] = $adressemapping;
 
 $config['fieldmappings']['address']['kontakttel'] = array(
 	'kontakt' => 'telNumber'
