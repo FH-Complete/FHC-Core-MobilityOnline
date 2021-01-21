@@ -346,7 +346,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$student = $incoming['student'];
 		$studentlehrverband = $incoming['studentlehrverband'];
 		$adresse = $incoming['adresse'];
-		$studienadresse = $incoming['studienadresse'];
 		$kontaktmail = $incoming['kontaktmail'];
 		$bisio = $incoming['bisio'];
 		$bisio_zweck = $incoming['bisio_zweck'];
@@ -356,6 +355,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$akte = isset($incoming['akte']) ? $incoming['akte'] : array();
 		$kontaktnotfall = isset($incoming['kontaktnotfall']) ? $incoming['kontaktnotfall'] : array();
 		$kontakttel = isset($incoming['kontakttel']) ? $incoming['kontakttel'] : array();
+		$studienadresse = isset($incoming['studienadresse']) ? $incoming['studienadresse'] : array();
 
 		$studiensemester = $prestudentstatus['studiensemester_kurzbz'];
 
@@ -644,6 +644,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	private function _saveAdresse($person_id, $adresse)
 	{
+		if (isEmptyArray($adresse))
+			return null;
+
 		$adresse_id = null;
 		// insert if there is no adress with same heimatadresse / zustelladresse values
 		$heimataddrresp = $this->ci->AdresseModel->loadWhere(array(

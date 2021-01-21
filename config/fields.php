@@ -60,7 +60,6 @@ $config['fhcfields']['application'] = array(
 								  'verband' => array('required' => true)
 	),
 	'adresse' => array('nation' => array('required' => true,
-
 										 'ref' => 'bis.tbl_nation',
 										 'reffield' => 'nation_code'),
 					   'ort' => array('required' => true),
