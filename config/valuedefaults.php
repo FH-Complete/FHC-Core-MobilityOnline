@@ -75,6 +75,10 @@ $config['fhcdefaults']['application']['bisio_zweck'] = array(
 	'zweck_code' => '1'
 );
 
+$config['fhcdefaults']['applicationout']['bisio_zweck'] = array(
+	'zweck_code' => '1'
+);
+
 $config['modefaults']['course']['lehrveranstaltung'] = array(
 	'applicationType' => 'IN',
 	'studyArea' => array('description' => 'FHTW Studiengänge')

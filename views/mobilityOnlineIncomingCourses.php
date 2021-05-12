@@ -79,7 +79,7 @@
 						<div class="well well-sm wellminheight">
 							<div class="text-center">
 								<h4>MobilityOnline Incomings</h4>
-								<div id="noincomingstext">
+								<div id="nrapplicationstext">
 									<span id="totalCoursesAssigned">0</span>/<span id="totalCoursesFhc">0</span> courses assigned
 								</div>
 							</div>

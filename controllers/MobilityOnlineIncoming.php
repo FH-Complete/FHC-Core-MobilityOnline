@@ -14,11 +14,11 @@ class MobilityOnlineIncoming extends Auth_Controller
 	{
 		parent::__construct(
 			array(
-			'index' => 'inout/incoming:rw',
-			'syncIncomings' => 'inout/incoming:rw',
-			'getIncomingJson' => 'inout/incoming:r',
-			'checkMoidsInFhc' => 'inout/incoming:r',
-			'getPostMaxSize' => 'inout/incoming:r'
+				'index' => 'inout/incoming:rw',
+				'syncIncomings' => 'inout/incoming:rw',
+				'getIncomingJson' => 'inout/incoming:r',
+				'checkMoidsInFhc' => 'inout/incoming:r',
+				'getPostMaxSize' => 'inout/incoming:r'
 			)
 		);
 

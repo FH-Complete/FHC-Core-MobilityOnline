@@ -427,7 +427,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 						// bisio
 						$bisio['student_uid'] = $benutzerrespuid;
-						$bisio_id = $this->_saveBisio($bisio, $bisio_zweck);
+						$bisio_id = $this->_saveBisio($bisio);
 						$bisio_zweck['bisio_id'] = $bisio_id;
 						$this->_saveBisioZweck($bisio_zweck);
 					}
@@ -465,8 +465,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Gets MobilityOnline incomings for a fhcomplete studiensemester
+	 * Gets MobilityOnline incomings for a fhcomplete studiensemester, optionally from a Studiengang.
 	 * @param $studiensemester
+	 * @param $studiengang_kz as in fhc db
 	 * @return array with applications
 	 */
 	public function getIncoming($studiensemester, $studiengang_kz = null)
