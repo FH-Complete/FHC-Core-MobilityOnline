@@ -141,8 +141,9 @@ var MobilityOnlineOutgoing = {
 								"<td>" + nachname + ", " + vorname + "</td>" +
 								"<td>" + student_uid + "</td>" +
 								"<td>" + outgoingdata.kontaktmail.kontakt + "</td>" +
-								"<td>" + gerdatevon + "</td>" +
-								"<td>" + gerdatebis + "</td>" +
+								"<td class='text-center'>" + gerdatevon + "</td>" +
+								"<td class='text-center'>" + gerdatebis + "</td>" +
+								"<td class='text-center'>" + moid + "</td>" +
 								"<td class='text-center' id='infhciconcell_"+outgoingobj.moid+"'>" + newicon + "</td>" +
 								"</tr>"
 							);
@@ -160,14 +161,12 @@ var MobilityOnlineOutgoing = {
 								applicationsrowEl.click(
 									function()
 									{
-										console.log(existingBisios);
-
-
 										let checkedFound = false;
 
 										let bisiosHtml = "<div class='text-center'>";
-										bisiosHtml += "<div class='text-center'><button id='linkBisioBtn' class='btn btn-default'>" +
-											"<i class='fa fa-link'></i>&nbsp;Link</button></div><br />";
+										let linkBtnHtml = "<div class='text-center'><button class='btn btn-default linkBisioBtn'>" +
+											"<i class='fa fa-link'></i>&nbsp;Link</button></div>";
+										bisiosHtml += linkBtnHtml+"<br />";
 
 										for (let idx in existingBisios)
 										{
@@ -182,7 +181,6 @@ var MobilityOnlineOutgoing = {
 												checkedFound = true;
 											}
 
-											//console.log(bisio);
 											bisiosHtml += "<table class='table-bordered table-condensed table-bisiolink'>";
 											bisiosHtml += "<tr>";
 											bisiosHtml += "<td colspan='2'>";
@@ -199,23 +197,30 @@ var MobilityOnlineOutgoing = {
 											bisiosHtml += "</tr>";
 											bisiosHtml += "<tr>";
 											bisiosHtml += "<td>Mobilit&auml;tsprogramm</td>";
-											bisiosHtml += "<td>" + bisio.mobilitaetsprogramm + "</td>";
+											bisiosHtml += "<td>" + (bisio.mobilitaetsprogramm != null ? bisio.mobilitaetsprogramm : "") + "</td>";
+											bisiosHtml += "</tr>"
+											bisiosHtml += "<tr>";
+											bisiosHtml += "<td>Zweck</td>";
+											bisiosHtml += "<td>" + (bisio.zweck != null ? bisio.zweck : "") + "</td>";
 											bisiosHtml += "</tr>"
 											bisiosHtml += "<tr>";
 											bisiosHtml += "<td>Nation</td>";
-											bisiosHtml += "<td>" + bisio.nation + "</td>";
+											bisiosHtml += "<td>" + (bisio.nation != null ? bisio.nation : "") + "</td>";
 											bisiosHtml += "</tr>"
 											bisiosHtml += "<tr>";
 											bisiosHtml += "<td>Universit&auml;t</td>";
-											bisiosHtml += "<td>" + bisio.universitaet + "</td>";
+											bisiosHtml += "<td>" + (bisio.nation != null ? bisio.universitaet : "") + "</td>";
 											bisiosHtml += "</tr>";
 											bisiosHtml += "</table>";
 											bisiosHtml += "<br />"
 										}
 
+										bisiosHtml += linkBtnHtml;
+
 										bisiosHtml += "</div>";
 
-										//$("#applicationsrow_"+moid).css("background-color", "#f5f5f5"); // color should stay after click
+										$("#applications td").css("background-color", ""); // reset color of other clicked rows
+										$("#applicationsrow_"+moid+" td").css("background-color", "#f5f5f5"); // color should stay after click
 
 										$("#applicationsyncoutputheading").html(
 											'<h4>Select correct mobility to link for '+student_uid+', '+vorname+' '+nachname+'</h4>'
@@ -225,13 +230,11 @@ var MobilityOnlineOutgoing = {
 											bisiosHtml
 										)
 
-										$("#linkBisioBtn").click(
+										$(".linkBisioBtn").click(
 											function()
 											{
-												console.log($('input[name=bisiocheck]:checked').val());
 												let bisio_id_with_prefix = $('input[name=bisiocheck]:checked').val();
 												let bisio_id = bisio_id_with_prefix.substr(bisio_id_with_prefix.indexOf('_') + 1);
-												console.log(bisio_id);
 												MobilityOnlineOutgoing.linkBisio(moid, bisio_id);
 											}
 										)
@@ -239,9 +242,10 @@ var MobilityOnlineOutgoing = {
 								)
 							}
 						}
-						let headers = {headers: { 0: { sorter: false, filter: false}, 6: {sorter: false, filter: false} }};
+						let tablesortParams = {headers: { 0: { sorter: false, filter: false}, 4: {sorter: "shortDate"}, 5: {sorter: "shortDate"},
+													7: {sorter: false, filter: false} }, dateFormat: "ddmmyyyy"};
 
-						Tablesort.addTablesorter("applicationstbl", [[1, 0], [2, 0]], ["filter"], 2, headers);
+						Tablesort.addTablesorter("applicationstbl", [[1, 0], [2, 0], [3, 0], [4, 0]], ["filter"], 2, tablesortParams);
 					}
 					else
 					{
@@ -268,6 +272,7 @@ var MobilityOnlineOutgoing = {
 				{
 					if (FHC_AjaxClient.hasData(data))
 					{
+						$("#applications td").css("background-color", ""); // remove background color of applications table
 						$("#applicationsyncoutputtext").append(data.retval.syncoutput);
 
 						if ($("#applicationsyncoutputheading").text().length > 0)
@@ -304,11 +309,9 @@ var MobilityOnlineOutgoing = {
 			{
 				successCallback: function(data, textStatus, jqXHR)
 				{
-					console.log(data);
 					if (FHC_AjaxClient.hasData(data))
 					{
 						let insertedMapping = FHC_AjaxClient.getData(data)
-						console.log(insertedMapping);
 						let insertedMoid = insertedMapping.mo_applicationid;
 						MobilityOnlineOutgoing._blackInApplicationRow(insertedMoid);
 						$("#applicationsyncoutputtext").html("<div class='text-center text-success'>successfully linked applicationid "+insertedMoid+".</div>");

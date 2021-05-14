@@ -332,7 +332,10 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 						}
 					}
 					elseif ($required)
+					{
 						$haserror = true;
+						$errortext = 'does not exist';
+					}
 
 					if ($haserror)
 					{

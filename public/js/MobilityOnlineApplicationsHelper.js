@@ -22,11 +22,11 @@ var MobilityOnlineApplicationsHelper = {
 		$("#selectnewapplications").click(
 			function()
 			{
-				var incomingelem = $("#incomings tr");
-				incomingelem.each(
+				let applicationElem = $("#applications tr");
+				applicationElem.each(
 					function()
 					{
-						var infhc = $(this).find("input.infhc").val();
+						let infhc = $(this).find("input.infhc").val();
 
 						if (infhc === '0')
 							$(this).find("input[type=checkbox][name='applications[]']").prop('checked', true);

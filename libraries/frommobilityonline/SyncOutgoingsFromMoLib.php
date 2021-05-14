@@ -14,22 +14,12 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	{
 		parent::__construct();
 
-		$this->ci->load->model('person/person_model', 'PersonModel');
-		$this->ci->load->model('person/benutzer_model', 'BenutzerModel');
-		$this->ci->load->model('organisation/studiensemester_model', 'StudiensemesterModel');
-		$this->ci->load->model('organisation/studiengang_model', 'StudiengangModel');
-		$this->ci->load->model('crm/prestudent_model', 'PrestudentModel');
-		$this->ci->load->model('crm/prestudentstatus_model', 'PrestudentstatusModel');
-		$this->ci->load->model('crm/student_model', 'StudentModel');
-		$this->ci->load->model('education/lehrveranstaltung_model', 'LehrveranstaltungModel');
-		$this->ci->load->model('education/lehreinheit_model', 'LehreinheitModel');
-		$this->ci->load->model('education/studentlehrverband_model', 'StudentlehrverbandModel');
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 		$this->ci->load->model('codex/bisio_model', 'BisioModel');
-		$this->ci->load->model('codex/bisiozweck_model', 'BisioZweckModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobisioidzuordnung_model', 'MobisioidzuordnungModel');
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobilityonlinefhc_model', 'MoFhcModel');
 	}
 
 	/**
@@ -225,7 +215,9 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		// bisio
 		$bisio_id = $this->_saveBisio($appid, $bisio_id, $bisio);
 		$bisio_zweck['bisio_id'] = $bisio_id;
-		$this->_saveBisioZweck($bisio_zweck);
+		$bisio_zweckresult = $this->ci->MoFhcModel->saveBisioZweck($bisio_zweck);
+		if (hasData($bisio_zweckresult))
+			$this->log('insert', $bisio_zweckresult, 'bisio_zweck');
 
 		// Transaction complete!
 		$this->ci->db->trans_complete();
@@ -356,14 +348,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			elseif ($fhcobj_extended->error === false)
 			{
 				// check if has not mapped bisios in fhcomplete
-				$this->ci->BisioModel->addSelect('tbl_bisio.bisio_id, von, bis, universitaet, 
-					tbl_mobilitaetsprogramm.beschreibung as mobilitaetsprogramm, ort, tbl_nation.langtext as nation');
-				$this->ci->BisioModel->addJoin('bis.tbl_mobilitaetsprogramm', 'mobilitaetsprogramm_code', 'LEFT');
-				$this->ci->BisioModel->addJoin('bis.tbl_nation', 'nation_code', 'LEFT');
-				$this->ci->BisioModel->addOrder('von', 'DESC');
-				$this->ci->BisioModel->addOrder('updateamum', 'DESC');
-				$this->ci->BisioModel->addOrder('insertamum', 'DESC');
-				$existingBisiosRes = $this->ci->BisioModel->loadWhere(array('student_uid' => $fhcobj['bisio']['student_uid']));
+				$existingBisiosRes = $this->ci->MoFhcModel->getBisio($fhcobj['bisio']['student_uid']);
 
 				if (isError($existingBisiosRes))
 				{
@@ -426,36 +411,10 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Inserts bisio_zweck for a student or updates an existing one.
-	 * @param $bisio_zweck
-	 * @return int|null bisio_id and zweck_id of inserted or updated bisio_zweck if successful, null otherwise.
+	 * Check if bisio is already in fhcomplete by checking sync table.
+	 * @param $appid
+	 * @return object error or success with found id if in fhcomplete, success with null if not in fhcomplete
 	 */
-	private function _saveBisioZweck($bisio_zweck)
-	{
-		$bisio_zweckid = null;
-
-		$bisiocheckresp = $this->ci->BisioZweckModel->loadWhere(array('bisio_id' => $bisio_zweck['bisio_id']));
-
-		if (isSuccess($bisiocheckresp))
-		{
-			if (hasData($bisiocheckresp))
-			{
-				$bisio_zweckresult = $this->ci->BisioZweckModel->update(array('bisio_id' => $bisio_zweck['bisio_id']),
-					array('zweck_code' => $bisio_zweck['zweck_code']));
-				$this->log('update', $bisio_zweckresult, 'bisio_zweck');
-			}
-			else
-			{
-				$bisio_zweckresult = $this->ci->BisioZweckModel->insert($bisio_zweck);
-				$this->log('insert', $bisio_zweckresult, 'bisio_zweck');
-			}
-
-			$bisio_zweckid = getData($bisio_zweckresult);
-		}
-
-		return $bisio_zweckid;
-	}
-
 	private function _checkBisioInFhc($appid)
 	{
 		$infhccheck_bisio_id = null;

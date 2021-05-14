@@ -162,7 +162,7 @@ var MobilityOnlineIncoming = {
 							);
 							MobilityOnlineApplicationsHelper.refreshApplicationsNumber();
 						}
-						var headers = {headers: { 0: { sorter: false, filter: false}, 5: {sorter: false, filter: false} }};
+						var headers = {headers: { 0: { sorter: false, filter: false}, 6: {sorter: false, filter: false} }};
 
 						Tablesort.addTablesorter("applicationstbl", [[1, 0], [2, 0]], ["filter"], 2, headers);
 					}
@@ -182,6 +182,7 @@ var MobilityOnlineIncoming = {
 	{
 		var incomingJson = JSON.stringify(incomings);
 
+		// post data might be too big - then split in in half. factor 3.5 approx. scales up to actual data size
 		var postlength = incomingJson.length + 3.5 * incomings.length;
 
 		if (postlength > maxPostSize)

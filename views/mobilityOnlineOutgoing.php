@@ -41,7 +41,7 @@
 							array(
 								'applicationType' => 'Outgoings',
 								'columnnames' => array(
-									'Name', 'Uid', 'E-Mail', 'Aufh.von', 'Aufh.bis', 'In FHC'
+									'Name', 'Uid', 'E-Mail', 'Aufh.von', 'Aufh.bis', 'ID', 'In FHC'
 								)
 							)
 					); ?>
