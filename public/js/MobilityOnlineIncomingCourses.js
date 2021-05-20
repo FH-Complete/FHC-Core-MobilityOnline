@@ -7,8 +7,8 @@ $(document).ready(function()
 		$("#showincomingsbtn").click(
 			function()
 			{
-				var studiensemester = $("#studiensemester").val();
-				var studiengang_kz = $("#studiengang_kz").val();
+				let studiensemester = $("#studiensemester").val();
+				let studiengang_kz = $("#studiengang_kz").val();
 				$("#studiengang_kz").parent().removeClass("has-error");
 				if (studiengang_kz === '')
 					$("#studiengang_kz").parent().addClass("has-error");
@@ -18,21 +18,21 @@ $(document).ready(function()
 		);
 
 		// make right MO courses box follow on scroll
-		var mocourseswell = $("#mocourseswell");
+		let mocourseswell = $("#mocourseswell");
 		mocourseswell.css('position', 'relative');
 
 		$(window).on('scroll', function(event) {
 			if ($("#fhcles").length > 0)
 			{
-				var scrollTop = $(window).scrollTop();
-				var maxScrollHeight = $("#fhcles")[0].scrollHeight;
-				var wellheight = $("#mocourseswell")[0].scrollHeight;
+				let scrollTop = $(window).scrollTop();
+				let maxScrollHeight = $("#fhcles")[0].scrollHeight;
+				let wellheight = $("#mocourseswell")[0].scrollHeight;
 				if (wellheight < maxScrollHeight && scrollTop < maxScrollHeight)
 				{
-					var maxscreenheight = screen.height;
-					var windowheight = $(window).height();
-					var screenheightfactor = maxscreenheight / windowheight;
-					var top = scrollTop / screenheightfactor;
+					let maxscreenheight = screen.height;
+					let windowheight = $(window).height();
+					let screenheightfactor = maxscreenheight / windowheight;
+					let top = scrollTop / screenheightfactor;
 					mocourseswell.css('top', top + 'px');
 				}
 			}
@@ -62,7 +62,7 @@ var MobilityOnlineIncomingCourses = {
 					if (FHC_AjaxClient.hasData(data))
 					{
 						$("#incomingprestudents").empty();
-						var incomingcourses = data.retval;
+						let incomingcourses = FHC_AjaxClient.getData(data);
 						MobilityOnlineIncomingCourses.incomingCourses = incomingcourses;
 						MobilityOnlineIncomingCourses._printIncomingPrestudents(incomingcourses);
 					}
@@ -91,38 +91,41 @@ var MobilityOnlineIncomingCourses = {
 			{
 				successCallback: function (data, textStatus, jqXHR)
 				{
-					var messageel = $("#message");
-					if (FHC_AjaxClient.isSuccess(data))
+					let messageel = $("#message");
+					let msgtext = "";
+					if (FHC_AjaxClient.isError(data))
+					{
+						messageel.removeClass("text-success");
+						messageel.addClass("text-danger");
+						msgtext = FHC_AjaxClient.getError(data);
+					}
+					else if (FHC_AjaxClient.isSuccess(data))
 					{
 						messageel.removeClass("text-danger");
 						messageel.addClass("text-success");
+						msgtext = FHC_AjaxClient.getData(data);
 
-						var lvidelements = $("#allfhcles .lehrveranstaltunginput");
-						var lvids = [];
+						let lvidelements = $("#allfhcles .lehrveranstaltunginput");
+						let lvids = [];
 
 						lvidelements.each(
 							function()
 							{
-								var lehrveranstaltung_id = $(this).val();
+								let lehrveranstaltung_id = $(this).val();
 								lvids.push(lehrveranstaltung_id);
 							}
 						);
 
-						var studiensemester = $("#studiensemester").val();
+						let studiensemester = $("#studiensemester").val();
 
 						MobilityOnlineIncomingCourses.refreshCourseAssignments(lvids, lehreinheitassignments[0].uid, studiensemester)
 					}
-					else
-					{
-						messageel.removeClass("text-success");
-						messageel.addClass("text-danger");
-					}
 
-					messageel.html(data.retval);
+					messageel.html(msgtext);
 				},
 				errorCallback: function()
 				{
-					var messageel = $("#message");
+					let messageel = $("#message");
 					messageel.removeClass("text-success");
 					messageel.addClass("text-danger");
 					$("#message").html("Error when changing Lehreinheit assignments!");
@@ -151,19 +154,21 @@ var MobilityOnlineIncomingCourses = {
 				{
 					if (FHC_AjaxClient.hasData(data))
 					{
-						for (var prestudent in MobilityOnlineIncomingCourses.incomingCourses)
+						let lvdata = FHC_AjaxClient.getData(data);
+
+						for (let prestudent in MobilityOnlineIncomingCourses.incomingCourses)
 						{
-							var prestudentobj = MobilityOnlineIncomingCourses.incomingCourses[prestudent];
+							let prestudentobj = MobilityOnlineIncomingCourses.incomingCourses[prestudent];
 
 							if (prestudentobj.uid === uid)
 							{
-								for (var lvid in data.retval)
+								for (let lvid in lvdata)
 								{
-									var lv = data.retval[lvid];
+									let lv = lvdata[lvid];
 
-									for (var oldlvid in prestudentobj.lvs)
+									for (let oldlvid in prestudentobj.lvs)
 									{
-										var oldlv = prestudentobj.lvs[oldlvid];
+										let oldlv = prestudentobj.lvs[oldlvid];
 										if (oldlv != null && oldlv.lehrveranstaltung.lehrveranstaltung_id == lv.lehrveranstaltung.lehrveranstaltung_id)
 										{
 											oldlv.lehrveranstaltung.incomingsplaetze = lv.lehrveranstaltung.incomingsplaetze;
@@ -172,9 +177,9 @@ var MobilityOnlineIncomingCourses = {
 										}
 									}
 
-									for (var oldNonMoLvid in prestudentobj.nonMoLvs)
+									for (let oldNonMoLvid in prestudentobj.nonMoLvs)
 									{
-										var oldNonMoLv = prestudentobj.nonMoLvs[oldNonMoLvid];
+										let oldNonMoLv = prestudentobj.nonMoLvs[oldNonMoLvid];
 										if (oldNonMoLv != null && oldNonMoLv.lehrveranstaltung.lehrveranstaltung_id == lv.lehrveranstaltung.lehrveranstaltung_id)
 										 {
 											 oldNonMoLv.lehrveranstaltung.incomingsplaetze = lv.lehrveranstaltung.incomingsplaetze;
@@ -208,24 +213,24 @@ var MobilityOnlineIncomingCourses = {
 	{
 		$("#incomingprestudents").empty();
 
-		var totalAssigned = 0, totalLvsInFhc = 0;
+		let totalAssigned = 0, totalLvsInFhc = 0;
 
-		for (var person in incomingscourses)
+		for (let person in incomingscourses)
 		{
-			var prestudentobj = incomingscourses[person];
-			var tablerowstring = "<tr>";
+			let prestudentobj = incomingscourses[person];
+			let tablerowstring = "<tr>";
 
 			tablerowstring += "<td>"+prestudentobj.nachname+", "+prestudentobj.vorname+"</td>" +
 				"<td>"+prestudentobj.email+"</td>";
 
-			var assignedCount = 0, notInMo = 0;
-			var lvsInFhc = prestudentobj.lvs.length;
+			let assignedCount = 0, notInMo = 0;
+			let lvsInFhc = prestudentobj.lvs.length;
 
-			for (var lv in prestudentobj.lvs)
+			for (let lv in prestudentobj.lvs)
 			{
-				var lvobj = prestudentobj.lvs[lv];
+				let lvobj = prestudentobj.lvs[lv];
 
-				for (var le in lvobj.lehreinheiten)
+				for (let le in lvobj.lehreinheiten)
 				{
 					if (lvobj.lehreinheiten[le].directlyAssigned === true)
 					{
@@ -235,11 +240,11 @@ var MobilityOnlineIncomingCourses = {
 				}
 			}
 
-			for (var nomolv in prestudentobj.nonMoLvs)
+			for (let nomolv in prestudentobj.nonMoLvs)
 			{
-				var nomolvobj = prestudentobj.nonMoLvs[nomolv];
+				let nomolvobj = prestudentobj.nonMoLvs[nomolv];
 
-				for (var le in nomolvobj.lehreinheiten)
+				for (let le in nomolvobj.lehreinheiten)
 				{
 					if (nomolvobj.lehreinheiten[le].directlyAssigned === true)
 					{
@@ -289,7 +294,7 @@ var MobilityOnlineIncomingCourses = {
 		$("#totalCoursesAssigned").text(totalAssigned);
 		$("#totalCoursesFhc").text(totalLvsInFhc);
 
-		var headers = {headers: { 3: { sorter: false, filter: false}}};
+		let headers = {headers: { 3: { sorter: false, filter: false}}};
 		Tablesort.addTablesorter("incomingprestudentstbl", [[0, 0], [1, 0]], ["filter"], 2, headers);
 	},
 	/**
@@ -307,9 +312,9 @@ var MobilityOnlineIncomingCourses = {
 	},
 	_printMoCourses: function(moapplication)
 	{
-		var totalAssigned = 0;
+		let totalAssigned = 0;
 
-		var prestudentdatahtml = "<tr><td class='prestudentfieldname'>First name</td><td>"+moapplication.vorname+"</td>" +
+		let prestudentdatahtml = "<tr><td class='prestudentfieldname'>First name</td><td>"+moapplication.vorname+"</td>" +
 			"<td class='prestudentfieldname'>Last name</td><td class='prestudentfieldvalue'>"+moapplication.nachname+"</td></tr>" +
 			"<tr><td class='prestudentfieldname'>E-Mail</td><td class='prestudentfieldvalue'>"+moapplication.email+"</td>" +
 			"<td class='prestudentfieldname'>Phone number</td><td class='prestudentfieldvalue'>"+moapplication.phonenumber+"</td></tr>" +
@@ -323,21 +328,21 @@ var MobilityOnlineIncomingCourses = {
 
 		$("#molvs").empty();
 
-		for (var lv in moapplication.lvs)
+		for (let lv in moapplication.lvs)
 		{
-			var assignedCount = 0;
-			var status = "";
-			var lvobj = moapplication.lvs[lv];
+			let assignedCount = 0;
+			let status = "";
+			let lvobj = moapplication.lvs[lv];
 
-			for (var le in lvobj.lehreinheiten)
+			for (let le in lvobj.lehreinheiten)
 			{
 				if (lvobj.lehreinheiten[le].directlyAssigned === true)
 					assignedCount++;
 			}
 
-			var tablerowstring = "<tr><td>"+lvobj.lehrveranstaltung.mobezeichnung+"</td>";
+			let tablerowstring = "<tr><td>"+lvobj.lehrveranstaltung.mobezeichnung+"</td>";
 
-			var textclass = 'fa fa-check text-success';
+			let textclass = 'fa fa-check text-success';
 
 			if (assignedCount <= 0)
 				textclass = 'fa fa-exclamation text-danger';
@@ -363,15 +368,15 @@ var MobilityOnlineIncomingCourses = {
 	},
 	_printFhcCourses: function(fhcprestudent)
 	{
-		var fhclvhtml = "";
-		var numLvs = 0;
-		var hasLes = false;
+		let fhclvhtml = "";
+		let numLvs = 0;
+		let hasLes = false;
 
 		fhclvhtml += "<div id='fhcles'>";
 
-		for (var fhclv in fhcprestudent.lvs)
+		for (let fhclv in fhcprestudent.lvs)
 		{
-			var fhclvobj = fhcprestudent.lvs[fhclv];
+			let fhclvobj = fhcprestudent.lvs[fhclv];
 			if ($.isNumeric(fhclvobj.lehrveranstaltung.lehrveranstaltung_id))
 			{
 				numLvs++;
@@ -387,17 +392,17 @@ var MobilityOnlineIncomingCourses = {
 		// (e.g. when course assignment gets deleted in MobilityOnline)
 		if (fhcprestudent.nonMoLvs.length > 0)
 		{
-			var first = true;
-			for (var nomolv in fhcprestudent.nonMoLvs)
+			let first = true;
+			for (let nomolv in fhcprestudent.nonMoLvs)
 			{
-				var nonmolvobj = fhcprestudent.nonMoLvs[nomolv];
+				let nonmolvobj = fhcprestudent.nonMoLvs[nomolv];
 				if ($.isNumeric(nonmolvobj.lehrveranstaltung.lehrveranstaltung_id))
 				{
 					numLvs++;
 
-					var assigned = false;
+					let assigned = false;
 
-					for (var lehreinheit in nonmolvobj.lehreinheiten)
+					for (let lehreinheit in nonmolvobj.lehreinheiten)
 					{
 						if (nonmolvobj.lehreinheiten[lehreinheit].directlyAssigned)
 						{
@@ -449,13 +454,13 @@ var MobilityOnlineIncomingCourses = {
 		$("#save").click(
 			function()
 			{
-				var uid = fhcprestudent.uid;
-				var lehreinheitassignments = [];
+				let uid = fhcprestudent.uid;
+				let lehreinheitassignments = [];
 				$(".lehreinheitinput").each(
 					function()
 					{
-						var idstr = $(this).prop("id");
-						var lehreinheit_id = idstr.substr(idstr.indexOf("_") + 1);
+						let idstr = $(this).prop("id");
+						let lehreinheit_id = idstr.substr(idstr.indexOf("_") + 1);
 						lehreinheitassignments.push(
 							{
 								"uid": uid,
@@ -472,26 +477,26 @@ var MobilityOnlineIncomingCourses = {
 	},
 	_getLehrveranstaltungHtml: function(lehrveranstaltungobj)
 	{
-		var fhclvhtml = "<div class='panel panel-default'>";
+		let fhclvhtml = "<div class='panel panel-default'>";
 		fhclvhtml += "<div class='panel-heading fhclvpanelheading'>";
 		fhclvhtml += "" + lehrveranstaltungobj.lehrveranstaltung.fhcbezeichnung +
 			 " | ";
 
-		for (var stg in lehrveranstaltungobj.studiengaenge)
+		for (let stg in lehrveranstaltungobj.studiengaenge)
 		{
-			var stgobj = lehrveranstaltungobj.studiengaenge[stg];
+			let stgobj = lehrveranstaltungobj.studiengaenge[stg];
 			fhclvhtml += (" " + stgobj.kuerzel);
 		}
 
-		for (var sem in lehrveranstaltungobj.ausbildungssemester)
+		for (let sem in lehrveranstaltungobj.ausbildungssemester)
 		{
-			var semobj = lehrveranstaltungobj.ausbildungssemester[sem];
+			let semobj = lehrveranstaltungobj.ausbildungssemester[sem];
 			fhclvhtml += " " + semobj;
 		}
 
 		fhclvhtml += " | ";
 
-		var coursefull = (lehrveranstaltungobj.lehrveranstaltung.anz_incomings) > parseInt(lehrveranstaltungobj.lehrveranstaltung.incomingplaetze);
+		let coursefull = (lehrveranstaltungobj.lehrveranstaltung.anz_incomings) > parseInt(lehrveranstaltungobj.lehrveranstaltung.incomingplaetze);
 
 		if (coursefull)
 			fhclvhtml += "<span class='alert-danger'>";
@@ -510,9 +515,9 @@ var MobilityOnlineIncomingCourses = {
 
 		fhclvhtml += "<input type='hidden' class='lehrveranstaltunginput' value="+lehrveranstaltungobj.lehrveranstaltung.lehrveranstaltung_id+">";
 
-		for (var le in lehrveranstaltungobj.lehreinheiten)
+		for (let le in lehrveranstaltungobj.lehreinheiten)
 		{
-			var lehreinheitobj = lehrveranstaltungobj.lehreinheiten[le];
+			let lehreinheitobj = lehrveranstaltungobj.lehreinheiten[le];
 			fhclvhtml += MobilityOnlineIncomingCourses._getLehreinheitHtml(lehrveranstaltungobj, lehreinheitobj);
 		}
 		fhclvhtml += "</div></div>";
@@ -521,14 +526,14 @@ var MobilityOnlineIncomingCourses = {
 	},
 	_getLehreinheitHtml: function(lehrveranstaltungobj, lehreinheitobj)
 	{
-		var fhcleshtml = '';
-		var checked = lehreinheitobj.directlyAssigned === true ? "checked": '';
+		let fhcleshtml = '';
+		let checked = lehreinheitobj.directlyAssigned === true ? "checked": '';
 		fhcleshtml += "<div class='checkbox'><input type='checkbox' class='lehreinheitinput' id='lecheckbox_"+lehreinheitobj.lehreinheit_id+"' "+checked+">";
 		fhcleshtml += lehreinheitobj.lehrform_kurzbz;
 
-		for (var legr in lehreinheitobj.lehreinheitgruppen)
+		for (let legr in lehreinheitobj.lehreinheitgruppen)
 		{
-			var legrobj = lehreinheitobj.lehreinheitgruppen[legr];
+			let legrobj = lehreinheitobj.lehreinheitgruppen[legr];
 			if (legrobj.direktinskription === true)
 				continue;
 
@@ -546,9 +551,9 @@ var MobilityOnlineIncomingCourses = {
 			}
 		}
 
-		for (var lektor in lehreinheitobj.lektoren)
+		for (let lektor in lehreinheitobj.lektoren)
 		{
-			var lektoruid = lehreinheitobj.lektoren[lektor];
+			let lektoruid = lehreinheitobj.lektoren[lektor];
 			fhcleshtml += " "+(lektoruid == null ? '' : lektoruid);
 		}
 
@@ -566,16 +571,16 @@ var MobilityOnlineIncomingCourses = {
 	{
 		$("#message").empty();
 
-		var toToggle = [
+		let toToggle = [
 			$("#syncIncomingInput"),
 			$("#incomingprestudentsrow"),
 			$("#coursesassignment"),
 			$("#lvsprestudent")
 		];
 
-		for (var element in toToggle)
+		for (let element in toToggle)
 		{
-			var el = toToggle[element];
+			let el = toToggle[element];
 
 			if (el.hasClass("hidden"))
 				el.removeClass("hidden");

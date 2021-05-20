@@ -12,8 +12,8 @@
 			'ajaxlib' => true,
 			'tablesorter' => true,
 			'navigationwidget' => true,
-			'customJSs' => array('public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineOutgoing.js',
-								'public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineApplicationsHelper.js',
+			'customJSs' => array('public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineApplicationsHelper.js',
+								'public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineOutgoing.js',
 								'public/js/tablesort/tablesort.js'),
 			'customCSSs' => array('public/extensions/FHC-Core-MobilityOnline/css/MobilityOnline.css',
 								'public/css/sbadmin2/tablesort_bootstrap.css')

@@ -8,8 +8,8 @@ $(document).ready(function()
 
 		let getOutgoingFunc = function()
 		{
-			var studiensemester = $("#studiensemester").val();
-			var studiengang_kz = $("#studiengang_kz").val();
+			let studiensemester = $("#studiensemester").val();
+			let studiengang_kz = $("#studiengang_kz").val();
 			MobilityOnlineApplicationsHelper.resetSyncOutput();
 			MobilityOnlineOutgoing.getOutgoing(studiensemester, studiengang_kz);
 		}
@@ -27,8 +27,8 @@ $(document).ready(function()
 		$("#applicationsyncbtn").click(
 			function()
 			{
-				var outgoingelem = $("#applications input[type=checkbox]:checked");
-				var outgoings = [];
+				let outgoingelem = $("#applications input[type=checkbox]:checked");
+				let outgoings = [];
 				outgoingelem.each(
 					function()
 					{
@@ -75,17 +75,17 @@ var MobilityOnlineOutgoing = {
 
 					if (FHC_AjaxClient.hasData(data))
 					{
-						var outgoings = data.retval;
+						let outgoings = FHC_AjaxClient.getData(data);
 						MobilityOnlineOutgoing.outgoings = outgoings;
 
-						for (var outgoing in outgoings)
+						for (let outgoing in outgoings)
 						{
-							var outgoingobj = outgoings[outgoing];
-							var outgoingdata = outgoingobj.data;
+							let outgoingobj = outgoings[outgoing];
+							let outgoingdata = outgoingobj.data;
 
-							var person = outgoingdata.person;
-							var hasError = outgoingobj.error;
-							var chkbxstring, stgnotsettxt, errorclass, newicon;
+							let person = outgoingdata.person;
+							let hasError = outgoingobj.error;
+							let chkbxstring, stgnotsettxt, errorclass, newicon;
 							chkbxstring = stgnotsettxt = errorclass = "";
 							let moid = outgoingobj.moid;
 							let gerdatevon = MobilityOnlineOutgoing._convertDateToGerman(outgoingdata.bisio.von);
@@ -98,8 +98,8 @@ var MobilityOnlineOutgoing = {
 							if (hasError)
 							{
 								errorclass = " class='inactive' data-toggle='tooltip' title='";
-								var firstmsg = true;
-								for (var i in outgoingobj.errorMessages)
+								let firstmsg = true;
+								for (let i in outgoingobj.errorMessages)
 								{
 									if (!firstmsg)
 										errorclass += ', ';
@@ -272,28 +272,35 @@ var MobilityOnlineOutgoing = {
 				{
 					if (FHC_AjaxClient.hasData(data))
 					{
+						let syncres = FHC_AjaxClient.getData(data);
+
 						$("#applications td").css("background-color", ""); // remove background color of applications table
+
+						MobilityOnlineApplicationsHelper.writeSyncOutput(syncres.syncoutput);
+
 						$("#applicationsyncoutputtext").append(data.retval.syncoutput);
 
 						if ($("#applicationsyncoutputheading").text().length > 0)
 						{
-							$("#nradd").text(parseInt($("#nradd").text()) + data.retval.added.length);
-							$("#nrupdate").text(parseInt($("#nrupdate").text()) + data.retval.updated.length);
+							$("#nradd").text(parseInt($("#nradd").text()) + syncres.added.length);
+							$("#nrupdate").text(parseInt($("#nrupdate").text()) + syncres.updated.length);
 						}
 						else
 						{
 							$("#applicationsyncoutputheading")
 								.append("<br />MOBILITY ONLINE OUTGOING SYNC FINISHED<br />"+
-									"<span id = 'nradd'>" + data.retval.added.length + "</span> added, "+
-									"<span id = 'nrupdate'>" + data.retval.updated.length + "</span> updated</div>")
+									"<span id = 'nradd'>" +syncres.added.length + "</span> added, "+
+									"<span id = 'nrupdate'>" + syncres.updated.length + "</span> updated</div>")
 								.append("<br />-----------------------------------------------<br />");
 						}
-						MobilityOnlineOutgoing.refreshOutgoingsSyncStatus(data.retval.added.concat(data.retval.updated));
+						MobilityOnlineOutgoing.refreshOutgoingsSyncStatus(syncres.added.concat(syncres.updated));
 					}
 				},
 				errorCallback: function()
 				{
-					$("#applicationsyncoutputtext").html("<div class='text-center'>error occured while syncing!</div>");
+					$("#applicationsyncoutputtext").html(
+						MobilityOnlineApplicationsHelper.getMessageHtml("error occured while syncing!", "error")
+					);
 				}
 			}
 		);
@@ -314,7 +321,7 @@ var MobilityOnlineOutgoing = {
 						let insertedMapping = FHC_AjaxClient.getData(data)
 						let insertedMoid = insertedMapping.mo_applicationid;
 						MobilityOnlineOutgoing._blackInApplicationRow(insertedMoid);
-						$("#applicationsyncoutputtext").html("<div class='text-center text-success'>successfully linked applicationid "+insertedMoid+".</div>");
+						$("#applicationsyncoutputtext").html(MobilityOnlineApplicationsHelper.getMessageHtml("successfully linked applicationid "+insertedMoid, "success"));
 						let outgoingToSync = [];
 						for (let outgoing in MobilityOnlineOutgoing.outgoings)
 						{
@@ -328,7 +335,7 @@ var MobilityOnlineOutgoing = {
 				},
 				errorCallback: function()
 				{
-					$("#applicationsyncoutputtext").html("<div class='text-center'>error occured while linking mobility!</div>");
+					$("#applicationsyncoutputtext").html(MobilityOnlineApplicationsHelper.getMessageHtml("error occured while linking mobility!", "error"));
 				}
 			}
 		);
@@ -338,59 +345,31 @@ var MobilityOnlineOutgoing = {
 	 */
 	refreshOutgoingsSyncStatus: function(synced_moids)
 	{
-/*		var moidsel = $("#applications input[name='applications[]']");
-		var moids = [];
+		for (let idx in synced_moids)
+		{
+			let moid = synced_moids[idx];
 
-		$(moidsel).each(
-			function()
+			// refresh JS array
+			for (let outgoing in MobilityOnlineOutgoing.outgoings)
 			{
-				moids.push($(this).val());
-			}
-		);*/
+				let outgoingsobj = MobilityOnlineOutgoing.outgoings[outgoing];
 
-/*		FHC_AjaxClient.ajaxCallPost(
-			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/checkMoidsInFhc',
-			{
-				"moids": moids
-			},
-			{
-				successCallback: function(data, textStatus, jqXHR)
-				{*/
-/*					if (FHC_AjaxClient.hasData(data))
-					{*/
-						for (let idx in synced_moids)
-						{
-							//var fhc_id = data.retval[moid];
-							//var infhc = $.isNumeric(fhc_id);
-							let moid = synced_moids[idx];
-
-							// refresh JS array
-							for (var outgoing in MobilityOnlineOutgoing.outgoings)
-							{
-								var outgoingsobj = MobilityOnlineOutgoing.outgoings[outgoing];
-
-								if (outgoingsobj.moid === parseInt(moid))
-								{
-									outgoingsobj.infhc = true;
-										//outgoingsobj.prestudent_id = fhc_id;
-									break;
-								}
-							}
-
-							// refresh Outgoings Table "in FHC" field
-							let infhciconel = $("#infhcicon_" + moid);
-							let infhcel = $("#infhc_" + moid);
-
-							infhciconel.removeClass();
-							infhcel.val("1");
-							infhciconel.addClass("fa fa-check");
-						}
-/*					}
-				},
-				errorCallback: function()
+				if (outgoingsobj.moid === parseInt(moid))
 				{
-					FHC_DialogLib.alertError("error when refreshing FHC column!");
-				}*/
+					outgoingsobj.infhc = true;
+						//outgoingsobj.prestudent_id = fhc_id;
+					break;
+				}
+			}
+
+			// refresh Outgoings Table "in FHC" field
+			let infhciconel = $("#infhcicon_" + moid);
+			let infhcel = $("#infhc_" + moid);
+
+			infhciconel.removeClass();
+			infhcel.val("1");
+			infhciconel.addClass("fa fa-check");
+		}
 	},
 	_blackInApplicationRow: function(moid)
 	{

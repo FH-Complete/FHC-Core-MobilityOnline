@@ -45,41 +45,32 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * Executes sync of incomings for a Studiensemester from MO to FHC. Adds or updates incomings.
 	 * @param $studiensemester
 	 * @param $incomings
-	 * @return string syncoutput containing info about failures/success
+	 * @return array syncoutput containing info about failures/success
 	 */
 	public function startIncomingSync($studiensemester, $incomings)
 	{
-		$results = array('added' => 0, 'updated' => 0, 'errors' => 0, 'syncoutput' => '');
+		$results = array('added' => 0, 'updated' => 0, 'errors' => 0, 'syncoutput' => array());
 		$studcount = count($incomings);
 
 		if (empty($incomings) || !is_array($incomings) || $studcount <= 0)
 		{
-			$results['syncoutput']  .= "<div class='text-center'>No incomings found for sync! aborting.</div>";
+			$this->addInfoOutput("No incomings found for sync! aborting.");
 		}
 		else
 		{
-			$first = true;
 			foreach ($incomings as $incoming)
 			{
 				$incomingdata = $incoming['data'];
 				$appid = $incoming['moid'];
 
-				if (!$first)
-					$results['syncoutput'] .= "<br />";
-				$first = false;
-
 				$infhccheck_prestudent_id = $this->checkMoIdInFhc($appid);
 
 				if (isset($infhccheck_prestudent_id) && is_numeric($infhccheck_prestudent_id))
 				{
-					$results['syncoutput'] .= "<br />prestudent ".("for applicationid $appid ").$incomingdata['person']['vorname'].
-						" ".$incomingdata['person']['nachname']." already exists in fhcomplete - updating";
+					$this->addInfoOutput("student for applicationid $appid ".$incomingdata['person']['vorname'].
+						" ".$incomingdata['person']['nachname']." already exists in fhcomplete - updating");
 
 					$prestudent_id = $this->saveIncoming($incomingdata, $infhccheck_prestudent_id);
-
-					$saveIncomingOutput = $this->getOutput();
-
-					$results['syncoutput'] .= $saveIncomingOutput;
 
 					if (isset($prestudent_id) && is_numeric($prestudent_id))
 					{
@@ -91,24 +82,20 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 						if (hasData($result))
 						{
 							$results['updated']++;
-							$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> student for applicationid $appid - ".
-								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." successfully updated";
+							$this->addSuccessOutput("student for applicationid $appid - ".
+								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." successfully updated");
 						}
 					}
 					else
 					{
 						$results['errors']++;
-						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when updating student for applicationid $appid - "
-							.$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']."</span>";
+						$this->addErrorOutput("error when updating student for applicationid $appid - "
+							.$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']);
 					}
 				}
 				else
 				{
 					$prestudent_id = $this->saveIncoming($incomingdata);
-
-					$saveIncomingOutput = $this->getOutput();
-
-					$results['syncoutput'] .= $saveIncomingOutput;
 
 					if (isset($prestudent_id) && is_numeric($prestudent_id))
 					{
@@ -119,25 +106,27 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 						if (hasData($result))
 						{
 							$results['added']++;
-							$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> student for applicationid $appid - ".
-								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." successfully added";
+							$this->addSuccessOutput("student for applicationid $appid - ".
+								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." successfully added");
 						}
 						else
 						{
 							$results['errors']++;
-							$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> mapping entry in db could not be added student for applicationid $appid - ".
-								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']."</span>";
+							$this->addErrorOutput("mapping entry in db could not be added student for applicationid $appid - ".
+								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']);
 						}
 					}
 					else
 					{
 						$results['errors']++;
-						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when adding student for applicationid $appid - ".
-							$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']."</span>";
+						$this->addErrorOutput("error when adding student for applicationid $appid - ".
+							$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']);
 					}
 				}
 			}
 		}
+
+		$results['syncoutput'] = $this->getOutput();
 		return $results;
 	}
 
@@ -323,19 +312,18 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function saveIncoming($incoming, $prestudent_id = null)
 	{
-		$this->output = '';
 		//error check for missing data etc.
 		$errors = $this->fhcObjHasError($incoming, self::MOOBJECTTYPE);
 
 		if ($errors->error)
 		{
-			$this->output .= "<br />ERROR! ";
+			$this->addErrorOutput("ERROR! ");
 			foreach ($errors->errorMessages as $errorMessage)
 			{
-				$this->output .= "$errorMessage";
+				$this->addErrorOutput($errorMessage);
 			}
 
-			$this->output .= "<br />aborting incoming save";
+			$this->addErrorOutput("aborting outgoing save");
 			return null;
 		}
 
@@ -455,7 +443,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// Check if everything went ok during the transaction
 		if ($this->ci->db->trans_status() === false)
 		{
-			$this->output .= "rolling back...";
+			$this->addInfoOutput("rolling back...");
 			$this->ci->db->trans_rollback();
 			return null;
 		}
@@ -734,7 +722,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				{
 					if ($this->debugmode)
 					{
-						$this->output .= '<br />lichtbild already exists, akte_id '.$aktecheckresp->retval[0]->akte_id;
+						$this->addInfoOutput('lichtbild already exists, akte_id '.$aktecheckresp->retval[0]->akte_id);
 					}
 				}
 				else
@@ -833,7 +821,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 				if ($this->debugmode)
 				{
-					$this->output .= "<br />benutzer for student ".$prestudent['prestudent_id'] ." already exists, uid " .$benutzer['uid'];
+					$this->addInfoOutput("benutzer for student ".$prestudent['prestudent_id'] ." already exists, uid " .$benutzer['uid']);
 				}
 			}
 			else
@@ -855,7 +843,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 					if (hasData($benutzercheckresp))
 					{
-						$this->output .= "<br />benutzer with uid ".$benutzer['uid']." already exists";
+						$this->addInfoOutput("benutzer with uid ".$benutzer['uid']." already exists");
 						$benutzerresp_uid = $benutzer['uid'];
 					}
 					elseif (isSuccess($benutzercheckresp))

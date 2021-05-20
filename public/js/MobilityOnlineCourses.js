@@ -11,7 +11,7 @@ $(document).ready(function()
 		$("#studiensemester").change(
 			function()
 			{
-				var studiensemester = $(this).val();
+				let studiensemester = $(this).val();
 				MobilityOnlineCourses.getLvs(studiensemester);
 			}
 		);
@@ -20,7 +20,7 @@ $(document).ready(function()
 		$("#lvhead").click(
 			function()
 			{
-				var lvsel = $("#lvs");
+				let lvsel = $("#lvs");
 				if (lvsel.hasClass("hidden"))
 				{
 					lvsel.removeClass("hidden");
@@ -55,19 +55,20 @@ var MobilityOnlineCourses = {
 				{
 					if (FHC_AjaxClient.isSuccess(data))
 					{
-						var lvcount = data.retval.length;
+						let lvres = FHC_AjaxClient.getData(data);
+						let lvcount = lvres.length;
 						$("#lvcount").text(lvcount);
 						$("#lvs").empty();
-						for (var i in data.retval)
+						for (let i in lvres)
 						{
-							var lv = data.retval[i];
+							let lv = lvres[i];
 							$("#lvs").append("<p>" + lv.studiengang_kuerzel + " " + lv.orgform_kurzbz + " - "
 								+ lv.lv_bezeichnung + " " + lv.lehrform_kurzbz + " - " + lv.lehrveranstaltung_id + "</p>");
 						}
 					}
 					else
 					{
-						$("#lvs").html("<p>" + (data.retval ? data.retval : "error when getting courses") + "</p>");
+						$("#lvs").html("<p>" + (FHC_AjaxClient.isError(data) ? FHC_AjaxClient.getError(data) : "error when getting courses") + "</p>");
 					}
 				},
 				errorCallback: function(jqXHR, textStatus, errorThrown)
@@ -90,9 +91,9 @@ var MobilityOnlineCourses = {
 				{
 					if (FHC_AjaxClient.hasData(data))
 					{
-						var syncdata = data.retval;
+						let syncdata = FHC_AjaxClient.getData(data);
 						$("#lvsyncoutput").html(syncdata.syncoutput);
-						var infotext = "Sync completed. " + syncdata.added + " added,<br />" + syncdata.updated +
+						let infotext = "Sync completed. " + syncdata.added + " added,<br />" + syncdata.updated +
 							" updated, " + syncdata.deleted + " deleted,<br />" +
 							"<span "+(syncdata.errors > 0 ? "class='text-danger'" : "") + ">" + syncdata.errors + " errors</span>";
 						FHC_DialogLib.alertInfo(infotext);

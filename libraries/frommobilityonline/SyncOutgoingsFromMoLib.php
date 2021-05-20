@@ -30,24 +30,19 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function startOutgoingSync($studiensemester, $outgoings)
 	{
-		$results = array('added' => array(), 'updated' => array(), 'errors' => 0, 'syncoutput' => '');
+		$results = array('added' => array(), 'updated' => array(), 'errors' => 0, 'syncoutput' => array());
 		$studcount = count($outgoings);
 
 		if (empty($outgoings) || !is_array($outgoings) || $studcount <= 0)
 		{
-			$results['syncoutput']  .= "<div class='text-center'>No outgoings found for sync! aborting.</div>";
+			$this->addInfoOutput('No outgoings found for sync! aborting.');
 		}
 		else
 		{
-			$first = true;
 			foreach ($outgoings as $outgoing)
 			{
 				$outgoingdata = $outgoing['data'];
 				$appid = $outgoing['moid'];
-
-				if (!$first)
-					$results['syncoutput'] .= "<br />";
-				$first = false;
 
 				$infhccheck_bisio_id = null;
 				$bisioIdRes = $this->_checkBisioInFhc($appid);
@@ -55,8 +50,8 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				if (isError($bisioIdRes))
 				{
 					$results['errors']++;
-					$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when linking student for applicationid $appid - " .
-						$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname'] . "</span>";
+					$this->addErrorOutput("error when linking student for applicationid $appid - " .
+						$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname']);
 				}
 				else
 				{
@@ -68,8 +63,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 					$student_uid = $this->saveOutgoing($appid, $outgoingdata, $infhccheck_bisio_id);
 
-					$results['syncoutput'] .= $this->getOutput();
-
 					if (isset($student_uid))
 					{
 						if (isset($infhccheck_bisio_id))
@@ -79,24 +72,24 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 						}
 						else
 						{
-							//$results['added']++;
 							$results['added'][] = $appid;
 							$actiontext = 'added';
 						}
 
-						$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> student for applicationid $appid - " .
-							$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname'] . " successfully $actiontext";
+						$this->addSuccessOutput("student for applicationid $appid - " .
+							$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname'] . " successfully $actiontext");
 					}
 					else
 					{
 						$results['errors']++;
-						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when syncing student for applicationid $appid - " .
-							$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname'] . "</span>";
+						$this->addErrorOutput("error when syncing student for applicationid $appid - " .
+							$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname']);
 					}
 				}
 			}
 		}
 
+		$results['syncoutput'] = $this->getOutput();
 		return $results;
 	}
 
@@ -185,19 +178,18 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function saveOutgoing($appid, $outgoing, $bisio_id)
 	{
-		$this->output = '';
 		//error check for missing data etc.
 		$errors = $this->fhcObjHasError($outgoing, self::MOOBJECTTYPE_OUT);
 
 		if ($errors->error)
 		{
-			$this->output .= "<br />ERROR! ";
+			$this->addErrorOutput("ERROR! ");
 			foreach ($errors->errorMessages as $errorMessage)
 			{
-				$this->output .= "$errorMessage";
+				$this->addErrorOutput($errorMessage);
 			}
 
-			$this->output .= "<br />aborting outgoing save";
+			$this->addErrorOutput("aborting outgoing save");
 			return null;
 		}
 
@@ -225,7 +217,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		// Check if everything went ok during the transaction
 		if ($this->ci->db->trans_status() === false)
 		{
-			$this->output .= "rolling back...";
+			$this->addInfoOutput("rolling back...");
 			$this->ci->db->trans_rollback();
 			return null;
 		}

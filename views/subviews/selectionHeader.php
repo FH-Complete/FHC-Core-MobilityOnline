@@ -37,6 +37,6 @@
 	</div>
 	<div class="col-xs-1">
 		<label id="refreshBtnLabel">&nbsp;</label>
-		<button class="btn btn-default" id="refreshBtn" title="reload Applications"><i class="fa fa-download"></i></button>
+		<button class="btn btn-default" id="refreshBtn" title="Reload applications"><i class="fa fa-download"></i></button>
 	</div>
 </div>

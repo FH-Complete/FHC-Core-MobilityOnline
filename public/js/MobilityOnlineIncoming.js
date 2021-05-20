@@ -9,8 +9,8 @@ $(document).ready(function()
 		// get Incomings when Dropdown selected
 		let getIncomingFunc = function()
 		{
-			var studiensemester = $("#studiensemester").val();
-			var studiengang_kz = $("#studiengang_kz").val();
+			let studiensemester = $("#studiensemester").val();
+			let studiengang_kz = $("#studiengang_kz").val();
 			MobilityOnlineApplicationsHelper.resetSyncOutput();
 			MobilityOnlineIncoming.getIncoming(studiensemester, studiengang_kz);
 		}
@@ -28,24 +28,24 @@ $(document).ready(function()
 		$("#applicationsyncbtn").click(
 			function()
 			{
-				var incomingelem = $("#applications input[type=checkbox]:checked");
-				var incomings = [];
+				let incomingelem = $("#applications input[type=checkbox]:checked");
+				let incomings = [];
 				incomingelem.each(
 					function()
 					{
-						for (var incoming in MobilityOnlineIncoming.incomings)
+						for (let incoming in MobilityOnlineIncoming.incomings)
 						{
-							var moinc = MobilityOnlineIncoming.incomings[incoming];
+							let moinc = MobilityOnlineIncoming.incomings[incoming];
 							if (moinc.moid == $(this).val())
 								incomings.push(moinc)
 						}
 					}
 				);
 
-				var syncIncomingsFunc = function (data) {
+				let syncIncomingsFunc = function (data) {
 					if (FHC_AjaxClient.hasData(data))
 					{
-						var maxPostSize = FHC_AjaxClient.getData(data);
+						let maxPostSize = FHC_AjaxClient.getData(data);
 						if ($.isNumeric(maxPostSize))
 						{
 							maxPostSize = (parseInt(maxPostSize));
@@ -92,25 +92,25 @@ var MobilityOnlineIncoming = {
 
 					if (FHC_AjaxClient.hasData(data))
 					{
-						var incomings = data.retval;
+						let incomings = FHC_AjaxClient.getData(data);
 						MobilityOnlineIncoming.incomings = incomings;
 
-						for (var incoming in incomings)
+						for (let incoming in incomings)
 						{
-							var incomingobj = incomings[incoming];
-							var incomingdata = incomingobj.data;
+							let incomingobj = incomings[incoming];
+							let incomingdata = incomingobj.data;
 
-							var person = incomingdata.person;
-							var hasError = incomingobj.error;
-							var chkbxstring, stgnotsettxt, errorclass, newicon;
+							let person = incomingdata.person;
+							let hasError = incomingobj.error;
+							let chkbxstring, stgnotsettxt, errorclass, newicon;
 							chkbxstring = stgnotsettxt = errorclass = "";
 
 							// show errors in tooltip if sync not possible
 							if (hasError)
 							{
 								errorclass = " class='inactive' data-toggle='tooltip' title='";
-								var firstmsg = true;
-								for (var i in incomingobj.errorMessages)
+								let firstmsg = true;
+								for (let i in incomingobj.errorMessages)
 								{
 									if (!firstmsg)
 										errorclass += ', ';
@@ -125,12 +125,12 @@ var MobilityOnlineIncoming = {
 							}
 
 							// courses from MobilityOnline
-							var coursesstring = '';
-							var firstcourse = true;
+							let coursesstring = '';
+							let firstcourse = true;
 
-							for (var courseidx in incomingdata.mocourses)
+							for (let courseidx in incomingdata.mocourses)
 							{
-								var course = incomingdata.mocourses[courseidx];
+								let course = incomingdata.mocourses[courseidx];
 								if (!firstcourse)
 									coursesstring += ' | ';
 								coursesstring += course.number + ': ' + course.name;
@@ -162,7 +162,7 @@ var MobilityOnlineIncoming = {
 							);
 							MobilityOnlineApplicationsHelper.refreshApplicationsNumber();
 						}
-						var headers = {headers: { 0: { sorter: false, filter: false}, 6: {sorter: false, filter: false} }};
+						let headers = {headers: { 0: { sorter: false, filter: false}, 5: {sorter: false, filter: false} }};
 
 						Tablesort.addTablesorter("applicationstbl", [[1, 0], [2, 0]], ["filter"], 2, headers);
 					}
@@ -180,16 +180,16 @@ var MobilityOnlineIncoming = {
 	},
 	syncIncomings: function(incomings, studiensemester, maxPostSize)
 	{
-		var incomingJson = JSON.stringify(incomings);
+		let incomingJson = JSON.stringify(incomings);
 
 		// post data might be too big - then split in in half. factor 3.5 approx. scales up to actual data size
-		var postlength = incomingJson.length + 3.5 * incomings.length;
+		let postlength = incomingJson.length + 3.5 * incomings.length;
 
 		if (postlength > maxPostSize)
 		{
-			var indexhalf = incomings.length / 2;
-			var incomingsPartOne = incomings.splice(0, indexhalf);
-			var incomingsPartTwo = incomings;//incomings.splice(indexhalf, incomings.length);
+			let indexhalf = incomings.length / 2;
+			let incomingsPartOne = incomings.splice(0, indexhalf);
+			let incomingsPartTwo = incomings;
 			MobilityOnlineIncoming.syncIncomings(incomingsPartOne, studiensemester, maxPostSize);
 			MobilityOnlineIncoming.syncIncomings(incomingsPartTwo, studiensemester, maxPostSize);
 		}
@@ -205,17 +205,19 @@ var MobilityOnlineIncoming = {
 					successCallback: function (data, textStatus, jqXHR) {
 						if (FHC_AjaxClient.hasData(data))
 						{
-							$("#applicationsyncoutputtext").append(data.retval.syncoutput);
+							let syncres = FHC_AjaxClient.getData(data);
+
+							MobilityOnlineApplicationsHelper.writeSyncOutput(syncres.syncoutput);
 
 							if ($("#applicationsyncoutputheading").text().length > 0)
 							{
-								$("#nradd").text(parseInt($("#nradd").text()) + data.retval.added);
-								$("#nrupdate").text(parseInt($("#nrupdate").text()) + data.retval.updated);
+								$("#nradd").text(parseInt($("#nradd").text()) + syncres.added);
+								$("#nrupdate").text(parseInt($("#nrupdate").text()) + syncres.updated);
 							}
 							else
 							{
 								$("#applicationsyncoutputheading")
-									.append("<br />MOBILITY ONLINE INCOMINGS SYNC FINISHED<br /><span id = 'nradd'>"+data.retval.added+"</span> added, <span id = 'nrupdate'>"+data.retval.updated+"</span> updated</div>")
+									.append("<br />MOBILITY ONLINE INCOMINGS SYNC FINISHED<br /><span id = 'nradd'>"+syncres.added+"</span> added, <span id = 'nrupdate'>"+syncres.updated+"</span> updated</div>")
 									.append("<br />-----------------------------------------------<br />");
 							}
 							MobilityOnlineIncoming.refreshIncomingsSyncStatus();
@@ -234,8 +236,8 @@ var MobilityOnlineIncoming = {
 	 */
 	refreshIncomingsSyncStatus: function()
 	{
-		var moidsel = $("#applications input[name='applications[]']");
-		var moids = [];
+		let moidsel = $("#applications input[name='applications[]']");
+		let moids = [];
 
 		$(moidsel).each(
 			function()
@@ -254,15 +256,17 @@ var MobilityOnlineIncoming = {
 				{
 					if (FHC_AjaxClient.hasData(data))
 					{
-						for (var moid in data.retval)
+						let moidres = FHC_AjaxClient.getData(data)
+
+						for (let moid in moidres)
 						{
-							var prestudent_id = data.retval[moid];
-							var infhc = $.isNumeric(prestudent_id);
+							let prestudent_id = moidres[moid];
+							let infhc = $.isNumeric(prestudent_id);
 
 							// refresh JS array
-							for (var incoming in MobilityOnlineIncoming.incomings)
+							for (let incoming in MobilityOnlineIncoming.incomings)
 							{
-								var incomingobj = MobilityOnlineIncoming.incomings[incoming];
+								let incomingobj = MobilityOnlineIncoming.incomings[incoming];
 
 								if (incomingobj.moid === parseInt(moid))
 								{
@@ -280,8 +284,8 @@ var MobilityOnlineIncoming = {
 							}
 
 							// refresh Incomings Table "in FHC" field
-							var infhciconel = $("#infhcicon_" + moid);
-							var infhcel = $("#infhc_" + moid);
+							let infhciconel = $("#infhcicon_" + moid);
+							let infhcel = $("#infhc_" + moid);
 
 							infhciconel.removeClass();
 							if (infhc)

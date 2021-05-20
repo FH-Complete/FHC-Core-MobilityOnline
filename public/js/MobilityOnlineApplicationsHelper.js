@@ -5,7 +5,7 @@ var MobilityOnlineApplicationsHelper = {
 		$("#selectallapplications").click(
 			function()
 			{
-				var applicationelem = $("#applications input[type=checkbox][name='applications[]']");
+				let applicationelem = $("#applications input[type=checkbox][name='applications[]']");
 				applicationelem.each(
 					function()
 					{
@@ -40,7 +40,7 @@ var MobilityOnlineApplicationsHelper = {
 	},
 	refreshApplicationsNumber: function()
 	{
-		var length = $("#applications input[type=checkbox][name='applications[]']:checked").length;
+		let length = $("#applications input[type=checkbox][name='applications[]']:checked").length;
 
 		$("#nrapplications").text(length);
 	},
@@ -48,5 +48,36 @@ var MobilityOnlineApplicationsHelper = {
 	{
 		$("#applicationsyncoutputheading").html("");
 		$("#applicationsyncoutputtext").html("<div class='text-center'>-</div>");
+	},
+	getMessageHtml: function(text, msgtype)
+	{
+		let msg = text;
+
+		if (msgtype == 'success')
+			msg = "<i class='fa fa-check text-success'></i> "+msg+"<br />";
+		else if (msgtype == 'error')
+			msg = "<span class='text-danger'><i class='fa fa-times'></i> "+msg+"</span><br />";
+
+		return msg;
+	},
+	writeSyncOutput: function(syncoutput)
+	{
+		for (let idx in syncoutput)
+		{
+			let message = syncoutput[idx];
+
+			$("#applicationsyncoutputtext").append("<br />");
+
+			if (message.type === 'error')
+				$("#applicationsyncoutputtext").append(
+					MobilityOnlineApplicationsHelper.getMessageHtml(message.text, "error")
+				);
+			else if (message.type === 'success')
+				$("#applicationsyncoutputtext").append(
+					MobilityOnlineApplicationsHelper.getMessageHtml(message.text, "success")
+				);
+			else
+				$("#applicationsyncoutputtext").append(message.text);
+		}
 	}
 }
