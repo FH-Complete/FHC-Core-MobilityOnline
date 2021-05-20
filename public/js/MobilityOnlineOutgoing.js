@@ -32,12 +32,7 @@ $(document).ready(function()
 				outgoingelem.each(
 					function()
 					{
-						for (let outgoing in MobilityOnlineOutgoing.outgoings)
-						{
-							let moinc = MobilityOnlineOutgoing.outgoings[outgoing];
-							if (moinc.moid == $(this).val())
-								outgoings.push(moinc)
-						}
+						outgoings.push(MobilityOnlineOutgoing._findOutgoingByMoid($(this).val())[0]);
 					}
 				);
 
@@ -168,6 +163,10 @@ var MobilityOnlineOutgoing = {
 											"<i class='fa fa-link'></i>&nbsp;Link</button></div>";
 										bisiosHtml += linkBtnHtml+"<br />";
 
+										bisiosHtml += "<div class='radio'>" +
+												"<label><input type='radio' name='bisiocheck' id='addNewBisio' value='null'>&nbsp;Add new mobility</label>" +
+											"</div>";
+
 										for (let idx in existingBisios)
 										{
 											let bisio = existingBisios[idx];
@@ -175,7 +174,7 @@ var MobilityOnlineOutgoing = {
 											let bisio_bis = MobilityOnlineOutgoing._convertDateToGerman(bisio.bis);
 
 											let checked = '';
-											if (!checkedFound && (bisio_von === gerdatevon && bisio_bis === gerdatebis) || existingBisios.length === 1)
+											if (!checkedFound && bisio_von === gerdatevon && bisio_bis === gerdatebis)
 											{
 												checked = ' checked';
 												checkedFound = true;
@@ -223,18 +222,23 @@ var MobilityOnlineOutgoing = {
 										$("#applicationsrow_"+moid+" td").css("background-color", "#f5f5f5"); // color should stay after click
 
 										$("#applicationsyncoutputheading").html(
-											'<h4>Select correct mobility to link for '+student_uid+', '+vorname+' '+nachname+'</h4>'
+											'<h4>Select correct fhcomplete mobility to link for '+student_uid+', '+vorname+' '+nachname+'</h4>'
 										)
 
 										$("#applicationsyncoutputtext").html(
 											bisiosHtml
 										)
 
+										if (!checkedFound)
+											$("#addNewBisio").prop("checked", true);
+
 										$(".linkBisioBtn").click(
 											function()
 											{
 												let bisio_id_with_prefix = $('input[name=bisiocheck]:checked').val();
-												let bisio_id = bisio_id_with_prefix.substr(bisio_id_with_prefix.indexOf('_') + 1);
+
+												// if null, outgoing should be newly added, no existing outgoing in fhc is selected
+												let bisio_id = bisio_id_with_prefix === 'null' ? null : bisio_id_with_prefix.substr(bisio_id_with_prefix.indexOf('_') + 1);
 												MobilityOnlineOutgoing.linkBisio(moid, bisio_id);
 											}
 										)
@@ -307,38 +311,47 @@ var MobilityOnlineOutgoing = {
 	},
 	linkBisio: function(moid, bisio_id)
 	{
-		FHC_AjaxClient.ajaxCallPost(
-			FHC_JS_DATA_STORAGE_OBJECT.called_path + '/linkBisio',
-			{
-				"moid": moid,
-				"bisio_id": bisio_id
-			},
-			{
-				successCallback: function(data, textStatus, jqXHR)
-				{
-					if (FHC_AjaxClient.hasData(data))
-					{
-						let insertedMapping = FHC_AjaxClient.getData(data)
-						let insertedMoid = insertedMapping.mo_applicationid;
-						MobilityOnlineOutgoing._blackInApplicationRow(insertedMoid);
-						$("#applicationsyncoutputtext").html(MobilityOnlineApplicationsHelper.getMessageHtml("successfully linked applicationid "+insertedMoid, "success"));
-						let outgoingToSync = [];
-						for (let outgoing in MobilityOnlineOutgoing.outgoings)
-						{
-							let moinc = MobilityOnlineOutgoing.outgoings[outgoing];
-							if (moinc.moid == insertedMoid)
-								outgoingToSync.push(moinc)
-						}
+		let initOutgoingSync = function(moid)
+		{
+			MobilityOnlineOutgoing._blackInApplicationRow(moid);
 
-						MobilityOnlineOutgoing.syncOutgoings(outgoingToSync, $("#studiensemester").val())
-					}
-				},
-				errorCallback: function()
+			let outgoingToSync = MobilityOnlineOutgoing._findOutgoingByMoid(moid);
+			MobilityOnlineOutgoing.syncOutgoings(outgoingToSync, $("#studiensemester").val());
+		}
+
+		if (bisio_id == null)
+		{
+			$("#applicationsyncoutputtext").html("");
+			initOutgoingSync(moid);
+		}
+		else
+		{
+			FHC_AjaxClient.ajaxCallPost(
+				FHC_JS_DATA_STORAGE_OBJECT.called_path + '/linkBisio',
 				{
-					$("#applicationsyncoutputtext").html(MobilityOnlineApplicationsHelper.getMessageHtml("error occured while linking mobility!", "error"));
+					"moid": moid,
+					"bisio_id": bisio_id
+				},
+				{
+					successCallback: function(data, textStatus, jqXHR)
+					{
+						if (FHC_AjaxClient.hasData(data))
+						{
+							let insertedMapping = FHC_AjaxClient.getData(data)
+							let insertedMoid = insertedMapping.mo_applicationid;
+							$("#applicationsyncoutputtext").html(
+								MobilityOnlineApplicationsHelper.getMessageHtml("successfully linked applicationid " + insertedMoid, "success")
+							);
+							initOutgoingSync(insertedMoid);
+						}
+					},
+					errorCallback: function()
+					{
+						$("#applicationsyncoutputtext").html(MobilityOnlineApplicationsHelper.getMessageHtml("error occured while linking mobility!", "error"));
+					}
 				}
-			}
-		);
+			);
+		}
 	},
 	/**
 	 * Refreshes status (infhc, not in fhc) of outgoings
@@ -357,7 +370,6 @@ var MobilityOnlineOutgoing = {
 				if (outgoingsobj.moid === parseInt(moid))
 				{
 					outgoingsobj.infhc = true;
-						//outgoingsobj.prestudent_id = fhc_id;
 					break;
 				}
 			}
@@ -370,6 +382,21 @@ var MobilityOnlineOutgoing = {
 			infhcel.val("1");
 			infhciconel.addClass("fa fa-check");
 		}
+	},
+	_findOutgoingByMoid(moid)
+	{
+		let outgoingFound = [];
+		for (let outgoing in MobilityOnlineOutgoing.outgoings)
+		{
+			let moinc = MobilityOnlineOutgoing.outgoings[outgoing];
+			if (moinc.moid == moid)
+			{
+				outgoingFound.push(moinc);
+				break;
+			}
+		}
+
+		return outgoingFound;
 	},
 	_blackInApplicationRow: function(moid)
 	{

@@ -37,7 +37,10 @@ $(document).ready(function()
 						{
 							let moinc = MobilityOnlineIncoming.incomings[incoming];
 							if (moinc.moid == $(this).val())
-								incomings.push(moinc)
+							{
+								incomings.push(moinc);
+								break;
+							}
 						}
 					}
 				);
