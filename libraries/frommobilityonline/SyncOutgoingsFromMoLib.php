@@ -16,6 +16,8 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 		$this->ci->load->model('codex/bisio_model', 'BisioModel');
+		$this->ci->load->model('person/person_model', 'PersonModel');
+		$this->ci->load->model('person/bankverbindung_model', 'BankverbindungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobisioidzuordnung_model', 'MobisioidzuordnungModel');
@@ -98,7 +100,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * @param $moapp MobilityOnline application
 	 * @return array with fhcomplete table arrays
 	 */
-	public function mapMoAppToOutgoing($moapp)
+	public function mapMoAppToOutgoing($moapp, $bankdata = null)
 	{
 		$fieldmappings = $this->conffieldmappings[self::MOOBJECTTYPE_OUT];
 		$bisiomappings = $fieldmappings['bisio'];
@@ -141,7 +143,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		// Nation
 		$mobisionation = $moapp->{$bisiomappings['nation_code']};
 
-
 		$monations = array(
 			$bisiomappings['nation_code'] => $mobisionation
 		);
@@ -165,6 +166,9 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		$fhcobj = $this->convertToFhcFormat($moapp, self::MOOBJECTTYPE_OUT);
+		$fhcbankdata = $this->convertToFhcFormat($bankdata, 'bankdetails');
+
+		$fhcobj = array_merge($fhcobj, $fhcbankdata);
 
 		return $fhcobj;
 	}
@@ -183,7 +187,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		if ($errors->error)
 		{
-			$this->addErrorOutput("ERROR! ");
 			foreach ($errors->errorMessages as $errorMessage)
 			{
 				$this->addErrorOutput($errorMessage);
@@ -195,21 +198,36 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		$bisio = $outgoing['bisio'];
 		$bisio_zweck = $outgoing['bisio_zweck'];
-
-/*		$studiensemester = $prestudentstatus['studiensemester_kurzbz'];
-
-		// all semesters, one for each prestudentstatus
-		$studiensemarr = $outgoing['all_studiensemester_kurzbz'];*/
+		$bankverbindung = $outgoing['bankverbindung'];
 
 		// Start DB transaction
 		$this->ci->db->trans_begin();
 
-		// bisio
-		$bisio_id = $this->_saveBisio($appid, $bisio_id, $bisio);
-		$bisio_zweck['bisio_id'] = $bisio_id;
-		$bisio_zweckresult = $this->ci->MoFhcModel->saveBisioZweck($bisio_zweck);
-		if (hasData($bisio_zweckresult))
-			$this->log('insert', $bisio_zweckresult, 'bisio_zweck');
+		// get person_id
+		$personRes = $this->ci->PersonModel->getByUid($bisio['student_uid']);
+
+		if (hasData($personRes))
+		{
+			$person_id = getData($personRes)[0]->person_id;
+
+			// bisio
+			$bisio_id = $this->_saveBisio($appid, $bisio_id, $bisio);
+
+			if (isset($bisio_id))
+			{
+				$bisio_zweck['bisio_id'] = $bisio_id;
+				$bisio_zweckresult = $this->ci->MoFhcModel->saveBisioZweck($bisio_zweck);
+
+				if (hasData($bisio_zweckresult))
+				{
+					$this->log('insert', $bisio_zweckresult, 'bisio_zweck');
+				}
+
+				// bankverbindung
+				$bankverbindung['person_id'] = $person_id;
+				$bankverbindung_id = $this->_saveBankverbindung($bankverbindung);
+			}
+		}
 
 		// Transaction complete!
 		$this->ci->db->trans_complete();
@@ -305,16 +323,12 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	{
 		$outgoings = array();
 
-		$cnt = 1;
-
 		foreach ($appids as $appid)
 		{
-			if ($cnt > 5)
-				break;
-			$cnt++;
 			$application = $this->ci->MoGetAppModel->getApplicationById($appid);
+			$bankdata = $this->ci->MoGetAppModel->getBankAccountDetails($appid);
 
-			$fhcobj = $this->mapMoAppToOutgoing($application);
+			$fhcobj = $this->mapMoAppToOutgoing($application, $bankdata);
 
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appid;
@@ -400,6 +414,45 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		return $bisio_id;
+	}
+
+	/**
+	 * Inserts bankverbindung for a student or updates an existing one.
+	 * @param $bankverbindung
+	 * @return int|null bankverbindung_id of inserted or updated bankverbindung if successful, null otherwise.
+	 */
+	private function _saveBankverbindung($bankverbindung)
+	{
+		$bankverbindung_id = null;
+
+		// check existent Bankverbindungen
+		$this->ci->BankverbindungModel->addSelect('bankverbindung_id');
+		$this->ci->BankverbindungModel->addOrder('insertamum');
+		$this->ci->BankverbindungModel->addLimit(1);
+
+		$bankverbindungRes = $this->ci->BankverbindungModel->loadWhere(array('person_id' => $bankverbindung['person_id']));
+
+		if (isSuccess($bankverbindungRes))
+		{
+			if (hasData($bankverbindungRes))
+			{
+				// Bankverbindung already exists - update
+				$bankverbindung_id = getData($bankverbindungRes)[0]->bankverbindung_id;
+				$this->stamp('update', $bisio);
+				$bankverbindungresp = $this->ci->BankverbindungModel->update($bankverbindung_id, $bankverbindung);
+				$this->log('update', $bankverbindungresp, 'bankverbindung');
+			}
+			else
+			{
+				// new Bankverbindung
+				$this->stamp('insert', $bankverbindung);
+				$bankverbindungresp = $this->ci->BankverbindungModel->insert($bankverbindung);
+				$this->log('insert', $bankverbindungresp, 'bankverbindung');
+				$bankverbindung_id = getData($bankverbindungresp)[0];
+			}
+		}
+
+		return $bankverbindung_id;
 	}
 
 	/**

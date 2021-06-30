@@ -143,6 +143,23 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	}
 
 	/**
+	 * Get bank account data of applicant
+	 * @param $appid
+	 * @return array bank data on success, null otherwise
+	 */
+	public function getBankAccountDetails($appid)
+	{
+		$success = $this->performCall('getBankAccountDetails', array('applicationID' => $appid));
+
+		if (isset($success->return))
+		{
+			return $success->return;
+		}
+		else
+			return null;
+	}
+
+	/**
 	 * Get Courses an applicant has assigned for
 	 * @param $appid
 	 * @return array courses on success, null otherwise
@@ -198,6 +215,35 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 				return $success->return;
 			else
 				return array($success->return);
+		}
+		else
+			return null;
+	}
+
+	public function getProjectDetailsByApplicationID($appid)
+	{
+		$success = $this->performCall('getProjectDetailsByApplicationID', array('applicationID' => $appid));
+
+		if (isset($success->return))
+		{
+			return $success->return;
+		}
+		else
+			return null;
+	}
+
+	/**
+	 * Get nomination data of an application, including project data.
+	 * @param $appid
+	 * @return array nomination data on success, null otherwise
+	 */
+	public function getNominationDataByApplicationID($appid)
+	{
+		$success = $this->performCall('getNominationDataByApplicationID', array('applicationID' => $appid, 'withProjectData' => true));
+
+		if (isset($success->return))
+		{
+			return $success->return;
 		}
 		else
 			return null;

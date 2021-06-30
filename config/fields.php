@@ -101,31 +101,45 @@ $config['fhcfields']['application'] = array(
 
 $config['fhcfields']['applicationout'] = array(
 	'bisio' => array(
-		'von' => array('required' => true,
+		'von' => array(
+			'required' => true,
 			'name' => 'Aufenthalt von',
 			'type' => 'date'),
-		'bis' => array('required' => true,
+		'bis' => array(
+			'required' => true,
 			'name' => 'Aufenthalt bis',
 			'type' => 'date'),
-		'nation_code' => array('required' => true,
+		'nation_code' => array(
+			'required' => true,
 			'name' => 'Nation',
 			'ref' => 'bis.tbl_nation'),
-		'mobilitaetsprogramm_code' => array('required' => true,
-				'name' => 'Austauschprogramm',
-				'type' => 'integer',
-				'ref' => 'bis.tbl_mobilitaetsprogramm'),
-		'student_uid' => array('required' => true,
-				'name' => 'Uid',
-				'ref' => 'public.tbl_student')
+		'mobilitaetsprogramm_code' => array(
+			'required' => true,
+			'name' => 'Austauschprogramm',
+			'type' => 'integer',
+			'ref' => 'bis.tbl_mobilitaetsprogramm'),
+		'student_uid' => array(
+			'required' => true,
+			'name' => 'Uid',
+			'ref' => 'public.tbl_student')
 	),
 	'bisio_zweck' => array(
-		'zweck_code' => array('required' => true,
+		'zweck_code' => array(
+			'required' => true,
 			'name' => 'Aufenthaltszweck',
 			'type' => 'integer',
 			'ref' => 'bis.tbl_zweck')
 	),
-	'kontaktmail' => array('kontakt' => array('required' => true,
-		'name' => 'E-Mail-Adresse')
+	'kontaktmail' => array(
+		'kontakt' => array(
+			'required' => true,
+			'name' => 'E-Mail-Adresse')
+	),
+	'bankverbindung' => array(
+		'iban' => array(
+			'required' => true,
+			'Name' => 'IBAN'
+		)
 	)
 );
 

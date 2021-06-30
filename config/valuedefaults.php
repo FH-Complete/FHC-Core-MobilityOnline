@@ -1,6 +1,6 @@
 <?php
 /**
- * Contains value defaults for fhcomplete and MobilityOnline fields that have no valuemapping
+ * Contains value defaults for autofill of fhcomplete and MobilityOnline fields that have no valuemapping
  */
 
 $config['fhcdefaults']['application']['prestudent'] = array(
@@ -77,6 +77,15 @@ $config['fhcdefaults']['application']['bisio_zweck'] = array(
 
 $config['fhcdefaults']['applicationout']['bisio_zweck'] = array(
 	'zweck_code' => '1'
+);
+
+/*$config['fhcdefaults']['applicationout']['bisio'] = array(
+	'student_uid' => 'be20b080'
+);*/
+
+$config['fhcdefaults']['bankdetails']['bankverbindung'] = array(
+	'typ' => 'p',
+	'verrechnung' => true
 );
 
 $config['modefaults']['course']['lehrveranstaltung'] = array(

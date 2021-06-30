@@ -5,10 +5,20 @@
  * ['fieldmappings']['mobilityonlineobject']['fhctable'] = array('fhcfieldname' => 'mobilityonlinefieldname')
  */
 
+// mappings reused by objects
 $personbasemapping =  array(
 	'vorname' => 'firstName',
 	'nachname' => 'lastName',
 );
+
+$bisiomappings = array(
+	'von' => 'bew_dat_von',
+	'bis' => 'bew_dat_bis',
+	'nation_code' => 'lcd_id_gast',
+	'mobilitaetsprogramm_code' => 'aust_prog_id'
+);
+
+$mailmapping = array('kontakt' => 'email');
 
 // person incoming
 $config['fieldmappings']['application']['person'] = $personbasemapping;
@@ -20,9 +30,6 @@ $config['fieldmappings']['application']['person']['geburtsnation'] = 'bew_geb_or
 $config['fieldmappings']['application']['person']['sprache'] = 'spr_id_komm';
 $config['fieldmappings']['application']['person']['foto'] = 'file';
 $config['fieldmappings']['application']['person']['anmerkung'] = 'bew_txt_gruende';
-
-// person outgoing
-$config['fieldmappings']['applicationout']['person'] = $personbasemapping;
 
 $config['fieldmappings']['application']['prestudent'] = array(
 	'studiengang_kz' => 'studr_id',
@@ -41,21 +48,9 @@ $config['fieldmappings']['application']['akte'] = array(
 	'inhalt' => 'file'
 );
 
-$bisiomappings = array(
-	'von' => 'bew_dat_von',
-	'bis' => 'bew_dat_bis',
-	'nation_code' => 'lcd_id_gast',
-	'mobilitaetsprogramm_code' => 'aust_prog_id'
-);
-
 // bisio incoming
 $config['fieldmappings']['application']['bisio'] = $bisiomappings;
 $config['fieldmappings']['application']['bisio']['universitaet'] = 'inst_id_heim_name';
-
-// bisio outgoing
-$config['fieldmappings']['applicationout']['bisio'] = $bisiomappings;
-$config['fieldmappings']['applicationout']['bisio']['universitaet'] = 'inst_id_gast';
-$config['fieldmappings']['applicationout']['bisio']['student_uid'] = 'bew_ber_matr_nr';
 
 $adressemapping = array(
 	'strasse' => 'street',
@@ -73,10 +68,7 @@ $config['fieldmappings']['address']['kontakttel'] = array(
 	'kontakt' => 'telNumber'
 );
 
-$mailmapping = array('kontakt' => 'email');
 $config['fieldmappings']['application']['kontaktmail'] = $mailmapping;
-
-$config['fieldmappings']['applicationout']['kontaktmail'] = $mailmapping;
 
 $config['fieldmappings']['application']['kontaktnotfall'] = array(
 	'kontakt' => 'bew_tel_nr_kontakt'
@@ -99,6 +91,24 @@ $config['fieldmappings']['incomingcourse']['lehrveranstaltung'] = array(
 
 $config['fieldmappings']['incomingcourse']['mostudiengang'] = array(
 	'bezeichnung' => 'studyFieldDescription'
+);
+
+// person outgoing
+$config['fieldmappings']['applicationout']['person'] = $personbasemapping;
+
+// bisio outgoing
+$config['fieldmappings']['applicationout']['bisio'] = $bisiomappings;
+$config['fieldmappings']['applicationout']['bisio']['universitaet'] = 'inst_id_gast';
+$config['fieldmappings']['applicationout']['bisio']['student_uid'] = 'bew_ber_matr_nr';
+
+// mailkontakt outgoing
+$config['fieldmappings']['applicationout']['kontaktmail'] = $mailmapping;
+
+// Bankkonto outgoing
+$config['fieldmappings']['bankdetails']['bankverbindung'] = array(
+	'iban' => 'iban',
+	'name' => 'bankName',
+	'bic' => 'swiftCode'
 );
 
 $config['fieldmappings']['course'] = array(
