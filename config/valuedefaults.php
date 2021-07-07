@@ -85,7 +85,7 @@ $config['fhcdefaults']['bankdetails']['bankverbindung'] = array(
 );
 
 $config['fhcdefaults']['payment']['konto'] = array(
-	'buchungstyp_kurzbz' => 'Sonstiges'
+	'buchungstyp_kurzbz' => 'ZuschussIO'
 );
 
 $config['modefaults']['course']['lehrveranstaltung'] = array(
