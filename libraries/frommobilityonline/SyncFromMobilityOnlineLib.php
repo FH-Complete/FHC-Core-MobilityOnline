@@ -23,7 +23,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	// output array containing errors, success etc messages when syncing
 	protected $output = array();
 
-	// fhc string replacements for mo values
+	// fhc value replacements for mo values
 	private $_replacementsarrToFHC = array(
 		'gebdatum' => array(
 			0 => '_mapDateToFhc'
@@ -60,6 +60,21 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		),
 		'foto' => array(
 			0 => '_resizeBase64ImageSmall'
+		),
+		'student_uid' => array(
+			0 => 'replaceEmpty'
+		),
+		'aufenthaltfoerderung_code' => array(
+			0 => 'replaceEmpty'
+		),
+		'zweck_code' => array(
+			0 => 'replaceEmpty'
+		),
+		'ects_erworben' => array(
+			0 => '_mapEctsToFhc'
+		),
+		'ects_angerechnet' => array(
+			0 => '_mapEctsToFhc'
 		)
 		/*,
 		'lehrveranstaltung_id' => array(
@@ -164,6 +179,12 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 								switch($params['type'])
 								{
 									case 'integer':
+										if (!is_int($value) && !ctype_digit($value))
+										{
+											$wrongdatatype = true;
+										}
+										break;
+									case 'float':
 										if (!is_numeric($value))
 										{
 											$wrongdatatype = true;
@@ -248,6 +269,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			}
 			else
 			{
+				// if required table not present in object - show error
 				$hasError->errorMessages[] = "data missing: $table";
 				$hasError->error = true;
 			}
@@ -365,7 +387,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$fhcvalue = $movalue;
 		//if exists in valuemappings - take value
 		if (!empty($valuemappings[$fhcindex])
-			&& array_key_exists($fhcvalue, $valuemappings[$fhcindex])
+			&& isset($valuemappings[$fhcindex][$fhcvalue])
 		)
 		{
 			$fhcvalue = $valuemappings[$fhcindex][$fhcvalue];
@@ -513,6 +535,22 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		{
 			$date = DateTime::createFromFormat('d.m.Y', $modate);
 			return date_format($date, 'Y-m-d');
+		}
+		else
+			return null;
+	}
+
+	/**
+	 * Converts MobilityOnline ects amount to fhcomplete format.
+	 * @param $moects
+	 * @return mixed
+	 */
+	private function _mapEctsToFhc($moects)
+	{
+		$pattern = '/^(\d+),(\d{2})$/';
+		if (preg_match($pattern, $moects))
+		{
+			return (float) str_replace(',', '.', $moects);
 		}
 		else
 			return null;

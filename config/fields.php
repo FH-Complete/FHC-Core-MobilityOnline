@@ -100,7 +100,22 @@ $config['fhcfields']['application'] = array(
 );
 
 $config['fhcfields']['applicationout'] = array(
+	'prestudent' => array(
+		'studiengang_kz' => array(
+			'required' => true,
+			'name' => 'Studiengang',
+			'type' => 'integer',
+			'ref' => 'public.tbl_studiengang'),
+		'studiensemester_kurzbz' => array(
+			'required' => true,
+			'name' => 'Studiensemester',
+			'ref' => 'public.tbl_studiensemester')
+	),
 	'bisio' => array(
+		'student_uid' => array(
+			'required' => true,
+			'name' => 'Uid',
+			'ref' => 'public.tbl_student'),
 		'von' => array(
 			'required' => true,
 			'name' => 'Aufenthalt von',
@@ -118,28 +133,46 @@ $config['fhcfields']['applicationout'] = array(
 			'name' => 'Austauschprogramm',
 			'type' => 'integer',
 			'ref' => 'bis.tbl_mobilitaetsprogramm'),
-		'student_uid' => array(
-			'required' => true,
-			'name' => 'Uid',
-			'ref' => 'public.tbl_student')
+		'ects_erworben' => array(
+			'required' => false,
+			'name' => 'ECTS erworben',
+			'type' => 'float'),
+		'ects_angerechnet' => array(
+			'required' => false,
+			'name' => 'ECTS angerechnet',
+			'type' => 'float')
 	),
 	'bisio_zweck' => array(
 		'zweck_code' => array(
-			'required' => true,
+			'required' => false,
 			'name' => 'Aufenthaltszweck',
 			'type' => 'integer',
 			'ref' => 'bis.tbl_zweck')
+	),
+	'bisio_aufenthaltfoerderung' => array(
+		'aufenthaltfoerderung_code' => array(
+			'required' => false,
+			'name' => 'Aufenthaltsförderung',
+			'type' => 'integer',
+			'ref' => 'bis.tbl_bisio_aufenthaltfoerderung')
 	),
 	'kontaktmail' => array(
 		'kontakt' => array(
 			'required' => true,
 			'name' => 'E-Mail-Adresse')
-	),
-	'bankverbindung' => array(
-		'iban' => array(
-			'required' => true,
-			'Name' => 'IBAN'
-		)
+	)
+);
+
+$config['fhcfields']['payment'] = array(
+	'konto' => array(
+		'betrag' =>
+			array('required' => true,
+				'name' => 'Betrag',
+				'type' => 'float'),
+		'buchungstyp_kurzbz' =>
+			array('required' => true,
+				'name' => 'Buchungstyp',
+				'ref' => 'public.tbl_buchungstyp')
 	)
 );
 

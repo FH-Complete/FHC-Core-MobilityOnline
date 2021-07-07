@@ -15,6 +15,7 @@ class Mobilityonlinefhc_model extends DB_Model
 		$this->load->model('crm/prestudent_model', 'PrestudentModel');
 		$this->load->model('person/Kontakt_model', 'KontaktModel');
 		$this->load->model('codex/bisiozweck_model', 'BisioZweckModel');
+		$this->load->model('codex/bisioaufenthaltfoerderung_model', 'BisioAufenthaltfoerderungModel');
 	}
 
 	/**
@@ -174,6 +175,9 @@ class Mobilityonlinefhc_model extends DB_Model
 	 */
 	public function saveBisioZweck($bisio_zweck)
 	{
+		if (!isset($bisio_zweck['zweck_code']))
+			return success(null);
+
 		$bisiocheckresp = $this->BisioZweckModel->loadWhere(
 			array(
 				'bisio_id' => $bisio_zweck['bisio_id'],
@@ -185,10 +189,42 @@ class Mobilityonlinefhc_model extends DB_Model
 			return $bisiocheckresp;
 
 		if (!hasData($bisiocheckresp))
-		{
 			return $this->BisioZweckModel->insert($bisio_zweck);
-		}
 		else
 			return success(null);
+	}
+
+	/**
+	 * Inserts bisio Aufenthaltsförderung for a student if not present, updates if present.
+	 * @param $bisio_aufenthaltfoerderung
+	 * @return int|null bisio_id and aufenthaltfoerderung_code of inserted aufenthaltfoerderung if successful, null otherwise.
+	 */
+	public function saveBisioAufenthaltfoerderung($bisio_aufenthaltfoerderung)
+	{
+		$result = null;
+
+		if (!isset($bisio_aufenthaltfoerderung['aufenthaltfoerderung_code']))
+			$result = success(null);
+		else
+		{
+			$bisiocheckresp = $this->BisioAufenthaltfoerderungModel->loadWhere(
+				array(
+					'bisio_id' => $bisio_aufenthaltfoerderung['bisio_id'],
+					'aufenthaltfoerderung_code' => $bisio_aufenthaltfoerderung['aufenthaltfoerderung_code']
+				)
+			);
+
+			if (isError($bisiocheckresp))
+				$result = $bisiocheckresp;
+			else
+			{
+				if (!hasData($bisiocheckresp))
+					$result = $this->BisioAufenthaltfoerderungModel->insert($bisio_aufenthaltfoerderung);
+				else
+					$result = success(null);
+			}
+		}
+
+		return $result;
 	}
 }

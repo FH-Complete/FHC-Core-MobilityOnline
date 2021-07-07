@@ -96,10 +96,25 @@ $config['fieldmappings']['incomingcourse']['mostudiengang'] = array(
 // person outgoing
 $config['fieldmappings']['applicationout']['person'] = $personbasemapping;
 
+// prestudent outgoing
+$config['fieldmappings']['applicationout']['prestudent'] = array(
+	'studiensemester_kurzbz' => 'sem_id',
+	'studiengang_kz' => 'studr_id'
+);
+
 // bisio outgoing
 $config['fieldmappings']['applicationout']['bisio'] = $bisiomappings;
-$config['fieldmappings']['applicationout']['bisio']['universitaet'] = 'inst_id_gast';
 $config['fieldmappings']['applicationout']['bisio']['student_uid'] = 'bew_ber_matr_nr';
+$config['fieldmappings']['applicationout']['bisio']['universitaet'] = 'inst_id_gast';
+$config['fieldmappings']['applicationout']['bisio']['ects_erworben'] = 'bew_anz_ects2';
+$config['fieldmappings']['applicationout']['bisio']['ects_angerechnet'] = 'bew_anz_ects';
+
+$config['fieldmappings']['applicationout']['bisio_zweck'] = array(
+	'zweck_code' => 'aktivitaet_art_id'
+);
+$config['fieldmappings']['applicationout']['bisio_aufenthaltfoerderung'] = array(
+	'aufenthaltfoerderung_code' => 'int_freifeld3'
+);
 
 // mailkontakt outgoing
 $config['fieldmappings']['applicationout']['kontaktmail'] = $mailmapping;
@@ -111,6 +126,15 @@ $config['fieldmappings']['bankdetails']['bankverbindung'] = array(
 	'bic' => 'swiftCode'
 );
 
+// Zahlungen (Konto) outgoing
+$config['fieldmappings']['payment']['konto']['betrag'] = 'paymentAmount';
+$config['fieldmappings']['payment']['buchungsinfo'] = array(
+	/*'mo_zahlung_id' => 'paymentId',*/
+	'mo_referenz_nr' => 'referenceNumber',
+	'mo_zahlungsgrund' => 'reasonOfPayment',
+);
+
+// Mappings for sync from FHC to MO
 $config['fieldmappings']['course'] = array(
 	'lv_bezeichnung' => 'courseName',
 	'studienjahr_kurzbz' => array('name' => 'academicYear', 'type' => 'description'),

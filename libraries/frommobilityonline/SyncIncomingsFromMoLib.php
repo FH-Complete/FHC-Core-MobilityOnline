@@ -239,7 +239,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// WS and SS if Studienjahr given in MO
 		if ($moapp->{$prestudentstatusmappings['studiensemester_kurzbz']} === $mostudjahr)
 		{
-			$this->mapMoStudienjahrToSemester($mostudjahr);
 			$allsemesters = array_unique(array_merge($allsemesters, $this->mapMoStudienjahrToSemester($mostudjahr)));
 		}
 

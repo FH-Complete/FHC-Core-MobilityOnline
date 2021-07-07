@@ -150,6 +150,22 @@ $config['valuemappings']['frommo']['betrag'] = array(
 	'946' => array('Studiengebuehr' => 0.00)
 );
 
+$config['valuemappings']['frommo']['aufenthaltfoerderung_code'] = array(
+	'1100668' => 1, // EU-Förderung
+	'1100669' => 2, // Beihilfe von Bund, Land, Gemeinde
+	'1100670' => 3, // Förderung durch Universität/Hochschule
+	'1100671' => 4, // andere Förderung
+	'1100672' => 5 // keine Förderung
+);
+
+$config['valuemappings']['frommo']['zweck_code'] = array(
+	'1114418' => '1', // Studium
+	'1114419' => '2', // Praktikum
+	'1114420' => '3', // Studium und Praktikum
+	'1114421' => '4', // Diplom-/Masterarbeit bzw. Dissertation
+	// '1114422' => '7', TODO: Kurzzeitmobilität
+);
+
 $defaultbuchungen = array('OEH' => 'ÖH-Beitrag STG Semester', 'Studiengebuehr' => 'Studienbeitrag_Incoming');
 $config['valuemappings']['frommo']['buchungstext'] = array(
 	'685' => $defaultbuchungen,
