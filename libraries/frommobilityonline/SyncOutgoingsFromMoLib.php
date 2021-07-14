@@ -186,6 +186,22 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 			else
 				$payments[] = $this->convertToFhcFormat($nominationData->project->payments, $paymentObjectName);
+
+			// check if payments already synced and set flag
+			for($i = 0; $i < count($payments); $i++)
+			{
+				$referenzNrRes = $this->_checkPaymentInFhc($payments[$i]['buchungsinfo']['mo_referenz_nr']);
+
+				if (isSuccess($referenzNrRes))
+				{
+					if (hasData($referenzNrRes))
+					{
+						$payments[$i]['buchungsinfo']['infhc'] = true;
+					}
+					else
+						$payments[$i]['buchungsinfo']['infhc'] = false;
+				}
+			}
 		}
 
 		$fhcobj = array_merge($fhcobj, $fhcbankdata, array('zahlungen' => $payments));
@@ -582,5 +598,27 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		return success($infhccheck_bisio_id);
+	}
+
+	/**
+	 * Check if payment is already in fhcomplete by checking sync table.
+	 * @param $mo_referenz_nr
+	 * @return object error or success with found buchungsnr if in fhcomplete, success with null if not in fhcomplete
+	 */
+	private function _checkPaymentInFhc($mo_referenz_nr)
+	{
+		$infhccheck_buchungsnr = null;
+		$this->ci->MozahlungidzuordnungModel->addSelect('buchungsnr');
+		$moReferenzNrRes = $this->ci->MozahlungidzuordnungModel->loadWhere(array('mo_referenz_nr' => $mo_referenz_nr));
+
+		if (isError($moReferenzNrRes))
+			return $moReferenzNrRes;
+
+		if (hasData($moReferenzNrRes))
+		{
+			$infhccheck_buchungsnr = getData($moReferenzNrRes)[0]->buchungsnr;
+		}
+
+		return success($infhccheck_buchungsnr);
 	}
 }

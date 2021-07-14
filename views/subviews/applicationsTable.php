@@ -9,7 +9,7 @@
 		</div>
 		<br />
 		<div class="panel panel-body">
-			<div class="text-center">
+			<div class="text-center" id="optionsPanel">
 				<a id="selectallapplications"><i class="fa fa-check"></i>&nbsp;select all</a>
 				&nbsp;&nbsp;
 				<a id="selectnewapplications"><i class="fa fa-check"></i>&nbsp;select new (not in FHC)</a>

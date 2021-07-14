@@ -15,8 +15,8 @@
 			'customJSs' => array('public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineApplicationsHelper.js',
 								'public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineOutgoing.js',
 								'public/js/tablesort/tablesort.js'),
-			'customCSSs' => array('public/extensions/FHC-Core-MobilityOnline/css/MobilityOnline.css',
-								'public/css/sbadmin2/tablesort_bootstrap.css')
+			'customCSSs' => array('public/css/sbadmin2/tablesort_bootstrap.css',
+								'public/extensions/FHC-Core-MobilityOnline/css/MobilityOnline.css')
 		)
 	);
 ?>
@@ -41,7 +41,7 @@
 							array(
 								'applicationType' => 'Outgoings',
 								'columnnames' => array(
-									'Name', 'Uid', 'E-Mail', 'Aufh.von', 'Aufh.bis', 'ID', 'In FHC'
+									'Name', 'Uid', 'E-Mail', 'Aufh.von', 'Aufh.bis', 'Zahlungen', 'ID', 'synchronisiert'
 								)
 							)
 					); ?>
