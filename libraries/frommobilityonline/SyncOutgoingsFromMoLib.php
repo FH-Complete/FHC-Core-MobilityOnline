@@ -104,18 +104,22 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function mapMoAppToOutgoing($moapp, $bankdata = null, $nominationData = null)
 	{
-		$fieldmappings = $this->conffieldmappings[self::MOOBJECTTYPE_OUT];
-		$bisiomappings = $fieldmappings['bisio'];
-		$prestudentmappings = $fieldmappings['prestudent'];
+		$fieldMappings = $this->conffieldmappings[self::MOOBJECTTYPE_OUT];
+		$bisioMappings = $fieldMappings['bisio'];
+		$prestudentMappings = $fieldMappings['prestudent'];
+		$bisioinfoMappings = $fieldMappings['bisio_info'];
 
 		// applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
-		$comboboxvaluefields = array($bisiomappings['nation_code'], $prestudentmappings['studiensemester_kurzbz'],
-			$prestudentmappings['studiengang_kz']);
+		$comboboxValueFields = array($bisioMappings['nation_code'], $prestudentMappings['studiensemester_kurzbz'],
+			$prestudentMappings['studiengang_kz']);
 
 		// applicationDataElements for which comboboxSecondValue is retrieved instead of elementValue
-		$comboboxsecondvaluefields = array($bisiomappings['universitaet']);
+		$comboboxSecondValueFields = array($bisioMappings['universitaet']);
 
-		foreach ($fieldmappings as $fhctable)
+		// applicationDataElements for which comboboxSecondValue is retrieved instead of elementValue
+		$elementvalueBooleanFields = array($bisioinfoMappings['ist_double_degree'], $bisioinfoMappings['ist_praktikum'], $bisioinfoMappings['ist_masterarbeit']);
+
+		foreach ($fieldMappings as $fhctable)
 		{
 			foreach ($fhctable as $value)
 			{
@@ -126,13 +130,17 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 					{
 						if ($element->elementName === $value)
 						{
-							if (in_array($element->elementName, $comboboxvaluefields) && isset($element->comboboxFirstValue))
+							if (in_array($element->elementName, $comboboxValueFields) && isset($element->comboboxFirstValue))
 							{
 								$moapp->$value = $element->comboboxFirstValue;
 							}
-							elseif (in_array($element->elementName, $comboboxsecondvaluefields) && isset($element->comboboxSecondValue))
+							elseif (in_array($element->elementName, $comboboxSecondValueFields) && isset($element->comboboxSecondValue))
 							{
 								$moapp->$value = $element->comboboxSecondValue;
+							}
+							elseif (in_array($element->elementName, $elementvalueBooleanFields) && isset($element->elementValueBoolean))
+							{
+								$moapp->$value = $element->elementValueBoolean;
 							}
 							else
 							{
@@ -145,25 +153,25 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		// Nation
-		$mobisionation = $moapp->{$bisiomappings['nation_code']};
+		$moBisionation = $moapp->{$bisioMappings['nation_code']};
 
-		$monations = array(
-			$bisiomappings['nation_code'] => $mobisionation
+		$moNations = array(
+			$bisioMappings['nation_code'] => $moBisionation
 		);
 
 		$fhcnations = $this->ci->NationModel->load();
 
 		if (hasData($fhcnations))
 		{
-			foreach ($fhcnations->retval as $fhcnation)
+			foreach ($fhcnations->retval as $fhcNation)
 			{
 				// trying to get nations by bezeichnung
-				foreach ($monations as $configbez => $moonation)
+				foreach ($moNations as $configBez => $mooNation)
 				{
-					if ($fhcnation->kurztext === $moonation || $fhcnation->langtext === $moonation || $fhcnation->engltext === $moonation)
+					if ($fhcNation->kurztext === $mooNation || $fhcNation->langtext === $mooNation || $fhcNation->engltext === $mooNation)
 					{
-						if (isset($moapp->{$configbez}))
-							$moapp->{$configbez} = $fhcnation->nation_code;
+						if (isset($moapp->{$configBez}))
+							$moapp->{$configBez} = $fhcNation->nation_code;
 					}
 				}
 			}
@@ -406,6 +414,10 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appid);
 
 			$fhcobj = $this->mapMoAppToOutgoing($application, $bankdata, $nominationData);
+
+			// if double degree - ignore application
+			if (isset($fhcobj['bisio_info']['ist_double_degree']) && $fhcobj['bisio_info']['ist_double_degree'] === true)
+				continue;
 
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appid;

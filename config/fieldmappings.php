@@ -112,8 +112,16 @@ $config['fieldmappings']['applicationout']['bisio']['ects_angerechnet'] = 'bew_a
 $config['fieldmappings']['applicationout']['bisio_zweck'] = array(
 	'zweck_code' => 'aktivitaet_art_id'
 );
+
 $config['fieldmappings']['applicationout']['bisio_aufenthaltfoerderung'] = array(
 	'aufenthaltfoerderung_code' => 'int_freifeld3'
+);
+
+// information about bisio which is not saved directly in fhcomplete
+$config['fieldmappings']['applicationout']['bisio_info'] = array(
+	'ist_double_degree' => 'bit_freifeld24',
+	'ist_praktikum' => 'is_praktikum',
+	'ist_masterarbeit' => 'bit_freifeld26'
 );
 
 // mailkontakt outgoing
