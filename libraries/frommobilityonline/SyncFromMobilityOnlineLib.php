@@ -165,7 +165,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					{
 						$value = $fhcobj[$table][$field];
 
-						if ($required && !is_numeric($value) && isEmptyString($value))
+						if ($required && !is_numeric($value) && !is_bool($value) && isEmptyString($value))
 						{
 							$haserror = true;
 							$errortext = 'is missing';
@@ -310,68 +310,71 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 * Uses 1. valuemappings in configs, 2. valuemappings in _replacementsarrToFHC otherwise
 	 * Also uses fhc valuedefaults to fill fhcobject
 	 * takes unmodified MobilityOnline value if field not found in valuemappings
-	 * @param $moobj MobilityOnline object as received from API
-	 * @param $objtype type of object, e.g. application
+	 * @param $moObj MobilityOnline object as received from API
+	 * @param $objType type of object, e.g. application
 	 * @return array with fhcomplete fields and values
 	 */
-	protected function convertToFhcFormat($moobj, $objtype)
+	protected function convertToFhcFormat($moObj, $objType)
 	{
-		if (!isset($moobj))
+		if (!isset($moObj))
 			return array();
 
-		$defaults = isset($this->_conffhcdefaults[$objtype]) ? $this->_conffhcdefaults[$objtype] : array();
+		$defaults = isset($this->_conffhcdefaults[$objType]) ? $this->_conffhcdefaults[$objType] : array();
 
 		// cases where value is different format in MO than in FHC -> valuemappings in config
-		$fhcobj = array();
-		$fhcvalue = null;
+		$fhcObj = array();
+		$fhcValue = null;
 
-		$moobjfieldmappings = $this->conffieldmappings[$objtype];
+		$moobjFieldmappings = $this->conffieldmappings[$objType];
 
-		foreach ($moobjfieldmappings as $fhctable => $mapping)
+		foreach ($moobjFieldmappings as $fhcTable => $mapping)
 		{
-			foreach ($moobj as $name => $value)
+			foreach ($moObj as $name => $value)
 			{
-				$fhcindeces = array();
+				$fhcIndeces = array();
 
 				//get all fieldmappings (string or 'name' array key match the MO name)
-				foreach ($mapping as $fhcidx => $moval)
+				foreach ($mapping as $fhcIdx => $moVal)
 				{
-					if ($moval === $name || (isset($moval['name']) && $moval['name'] === $name))
-						$fhcindeces[] = $fhcidx;
+					if ($moVal === $name || (isset($moVal['name']) && $moVal['name'] === $name))
+						$fhcIndeces[] = $fhcIdx;
 				}
 
-				$movalue = $moobj->$name;
+				$moValue = $moObj->$name;
 
-				if (!empty($fhcindeces))
+				if (!empty($fhcIndeces))
 				{
-					foreach ($fhcindeces as $fhcindex)
+					foreach ($fhcIndeces as $fhcIndex)
 					{
-						//if value is in object returned from MO, extract value
-						if (is_object($movalue) && isset($mapping[$fhcindex]['type']))
+						// if value is in object returned from MO, extract value
+
+						// if data is returned as array, type is name of field where value is stored
+						if (is_object($moValue) && isset($mapping[$fhcIndex]['type']))
 						{
-							$configtype = $mapping[$fhcindex]['type'];
-							$movalue = $moobj->$name->$configtype;
+							$configType = $mapping[$fhcIndex]['type'];
+							$moValue = $moObj->$name->$configType;
 						}
 
-						$fhcvalue = $this->getFHCValue($fhcindex, $movalue);
+						// convert extracted value to fhc value
+						$fhcValue = $this->getFHCValue($fhcIndex, $moValue);
 
-						$fhcobj[$fhctable][$fhcindex] = $fhcvalue;
+						$fhcObj[$fhcTable][$fhcIndex] = $fhcValue;
 					}
 				}
 			}
 		}
 
 		// add FHC defaults (values with no equivalent in MO)
-		foreach ($defaults as $fhckey => $fhcdefault)
+		foreach ($defaults as $fhcKey => $fhcDefault)
 		{
-			foreach ($fhcdefault as $defaultkey => $defaultvalue)
+			foreach ($fhcDefault as $defaultKey => $defaultValue)
 			{
-				if (!isset($fhcobj[$fhckey][$defaultkey]))
-					$fhcobj[$fhckey][$defaultkey] = $defaultvalue;
+				if (!isset($fhcObj[$fhcKey][$defaultKey]))
+					$fhcObj[$fhcKey][$defaultKey] = $defaultValue;
 			}
 		}
 
-		return $fhcobj;
+		return $fhcObj;
 	}
 
 	/**

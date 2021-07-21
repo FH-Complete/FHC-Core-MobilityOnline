@@ -369,7 +369,7 @@ var MobilityOnlineOutgoing = {
 
 				$("#applicationsrow_" + moid).after(
 					"<tr class='zlgRow zahlungrow_" + moid + "'>" +
-					"<td></td>" +
+					"<td><i class='fa fa-arrow-right'</td>" +
 					"<td colspan='7'>" +
 					"<b>Referenznr:</b> " + mo_referenz_nr +
 					" | <b>Zahlungsgrund:</b> " + buchungsinfo.mo_zahlungsgrund +
