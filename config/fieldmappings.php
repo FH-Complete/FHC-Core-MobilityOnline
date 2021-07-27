@@ -110,7 +110,7 @@ $config['fieldmappings']['applicationout']['bisio']['ects_erworben'] = 'bew_anz_
 $config['fieldmappings']['applicationout']['bisio']['ects_angerechnet'] = 'bew_anz_ects';
 
 $config['fieldmappings']['applicationout']['bisio_zweck'] = array(
-	'zweck_code' => 'aktivitaet_art_id'
+	'zweck_code' => 'aust_prog_id'
 );
 
 $config['fieldmappings']['applicationout']['bisio_aufenthaltfoerderung'] = array(
@@ -121,7 +121,8 @@ $config['fieldmappings']['applicationout']['bisio_aufenthaltfoerderung'] = array
 $config['fieldmappings']['applicationout']['bisio_info'] = array(
 	'ist_double_degree' => 'bit_freifeld24',
 	'ist_praktikum' => 'is_praktikum',
-	'ist_masterarbeit' => 'bit_freifeld26'
+	'ist_masterarbeit' => 'bit_freifeld26',
+	'ist_beihilfe' => 'is_beihilfe'
 );
 
 // mailkontakt outgoing

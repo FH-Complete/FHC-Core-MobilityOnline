@@ -41,7 +41,7 @@
 							array(
 								'applicationType' => 'Outgoings',
 								'columnnames' => array(
-									'Name', 'Uid', 'E-Mail', 'Aufh.von', 'Aufh.bis', 'Zahlungen', 'ID', 'synchronisiert'
+									'Name', 'Uid', 'E-Mail', 'Aufh.von', 'Aufh.bis', 'Zahlungen', 'ID', 'Gesynct'
 								)
 							)
 					); ?>

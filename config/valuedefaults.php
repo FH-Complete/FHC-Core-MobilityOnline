@@ -75,9 +75,17 @@ $config['fhcdefaults']['application']['bisio_zweck'] = array(
 	'zweck_code' => '1'
 );
 
-/*$config['fhcdefaults']['applicationout']['bisio_zweck'] = array(
-	'zweck_code' => '1'
-);*/
+$config['fhcdefaults']['applicationout']['bisio_zweck_studium_praktikum'] = array(
+	'zweck_code' => '3' // Studium und Praktikum
+);
+
+$config['fhcdefaults']['applicationout']['bisio_zweck_masterarbeit'] = array(
+	'zweck_code' => '4'  // Diplom-/Masterarbeit bzw. Dissertation
+);
+
+$config['fhcdefaults']['applicationout']['bisio_aufenthaltfoerderung_beihilfe'] = array(
+	'aufenthaltfoerderung_code' => 2  // Beihilfe von Bund, Land, Gemeinde
+);
 
 $config['fhcdefaults']['bankdetails']['bankverbindung'] = array(
 	'typ' => 'p',

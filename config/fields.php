@@ -156,23 +156,23 @@ $config['fhcfields']['applicationout'] = array(
 			'type' => 'integer',
 			'ref' => 'bis.tbl_bisio_aufenthaltfoerderung')
 	),
-	'bisio_info' => array(
+/*	'bisio_info' => array(
 /*		'ist_double_degree' => array(
 			'required' => true,
 			'name' => 'Double Degree Teilnahme',
 			'type' => 'boolean'
-		),*/
-/*		'ist_praktikum' => array(
+		),
+		'ist_praktikum' => array(
 			'required' => true,
 			'name' => 'Praktikum',
 			'type' => 'boolean'
-		),*/
+		),
 		'ist_masterarbeit' => array(
 			'required' => true,
 			'name' => 'Masterarbeit',
 			'type' => 'boolean'
 		)
-	),
+	),*/
 	'kontaktmail' => array(
 		'kontakt' => array(
 			'required' => true,

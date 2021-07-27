@@ -117,7 +117,8 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$comboboxSecondValueFields = array($bisioMappings['universitaet']);
 
 		// applicationDataElements for which comboboxSecondValue is retrieved instead of elementValue
-		$elementvalueBooleanFields = array($bisioinfoMappings['ist_double_degree'], $bisioinfoMappings['ist_praktikum'], $bisioinfoMappings['ist_masterarbeit']);
+		$elementvalueBooleanFields = array($bisioinfoMappings['ist_double_degree'], $bisioinfoMappings['ist_praktikum'],
+			$bisioinfoMappings['ist_masterarbeit'], $bisioinfoMappings['ist_beihilfe']);
 
 		foreach ($fieldMappings as $fhctable)
 		{
@@ -224,7 +225,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * @param $bisio_id
 	 * @return string prestudent_id of saved prestudent
 	 */
-	public function saveOutgoing($appid, $outgoing, $bisio_id)
+	public function saveOutgoing($appid, $outgoing, $bisio_id_existing)
 	{
 		//error check for missing data etc.
 		$errors = $this->fhcObjHasError($outgoing, self::MOOBJECTTYPE_OUT);
@@ -259,6 +260,9 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$bisio_zweck = $outgoing['bisio_zweck'];
 		$bisio_aufenthaltfoerderung = $outgoing['bisio_aufenthaltfoerderung'];
 
+		if (isset($outgoing['bisio_info']))
+			$bisio_info = $outgoing['bisio_info'];
+
 		// Start DB transaction
 		$this->ci->db->trans_begin();
 
@@ -270,12 +274,24 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$person_id = getData($personRes)[0]->person_id;
 
 			// bisio
-			$bisio_id = $this->_saveBisio($appid, $bisio_id, $bisio);
+			$bisio_id = $this->_saveBisio($appid, $bisio_id_existing, $bisio);
 
 			if (isset($bisio_id))
 			{
 				// bisio Zweck
+
+				$zweckCodesToSync = array();
+
+				// if praktikum flag is set -> only one Zweck "Studium und Praktikum"
+				if (isset($bisio_info['ist_praktikum']) && $bisio_info['ist_praktikum'] === true)
+				{
+					$bisio_zweck = $outgoing['bisio_zweck_studium_praktikum'];
+				}
+
+				// insert primary Zweck
 				$bisio_zweck['bisio_id'] = $bisio_id;
+				$zweckCodesToSync[] = $bisio_zweck['zweck_code'];
+
 				$bisio_zweckresult = $this->ci->MoFhcModel->saveBisioZweck($bisio_zweck);
 
 				if (hasData($bisio_zweckresult))
@@ -283,8 +299,32 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 					$this->log('insert', $bisio_zweckresult, 'bisio_zweck');
 				}
 
+				// if student writes Masterarbeit as well, insert secondary Diplom-/Masterarbeit bzw. Dissertation Zweck
+				if (isset($bisio_info['ist_masterarbeit']) && $bisio_info['ist_masterarbeit'] === true)
+				{
+					$bisio_zweck = $outgoing['bisio_zweck_masterarbeit'];
+					$bisio_zweck['bisio_id'] = $bisio_id;
+
+					$zweckCodesToSync[] = $bisio_zweck['zweck_code'];
+
+					$bisio_zweckresult = $this->ci->MoFhcModel->saveBisioZweck($bisio_zweck);
+
+					if (hasData($bisio_zweckresult))
+					{
+						$this->log('insert', $bisio_zweckresult, 'bisio_zweck');
+					}
+				}
+
+				// delete any Zweck which was not inserted/updated
+				$this->ci->MoFhcModel->deleteBisioZweck($bisio_id, $zweckCodesToSync);
+
 				// bisio Aufenthaltsförderung
+				$aufenthaltfoerderungCodesToSync = array();
+
 				$bisio_aufenthaltfoerderung['bisio_id'] = $bisio_id;
+
+				$aufenthaltfoerderungCodesToSync[] = $bisio_aufenthaltfoerderung['aufenthaltfoerderung_code'];
+
 				$bisio_aufenthaltfoerderungresult = $this->ci->MoFhcModel->saveBisioAufenthaltfoerderung($bisio_aufenthaltfoerderung);
 
 				if (hasData($bisio_aufenthaltfoerderungresult))
@@ -292,12 +332,32 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 					$this->log('insert', $bisio_aufenthaltfoerderungresult, 'bisio_aufenthaltfoerderung');
 				}
 
+
+				// add additional aufenthaltfoerderung if Beihilfe from Bund
+				if (isset($bisio_info['ist_beihilfe']) && $bisio_info['ist_beihilfe'] === true)
+				{
+					$bisio_aufenthaltfoerderung = $outgoing['bisio_aufenthaltfoerderung_beihilfe'];
+					$bisio_aufenthaltfoerderung['bisio_id'] = $bisio_id;
+
+					$aufenthaltfoerderungCodesToSync[] = $bisio_aufenthaltfoerderung['aufenthaltfoerderung_code'];
+
+					$bisio_aufenthaltfoerderungresult = $this->ci->MoFhcModel->saveBisioAufenthaltfoerderung($bisio_aufenthaltfoerderung);
+
+					if (hasData($bisio_aufenthaltfoerderungresult))
+					{
+						$this->log('insert', $bisio_aufenthaltfoerderungresult, 'bisio_aufenthaltfoerderung');
+					}
+				}
+
+				// delete any Aufenthaltförderung code which was not inserted/updated
+				$this->ci->MoFhcModel->deleteBisioAufenthaltfoerderung($bisio_id, $aufenthaltfoerderungCodesToSync);
+
+				// Bankverbindung
 				if (isset($outgoing['bankverbindung']['iban']) && !isEmptyString($outgoing['bankverbindung']['iban']))
 				{
-					// Bankverbindung
 					$bankverbindung = $outgoing['bankverbindung'];
 					$bankverbindung['person_id'] = $person_id;
-					$bankverbindung_id = $this->_saveBankverbindung($bankverbindung);
+					$bankverbindung_id = $this->_saveBankverbindung($bankverbindung, $bisio_id_existing);
 				}
 
 				// Zahlungen
@@ -508,9 +568,10 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	/**
 	 * Inserts bankverbindung for a student or updates an existing one.
 	 * @param $bankverbindung
+	 * @param $bisio_id_existing for check if it is a new save
 	 * @return int|null bankverbindung_id of inserted or updated bankverbindung if successful, null otherwise.
 	 */
-	private function _saveBankverbindung($bankverbindung)
+	private function _saveBankverbindung($bankverbindung, $bisio_id_existing)
 	{
 		$bankverbindung_id = null;
 
@@ -523,9 +584,9 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		if (isSuccess($bankverbindungRes))
 		{
-			if (hasData($bankverbindungRes))
+			if (hasData($bankverbindungRes) && isset($bisio_id_existing))
 			{
-				// Bankverbindung already exists - update
+				// Bankverbindung already exists and it's not first insert - update
 				$bankverbindung_id = getData($bankverbindungRes)[0]->bankverbindung_id;
 				$this->stamp('update', $bisio);
 				$bankverbindungresp = $this->ci->BankverbindungModel->update($bankverbindung_id, $bankverbindung);

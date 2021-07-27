@@ -227,4 +227,30 @@ class Mobilityonlinefhc_model extends DB_Model
 
 		return $result;
 	}
+
+	/**
+	 * Deletes all zweck entries for a bisio.
+	 * @param int $bisio_id
+	 * @param array $excludedZweckCodes zweck_code to exclude from deletion
+	 * @return object
+	 */
+	public function deleteBisioZweck($bisio_id, $excludedZweckCodes)
+	{
+		$qry = "DELETE FROM bis.tbl_bisio_zweck WHERE bisio_id = ? AND zweck_code NOT IN ?";
+
+		return  $this->execQuery($qry, array($bisio_id, $excludedZweckCodes));
+	}
+
+	/**
+	 * Deletes all aufenthaltfoerderung entries for a bisio.
+	 * @param int $bisio_id
+	 * @param array $excludedAufenthaltfoerderungCodes aufenthaltfoerderung_code to exclude from deletion
+	 * @return object
+	 */
+	public function deleteBisioAufenthaltfoerderung($bisio_id, $excludedAufenthaltfoerderungCodes)
+	{
+		$qry = "DELETE FROM bis.tbl_bisio_aufenthaltfoerderung WHERE bisio_id = ? AND aufenthaltfoerderung_code NOT IN ?";
+
+		return  $this->execQuery($qry, array($bisio_id, $excludedAufenthaltfoerderungCodes));
+	}
 }
