@@ -117,7 +117,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$comboboxSecondValueFields = array($bisioMappings['universitaet']);
 
 		// applicationDataElements for which comboboxSecondValue is retrieved instead of elementValue
-		$elementvalueBooleanFields = array($bisioinfoMappings['ist_double_degree'], $bisioinfoMappings['ist_praktikum'],
+		$elementvalueBooleanFields = array($bisioinfoMappings['ist_praktikum'],
 			$bisioinfoMappings['ist_masterarbeit'], $bisioinfoMappings['ist_beihilfe']);
 
 		foreach ($fieldMappings as $fhctable)
@@ -406,6 +406,27 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$stgvaluemappings = $this->valuemappings['frommo']['studiengang_kz'];
 		$mostgname = $this->conffieldmappings['incomingcourse']['mostudiengang']['bezeichnung'];
 
+		// searchobject to search outgoings
+		$searcharray = array(
+			'applicationType' => 'OUT',
+			'personType' => 'S',
+			'furtherSearchRestrictions' => array()
+		);
+
+		$applicationDataSearchFlags = array(
+			'bit_freifeld24' => false, // double degree shouldn't be synced
+			'is_storniert' => false
+		);
+
+		foreach ($applicationDataSearchFlags as $flagName => $flagValue)
+		{
+			$flagObj = new stdClass();
+			$flagObj->elementName = $flagName;
+			$flagObj->elementValueBoolean = $flagValue;
+			$flagObj->elementType = 'boolean';
+			$searcharray['furtherSearchRestrictions'][] = $flagObj;
+		}
+
 		// Also search for Outgoings who have entered Studienjahr as their Semester
 		$studienjahrsemestermo = $this->mapSemesterToMoStudienjahr($studiensemester);
 		if (isset($studienjahrsemestermo))
@@ -413,9 +434,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		foreach ($semestersforsearch as $semesterforsearch)
 		{
-			$searcharray = array('semesterDescription' => $semesterforsearch,
-							   'applicationType' => 'OUT',
-							   'personType' => 'S');
+			$searcharray['semesterDescription'] = $semesterforsearch;
 
 			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
 			{
@@ -434,14 +453,14 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 		}
 
-		foreach ($searcharrays as $searcharray)
+		foreach ($searcharrays as $sarr)
 		{
 			$appobj = $this->getSearchObj(
 				self::MOOBJECTTYPE,
-				$searcharray
+				$sarr
 			);
 
-			$semappids = $this->ci->MoGetAppModel->getApplicationIds($appobj);
+			$semappids = $this->ci->MoGetAppModel->getApplicationIdsWithFurtherSearchRestrictions($appobj);
 
 			if (!isEmptyArray($semappids))
 				$appids = array_merge($appids, $semappids);
@@ -450,6 +469,12 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		return $this->_getOutgoingByIds($appids);
 	}
 
+	/**
+	 * Links a MO application with a bisio in fhcomplete.
+	 * @param $moid
+	 * @param $bisio_id
+	 * @return object
+	 */
 	public function linkBisio($moid, $bisio_id)
 	{
 		return $this->ci->MobisioidzuordnungModel->insert(array('bisio_id' => $bisio_id, 'mo_applicationid' => $moid));
@@ -475,10 +500,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 			$fhcobj = $this->mapMoAppToOutgoing($application, $bankdata, $nominationData);
 
-			// if double degree - ignore application
-			if (isset($fhcobj['bisio_info']['ist_double_degree']) && $fhcobj['bisio_info']['ist_double_degree'] === true)
-				continue;
-
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appid;
 
@@ -498,7 +519,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			if (hasData($found_bisio_id))
 			{
 				$fhcobj_extended->infhc = true;
-				//$fhcobj_extended->prestudent_id = $found_bisio_id;
 			}
 			elseif ($fhcobj_extended->error === false)
 			{

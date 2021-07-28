@@ -119,7 +119,6 @@ $config['fieldmappings']['applicationout']['bisio_aufenthaltfoerderung'] = array
 
 // information about bisio which is not saved directly in fhcomplete
 $config['fieldmappings']['applicationout']['bisio_info'] = array(
-	'ist_double_degree' => 'bit_freifeld24',
 	'ist_praktikum' => 'is_praktikum',
 	'ist_masterarbeit' => 'bit_freifeld26',
 	'ist_beihilfe' => 'is_beihilfe'

@@ -55,6 +55,26 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	}
 
 	/**
+	 * Get application ids by search params, additional search params possible (applicationdataelements)
+	 * @param $data
+	 * @return array applications on success, null otherwise
+	 */
+	public function getApplicationIdsWithFurtherSearchRestrictions($data)
+	{
+		$success = $this->performCall('getApplicationIdsBySearchParametersWithFurtherSearchRestrictions', $data);
+
+		if (isset($success->return))
+		{
+			if (is_array($success->return) || (!is_object($success->return) && !is_integer($success->return)))
+				return $success->return;
+			else
+				return array($success->return);
+		}
+		else
+			return null;
+	}
+
+	/**
 	 * Get application by applicationid
 	 * @param $appid
 	 * @return array application on success, null otherwise
@@ -187,7 +207,13 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getFilesOfApplication($appid, $uploadSettingNumber)
 	{
-		$success = $this->performCall('getFilesOfApplication', array('applicationID' => $appid, 'uploadSettingNumber' => $uploadSettingNumber));
+		$success = $this->performCall(
+			'getFilesOfApplication',
+			array(
+				'applicationID' => $appid,
+				'uploadSettingNumber' => $uploadSettingNumber
+			)
+		);
 
 		if (isset($success->return))
 		{
@@ -239,7 +265,13 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getNominationDataByApplicationID($appid)
 	{
-		$success = $this->performCall('getNominationDataByApplicationID', array('applicationID' => $appid, 'withProjectData' => true));
+		$success = $this->performCall(
+			'getNominationDataByApplicationID',
+			array(
+				'applicationID' => $appid,
+				'withProjectData' => true
+			)
+		);
 
 		if (isset($success->return))
 		{

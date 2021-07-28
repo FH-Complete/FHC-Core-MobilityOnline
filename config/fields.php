@@ -157,11 +157,7 @@ $config['fhcfields']['applicationout'] = array(
 			'ref' => 'bis.tbl_bisio_aufenthaltfoerderung')
 	),
 /*	'bisio_info' => array(
-/*		'ist_double_degree' => array(
-			'required' => true,
-			'name' => 'Double Degree Teilnahme',
-			'type' => 'boolean'
-		),
+/*
 		'ist_praktikum' => array(
 			'required' => true,
 			'name' => 'Praktikum',
