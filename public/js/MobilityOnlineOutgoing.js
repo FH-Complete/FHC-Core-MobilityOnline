@@ -200,7 +200,7 @@ var MobilityOnlineOutgoing = {
 						);
 
 						// bind to sort event
-						$("#applicationstbl").bind("sortBegin",function(e, table) {
+						$("#applicationstbl").bind("sortBegin filterStart",function(e, table) {
 							// remove zahlung rows on resort
 							$(".zlgRow").remove();
 						});
