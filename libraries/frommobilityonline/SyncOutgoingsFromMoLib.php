@@ -186,15 +186,22 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$paymentObjectName = 'payment';
 		if (isset($nominationData->project->payments))
 		{
+			// payment can be object is single or array if multiple
 			if (is_array($nominationData->project->payments))
 			{
 				foreach ($nominationData->project->payments as $payment)
 				{
-					$payments[] = $this->convertToFhcFormat($payment, $paymentObjectName);
+					$fhcPayment = $this->convertToFhcFormat($payment, $paymentObjectName);
+					if ($fhcPayment['buchungsinfo']['angewiesen'] === true) // sync only if authorized
+						$payments[] = $fhcPayment;
 				}
 			}
 			else
-				$payments[] = $this->convertToFhcFormat($nominationData->project->payments, $paymentObjectName);
+			{
+				$fhcPayment = $this->convertToFhcFormat($nominationData->project->payments, $paymentObjectName);
+				if ($fhcPayment['buchungsinfo']['angewiesen'] === true) // sync only if authorized
+					$payments[] = $fhcPayment;
+			}
 
 			// check if payments already synced and set flag
 			for($i = 0; $i < count($payments); $i++)
@@ -331,7 +338,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				{
 					$this->log('insert', $bisio_aufenthaltfoerderungresult, 'bisio_aufenthaltfoerderung');
 				}
-
 
 				// add additional aufenthaltfoerderung if Beihilfe from Bund
 				if (isset($bisio_info['ist_beihilfe']) && $bisio_info['ist_beihilfe'] === true)

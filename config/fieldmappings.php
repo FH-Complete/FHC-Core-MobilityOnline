@@ -140,6 +140,7 @@ $config['fieldmappings']['payment']['buchungsinfo'] = array(
 	/*'mo_zahlung_id' => 'paymentId',*/
 	'mo_referenz_nr' => 'referenceNumber',
 	'mo_zahlungsgrund' => 'reasonOfPayment',
+	'angewiesen' => 'paymentAuthorised'
 );
 
 // Mappings for sync from FHC to MO
