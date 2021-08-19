@@ -5,7 +5,7 @@
  * ['fieldmappings']['mobilityonlineobject']['fhctable'] = array('fhcfieldname' => 'mobilityonlinefieldname')
  */
 
-// mappings reused by objects
+// mappings used by multiple objects
 $personbasemapping =  array(
 	'vorname' => 'firstName',
 	'nachname' => 'lastName',
@@ -83,6 +83,14 @@ $config['fieldmappings']['application']['konto'] = array(
 	'betrag' => 'aust_prog_id',
 	'buchungstext' => 'aust_prog_id',
 	'studiengang_kz' => 'studr_id'
+);
+
+$config['fieldmappings']['application']['status_info'] = array(
+	'beworben' => 'is_mail_best_bew',
+	'registriert' => 'is_registriert',
+	'bestaetigt' => 'is_mail_best_reg',
+	'erfasst' => 'is_pers_daten_erf',
+	'abgeschlossen' => 'is_abgeschlossen'
 );
 
 $config['fieldmappings']['incomingcourse']['lehrveranstaltung'] = array(

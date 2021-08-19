@@ -126,7 +126,7 @@ var MobilityOnlineOutgoing = {
 
 							// show expandable payment number
 							let paymentNumberString = zahlungen.length > 0 ?
-								"<button id='paymentNo_"+moid+"' type='button' class='btn btn-default btn-xs'>" +
+								"<button id='paymentNo_"+moid+"' type='button' class='btn btn-default btn-xs paymentNo'>" +
 								"<i class='fa fa-caret-right'></i> "+zahlungen.length+"</button>" : zahlungen.length;
 
 							// render right hand table with MO data
@@ -201,8 +201,9 @@ var MobilityOnlineOutgoing = {
 
 						// bind to sort event
 						$("#applicationstbl").bind("sortBegin filterStart",function(e, table) {
-							// remove zahlung rows on resort
+							// remove zahlung rows on resort and refilter
 							$(".zlgRow").remove();
+							$(".paymentNo i").removeClass('fa-caret-down').addClass('fa-caret-right');
 						});
 					}
 					else

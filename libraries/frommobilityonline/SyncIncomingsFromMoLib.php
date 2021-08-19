@@ -261,18 +261,17 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$fhcobj['pipelineStatus'] = 'not set';
 		$fhcobj['pipelineStatusDescription'] = 'no Status set';
 
-		$valuesconfig = $this->ci->config->item('values');
-		$pipelinestati = $valuesconfig['pipelinestati'];
-		for ($i = count($pipelinestati) - 1; $i >= 0; $i--)
+		$pipelinestati = $fieldmappings['status_info'];
+
+		foreach ($pipelinestati as $pipelinestatus)
 		{
 			foreach ($moapp->nonUsedApplicationDataElements as $element)
 			{
-				if (isset($element->elementName) && $element->elementName === $pipelinestati[$i]
+				if (isset($element->elementName) && $element->elementName === $pipelinestatus
 					&& isset($element->elementValueBoolean) && $element->elementValueBoolean === true)
 				{
 					$fhcobj['pipelineStatus'] = $element->elementName;
 					$fhcobj['pipelineStatusDescription'] = $element->elementDescription;
-					break 2;
 				}
 			}
 		}
@@ -464,10 +463,17 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$studiensemestermo = $this->mapSemesterToMo($studiensemester);
 		$semestersforsearch = array($studiensemestermo);
 		$searcharrays = array();
-		$appids = array();
+		$apps = array();
 
 		$stgvaluemappings = $this->valuemappings['frommo']['studiengang_kz'];
 		$mostgname = $this->conffieldmappings['incomingcourse']['mostudiengang']['bezeichnung'];
+
+		// searchobject to search incomings
+		$searcharray = array(
+			'applicationType' => 'IN',
+			'personType' => 'S',
+			'furtherSearchRestrictions' => array('is_storniert' => false)
+		);
 
 		// Also search for Incomings who have entered Studienjahr as their Semester
 		$studienjahrsemestermo = $this->mapSemesterToMoStudienjahr($studiensemester);
@@ -476,9 +482,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		foreach ($semestersforsearch as $semesterforsearch)
 		{
-			$searcharray = array('semesterDescription' => $semesterforsearch,
-							   'applicationType' => 'IN',
-							   'personType' => 'S');
+			$searcharray['semesterDescription'] = $semesterforsearch;
 
 			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
 			{
@@ -497,20 +501,20 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 		}
 
-		foreach ($searcharrays as $searcharray)
+		foreach ($searcharrays as $sarr)
 		{
-			$appobj = $this->getSearchObj(
+			$searchObj = $this->getSearchObj(
 				self::MOOBJECTTYPE,
-				$searcharray
+				$sarr
 			);
 
-			$semappids = $this->ci->MoGetAppModel->getApplicationIds($appobj);
+			$semApps = $this->ci->MoGetAppModel->getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions($searchObj);
 
-			if (!isEmptyArray($semappids))
-				$appids = array_merge($appids, $semappids);
+			if (!isEmptyArray($semApps))
+				$apps = array_merge($apps, $semApps);
 		}
 
-		return $this->_getIncomingByIds($appids);
+		return $this->_getIncomingExtended($apps);
 	}
 
 	/**
@@ -550,13 +554,14 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * @param $studiensemester for check if in mapping table
 	 * @return array with applications
 	 */
-	private function _getIncomingByIds($appids)
+	private function _getIncomingExtended($apps)
 	{
 		$incomings = array();
 
-		foreach ($appids as $appid)
+		foreach ($apps as $application)
 		{
-			$application = $this->ci->MoGetAppModel->getApplicationById($appid);
+			$appid = $application->applicationID;
+
 			$address = $this->ci->MoGetAppModel->getPermanentAddress($appid);
 			$currAddress = $this->ci->MoGetAppModel->getCurrentAddress($appid);
 

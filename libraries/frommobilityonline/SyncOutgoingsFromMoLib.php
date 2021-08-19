@@ -7,8 +7,7 @@ if (! defined('BASEPATH')) exit('No direct script access allowed');
  */
 class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 {
-	const MOOBJECTTYPE = 'application';
-	const MOOBJECTTYPE_OUT = 'applicationout';
+	const MOOBJECTTYPE = 'applicationout';
 
 	public function __construct()
 	{
@@ -104,7 +103,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function mapMoAppToOutgoing($moapp, $bankdata = null, $nominationData = null)
 	{
-		$fieldMappings = $this->conffieldmappings[self::MOOBJECTTYPE_OUT];
+		$fieldMappings = $this->conffieldmappings[self::MOOBJECTTYPE];
 		$bisioMappings = $fieldMappings['bisio'];
 		$prestudentMappings = $fieldMappings['prestudent'];
 		$bisioinfoMappings = $fieldMappings['bisio_info'];
@@ -178,7 +177,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 		}
 
-		$fhcobj = $this->convertToFhcFormat($moapp, self::MOOBJECTTYPE_OUT);
+		$fhcobj = $this->convertToFhcFormat($moapp, self::MOOBJECTTYPE);
 		$fhcbankdata = $this->convertToFhcFormat($bankdata, 'bankdetails');
 
 		// payments
@@ -235,7 +234,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	public function saveOutgoing($appid, $outgoing, $bisio_id_existing)
 	{
 		//error check for missing data etc.
-		$errors = $this->fhcObjHasError($outgoing, self::MOOBJECTTYPE_OUT);
+		$errors = $this->fhcObjHasError($outgoing, self::MOOBJECTTYPE);
 
 		// check Zahlungen for errors separately
 		$zahlungen = $outgoing['zahlungen'];
@@ -407,7 +406,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$studiensemestermo = $this->mapSemesterToMo($studiensemester);
 		$semestersforsearch = array($studiensemestermo);
 		$searcharrays = array();
-		$appids = array();
+		$apps = array();
 
 		$stgvaluemappings = $this->valuemappings['frommo']['studiengang_kz'];
 		$mostgname = $this->conffieldmappings['incomingcourse']['mostudiengang']['bezeichnung'];
@@ -461,18 +460,19 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		foreach ($searcharrays as $sarr)
 		{
-			$appobj = $this->getSearchObj(
+			$searchObj = $this->getSearchObj(
 				self::MOOBJECTTYPE,
 				$sarr
 			);
 
-			$semappids = $this->ci->MoGetAppModel->getApplicationIdsWithFurtherSearchRestrictions($appobj);
 
-			if (!isEmptyArray($semappids))
-				$appids = array_merge($appids, $semappids);
+			$semApps = $this->ci->MoGetAppModel->getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions($searchObj);
+
+			if (!isEmptyArray($semApps))
+				$apps = array_merge($apps, $semApps);
 		}
 
-		return $this->_getOutgoingByIds($appids);
+		return $this->_getOutgoingExtended($apps);
 	}
 
 	/**
@@ -487,20 +487,18 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Gets outgoings (applications) by appids
-	 * also checks if incomings already are in fhcomplete
-	 * (prestudent_id in tbl_mo_appidzuordnung table and tbl_prestudent)
-	 * @param $appids
+	 * Gets outgoings (applications) with additional data
+	 * @param $apps
 	 * @param $studiensemester for check if in mapping table
 	 * @return array with applications
 	 */
-	private function _getOutgoingByIds($appids)
+	private function _getOutgoingExtended($apps)
 	{
 		$outgoings = array();
 
-		foreach ($appids as $appid)
+		foreach ($apps as $application)
 		{
-			$application = $this->ci->MoGetAppModel->getApplicationById($appid);
+			$appid = $application->applicationID;
 			$bankdata = $this->ci->MoGetAppModel->getBankAccountDetails($appid);
 			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appid);
 
@@ -509,7 +507,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appid;
 
-			$errors = $this->fhcObjHasError($fhcobj, self::MOOBJECTTYPE_OUT);
+			$errors = $this->fhcObjHasError($fhcobj, self::MOOBJECTTYPE);
 			$fhcobj_extended->error = $errors->error;
 			$fhcobj_extended->errorMessages = $errors->errorMessages;
 

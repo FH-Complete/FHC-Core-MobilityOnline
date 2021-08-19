@@ -193,7 +193,7 @@ $config['fhcfields']['payment'] = array(
  * MobilityOnline fields for searching
  */
 
-$config['mofields']['application'] = array(
+$applicationSearchFields = array(
 	'firstName',
 	'lastName',
 	'secondLastName',
@@ -208,6 +208,9 @@ $config['mofields']['application'] = array(
 	'studyFieldDescription',
 	'login'
 );
+
+$config['mofields']['application'] = $applicationSearchFields;
+$config['mofields']['applicationout'] = $applicationSearchFields;
 
 $config['mofields']['course'] = array(
 	'semesterDescription',

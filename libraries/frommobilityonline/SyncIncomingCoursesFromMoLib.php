@@ -42,7 +42,11 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 							  'courseNumber' => $course->hostCourseNumber
 		);
 
-		$searchobj = $this->getSearchObj('course', $searchparams);
+		$searchobj = $this->getSearchObj(
+			'course',
+			$searchparams,
+			false
+		);
 
 		// search for course to get courseID
 		$mocourses = $this->ci->MoGetMaModel->getCoursesOfSemesterBySearchParameters($searchobj);

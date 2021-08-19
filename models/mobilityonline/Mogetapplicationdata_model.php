@@ -74,6 +74,21 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 			return null;
 	}
 
+	public function getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions($data)
+	{
+		$success = $this->performCall('getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions', $data);
+
+		if (isset($success->return))
+		{
+			if (is_array($success->return) || (!is_object($success->return) && !is_integer($success->return)))
+				return $success->return;
+			else
+				return array($success->return);
+		}
+		else
+			return null;
+	}
+
 	/**
 	 * Get application by applicationid
 	 * @param $appid

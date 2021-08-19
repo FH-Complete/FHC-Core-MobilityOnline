@@ -111,15 +111,16 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 	/**
 	 * Gets object for searching an Object in MobilityOnline API
-	 * @param $objtype Type of object to search.
+	 * @param $objType Type of object to search.
 	 * @param $searchparams Fields with values to search for.
+	 * @param bool $withSpecifiedElementsForReturn limit result to only certain applicationElements
 	 * @return array the object containing search parameters.
 	 */
-	public function getSearchObj($objtype, $searchparams)
+	public function getSearchObj($objType, $searchparams, $withSpecifiedElementsForReturn = true)
 	{
 		$searchobj = array();
 
-		$fields = $this->moconffields[$objtype];
+		$fields = $this->moconffields[$objType];
 
 		//prefill - also non-searched fields need to be passed with null
 		foreach ($fields as $field)
@@ -132,6 +133,29 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			foreach ($searchparams as $paramname => $param)
 			{
 				$searchobj[$paramname] = $param;
+			}
+		}
+
+		// specify elements to be included in searchresult
+		if ($withSpecifiedElementsForReturn === true)
+		{
+			$searchobj['specifiedElementsForReturn'] = array();
+			$uniqueFieldmappingMoNames = array();
+
+			$moobjFieldmappings = $this->conffieldmappings[$objType];
+
+			foreach ($moobjFieldmappings as $fhcTable => $mapping)
+			{
+				foreach ($mapping as $name => $value)
+				{
+					if (!(in_array($value, $uniqueFieldmappingMoNames)))
+					{
+						$elementToReturn = new StdClass();
+						$elementToReturn->elementName = $value;
+						$searchobj['specifiedElementsForReturn'][] = $elementToReturn;
+						$uniqueFieldmappingMoNames[] = $value;
+					}
+				}
 			}
 		}
 
