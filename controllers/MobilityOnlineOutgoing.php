@@ -102,6 +102,6 @@ class MobilityOnlineOutgoing extends Auth_Controller
 		if (hasData($linkbisiores))
 			$this->outputJsonSuccess(getData($linkbisiores));
 		else
-			$this->outputJsonError('Error when linking outgoing');
+			$this->outputJsonError('Fehler beim Verlinken des Outgoing');
 	}
 }

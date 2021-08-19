@@ -38,7 +38,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		if (empty($outgoings) || !is_array($outgoings) || $studcount <= 0)
 		{
-			$this->addInfoOutput('No outgoings found for sync! aborting.');
+			$this->addInfoOutput('Keine Outgoings für Sync gefunden! Abbruch.');
 		}
 		else
 		{
@@ -53,7 +53,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				if (isError($bisioIdRes))
 				{
 					$results['errors']++;
-					$this->addErrorOutput("error when linking student for applicationid $appid - " .
+					$this->addErrorOutput("Fehler beim Verlinken des Studierden mit applicationid $appid - " .
 						$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname']);
 				}
 				else
@@ -71,21 +71,21 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 						if (isset($infhccheck_bisio_id))
 						{
 							$results['updated'][] = $appid;
-							$actiontext = 'updated';
+							$actiontext = 'aktualisiert';
 						}
 						else
 						{
 							$results['added'][] = $appid;
-							$actiontext = 'added';
+							$actiontext = 'hinzugefügt';
 						}
 
-						$this->addSuccessOutput("student for applicationid $appid - " .
-							$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname'] . " successfully $actiontext");
+						$this->addSuccessOutput("Student mit applicationid $appid - " .
+							$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname'] . " erfolgreich $actiontext");
 					}
 					else
 					{
 						$results['errors']++;
-						$this->addErrorOutput("error when syncing student for applicationid $appid - " .
+						$this->addErrorOutput("Fehler beim Synchronisieren des Studierenden mit applicationid $appid - " .
 							$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname']);
 					}
 				}
@@ -257,7 +257,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				$this->addErrorOutput($errorMessage);
 			}
 
-			$this->addErrorOutput("aborting outgoing save");
+			$this->addErrorOutput("Abbruch des Outgoing Speicherung");
 			return null;
 		}
 
@@ -516,7 +516,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			if (isError($found_bisio_id))
 			{
 				$fhcobj_extended->error = true;
-				$fhcobj_extended->errorMessages[] = 'Error when linking bisio_id to appid';
+				$fhcobj_extended->errorMessages[] = 'Fehler beim verlinken der bisio_id mit der appid';
 			}
 
 			// mark as already in fhcomplete if bisio is in mapping table
@@ -532,7 +532,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				if (isError($existingBisiosRes))
 				{
 					$fhcobj_extended->error = true;
-					$fhcobj_extended->errorMessages[] = 'Error when checking existing mobilities in fhcomplete';
+					$fhcobj_extended->errorMessages[] = 'Fehler beim Prüfen der existierenden Mobilitäten in fhcomplete';
 				}
 
 				if (hasData($existingBisiosRes))
@@ -541,7 +541,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 					$fhcobj_extended->existingBisios = $existingBisios;
 					$fhcobj_extended->error = true;
-					$fhcobj_extended->errorMessages[] = 'Mobility already existing in fhcomplete, please link correct mobility by clicking on row.';
+					$fhcobj_extended->errorMessages[] = 'Mobilität existiert bereits in fhcomplete, zum Verlinken bitte auf Tabellenzeile klicken.';
 				}
 			}
 

@@ -69,12 +69,12 @@ var MobilityOnlineIncomingCourses = {
 					else
 					{
 						$("#fhcles").text("-");
-						$("#incomingprestudents").html("<tr align='center'><td colspan='5'>No incomings with courses found!</td></tr>");
+						$("#incomingprestudents").html("<tr align='center'><td colspan='5'>Keine Incomings mit Kursen gefunden!</td></tr>");
 					}
 				},
 				errorCallback: function()
 				{
-					$("#incomingprestudents").html("<tr align='center'><td colspan='5'>Error when getting incomings</td></tr>");
+					$("#incomingprestudents").html("<tr align='center'><td colspan='5'>Fehler beim Holen der Incomings!</td></tr>");
 				}
 			}
 		);
@@ -198,7 +198,7 @@ var MobilityOnlineIncomingCourses = {
 				},
 				errorCallback: function()
 				{
-					FHC_DialogLib.alertError("error when refreshing course assignments!");
+					FHC_DialogLib.alertError("Fehler beim Aktualisieren des Kurszuweisungen!");
 				}
 			}
 		)
@@ -271,7 +271,7 @@ var MobilityOnlineIncomingCourses = {
 			}
 
 			if (notInMo > 0)
-				tablerowstring += "<br /><span class='text-danger'>"+notInMo+" in FH-Complete, but not in MobilityOnline</span>";
+				tablerowstring += "<br /><span class='text-danger'>"+notInMo+" in FH-Complete, aber nicht in MobilityOnline</span>";
 
 			tablerowstring += "</td>";
 
@@ -314,12 +314,12 @@ var MobilityOnlineIncomingCourses = {
 	{
 		let totalAssigned = 0;
 
-		let prestudentdatahtml = "<tr><td class='prestudentfieldname'>First name</td><td>"+moapplication.vorname+"</td>" +
-			"<td class='prestudentfieldname'>Last name</td><td class='prestudentfieldvalue'>"+moapplication.nachname+"</td></tr>" +
+		let prestudentdatahtml = "<tr><td class='prestudentfieldname'>Vorname</td><td>"+moapplication.vorname+"</td>" +
+			"<td class='prestudentfieldname'>Nachname</td><td class='prestudentfieldvalue'>"+moapplication.nachname+"</td></tr>" +
 			"<tr><td class='prestudentfieldname'>E-Mail</td><td class='prestudentfieldvalue'>"+moapplication.email+"</td>" +
-			"<td class='prestudentfieldname'>Phone number</td><td class='prestudentfieldvalue'>"+moapplication.phonenumber+"</td></tr>" +
-			"<tr><td class='prestudentfieldname'>Study field</td><td class='prestudentfieldvalue'>"+moapplication.studiengang+"</td>" +
-			"<td class='prestudentfieldname'>Stay</td><td class='prestudentfieldvalue'>"+MobilityOnlineIncomingCourses._formatDateGerman(moapplication.stayfrom) +
+			"<td class='prestudentfieldname'>Telefon</td><td class='prestudentfieldvalue'>"+moapplication.phonenumber+"</td></tr>" +
+			"<tr><td class='prestudentfieldname'>Studiengang</td><td class='prestudentfieldvalue'>"+moapplication.studiengang+"</td>" +
+			"<td class='prestudentfieldname'>Aufenthalt</td><td class='prestudentfieldvalue'>"+MobilityOnlineIncomingCourses._formatDateGerman(moapplication.stayfrom) +
 			" - " + MobilityOnlineIncomingCourses._formatDateGerman(moapplication.stayto) +
 			"</td>" +
 			"</tr>";
@@ -349,11 +349,11 @@ var MobilityOnlineIncomingCourses = {
 
 			if ($.isNumeric(lvobj.lehrveranstaltung.lehrveranstaltung_id))
 				status = "<i class='"+textclass+"' id='courselestatus_"+lvobj.lehrveranstaltung.lehrveranstaltung_id+"'></i>" +
-					" <span id='courseleamount_"+lvobj.lehrveranstaltung.lehrveranstaltung_id+"'>"+assignedCount+" unit"+(assignedCount === 1 ? "" : "s")+"</span>" +
-					" assigned";
+					" <span id='courseleamount_"+lvobj.lehrveranstaltung.lehrveranstaltung_id+"'>"+assignedCount+" Einheit"+(assignedCount === 1 ? "" : "en")+"</span>" +
+					" zugewiesen";
 			else
 			{
-				status = "<i class='fa fa-exclamation text-danger' id='courselestatus_"+lvobj.lehrveranstaltung.lehrveranstaltung_id+"'></i> not in FHC";
+				status = "<i class='fa fa-exclamation text-danger' id='courselestatus_"+lvobj.lehrveranstaltung.lehrveranstaltung_id+"'></i> nicht in FHC";
 			}
 
 			tablerowstring += "<td>"+ status +"</td>";
@@ -430,14 +430,14 @@ var MobilityOnlineIncomingCourses = {
 		fhclvhtml += "<div class='row'>";
 		fhclvhtml += "<div class='col-xs-6 text-left'>" +
 			"<button class='btn btn-default' id='backtoincomings'>" +
-			"<i class='fa fa-arrow-left'></i> Back to all incomings"+
+			"<i class='fa fa-arrow-left'></i> Zurück zu allen Incomings"+
 			"</button>"+
 			"</div>";
 
 		if (numLvs > 0 && hasLes)
 			fhclvhtml += "<div class='col-xs-6 text-right'>" +
 				"<button class='btn btn-default' id='save'>" +
-				"<i class='glyphicon glyphicon-floppy-disk'></i> Save"+
+				"<i class='glyphicon glyphicon-floppy-disk'></i> Speichern"+
 				"</button>"+
 				"</div>";
 

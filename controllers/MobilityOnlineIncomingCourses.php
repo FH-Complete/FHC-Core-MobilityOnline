@@ -79,7 +79,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 	 */
 	public function updateLehreinheitAssignment()
 	{
-		$json = success('Teaching units assignment changed successfully');
+		$json = success('Änderung der Lehreinheitszuweisung erfolgreich durchgeführt');
 
 		$lehreinheitassignments = $this->input->post('lehreinheitassignments');
 
@@ -129,7 +129,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 		}
 
 		if (!$changed)
-			$this->outputJsonSuccess('No teaching unit assignments changed');
+			$this->outputJsonSuccess('Keine Lehreinheitszuweisungen geändert');
 		elseif (isSuccess($json) && !$hasError)
 		{
 			$this->outputJsonSuccess($json->retval);
@@ -152,7 +152,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 		$fhccourses = array();
 
 		if (!isset($studiensemester) || !isset($uid))
-			$this->outputJsonError("Parameters missing");
+			$this->outputJsonError("Parameter fehlen");
 
 		if (isset($lvids) && is_array($lvids))
 		{

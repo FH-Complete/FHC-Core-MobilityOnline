@@ -192,7 +192,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 						if ($required && !is_numeric($value) && !is_bool($value) && isEmptyString($value))
 						{
 							$haserror = true;
-							$errortext = 'is missing';
+							$errortext = 'fehlt';
 						}
 						else
 						{
@@ -250,7 +250,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 							if ($wrongdatatype)
 							{
 								$haserror = true;
-								$errortext = 'has wrong data type';
+								$errortext = 'hat falschen Datentyp';
 							}
 							elseif (!$haserror)
 							{
@@ -259,7 +259,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 									!$this->ci->MobilityonlinefhcModel->checkLength($table, $field, $value))
 								{
 									$haserror = true;
-									$errortext = "is too long ($value)";
+									$errortext = "ist zu lang ($value)";
 								}
 								// value referenced with foreign key exists?
 								elseif (isset($params['ref']))
@@ -270,7 +270,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 									if (!hasData($foreignkeyexists))
 									{
 										$haserror = true;
-										$errortext = 'has no match in FHC';
+										$errortext = 'hat kein Equivalent in FHC';
 									}
 								}
 							}
@@ -279,7 +279,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					elseif ($required)
 					{
 						$haserror = true;
-						$errortext = 'does not exist';
+						$errortext = 'existiert nicht';
 					}
 
 					if ($haserror)
@@ -294,7 +294,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			else
 			{
 				// if required table not present in object - show error
-				$hasError->errorMessages[] = "data missing: $table";
+				$hasError->errorMessages[] = "Daten fehlen: $table";
 				$hasError->error = true;
 			}
 		}
@@ -458,11 +458,11 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				else
 					$id = $response->retval;
 
-				$this->_setOutput(self::INFO_TYPE, "$table $modtype successful, id " . $id);
+				$this->_setOutput(self::INFO_TYPE, "$table $modtype erfolgreich, Id " . $id);
 			}
 			else
 			{
-				$this->_setOutput(self::ERROR_TYPE, "$table $modtype error");
+				$this->_setOutput(self::ERROR_TYPE, "$table $modtype Fehler");
 			}
 		}
 	}

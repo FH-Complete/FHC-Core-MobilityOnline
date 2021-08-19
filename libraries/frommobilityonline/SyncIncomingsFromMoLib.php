@@ -54,7 +54,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		if (empty($incomings) || !is_array($incomings) || $studcount <= 0)
 		{
-			$this->addInfoOutput("No incomings found for sync! aborting.");
+			$this->addInfoOutput("Keine Incoming für Sync gefunden! Abbruch.");
 		}
 		else
 		{
@@ -67,8 +67,8 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 				if (isset($infhccheck_prestudent_id) && is_numeric($infhccheck_prestudent_id))
 				{
-					$this->addInfoOutput("student for applicationid $appid ".$incomingdata['person']['vorname'].
-						" ".$incomingdata['person']['nachname']." already exists in fhcomplete - updating");
+					$this->addInfoOutput("Student für applicationid $appid ".$incomingdata['person']['vorname'].
+						" ".$incomingdata['person']['nachname']." existiert bereits in fhcomplete - aktualisieren");
 
 					$prestudent_id = $this->saveIncoming($incomingdata, $infhccheck_prestudent_id);
 
@@ -83,13 +83,13 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 						{
 							$results['updated']++;
 							$this->addSuccessOutput("student for applicationid $appid - ".
-								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." successfully updated");
+								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." erfolgreich aktualisiert");
 						}
 					}
 					else
 					{
 						$results['errors']++;
-						$this->addErrorOutput("error when updating student for applicationid $appid - "
+						$this->addErrorOutput("Fehler beim Update des Studierenden mit applicationid $appid - "
 							.$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']);
 					}
 				}
@@ -106,20 +106,20 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 						if (hasData($result))
 						{
 							$results['added']++;
-							$this->addSuccessOutput("student for applicationid $appid - ".
-								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." successfully added");
+							$this->addSuccessOutput("Student für applicationid $appid - ".
+								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." erfolgreich hinzugefügt");
 						}
 						else
 						{
 							$results['errors']++;
-							$this->addErrorOutput("mapping entry in db could not be added student for applicationid $appid - ".
+							$this->addErrorOutput("Fehler bei Verlinkung in FHC Datenbank für Studierenden mit applicationid $appid - ".
 								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']);
 						}
 					}
 					else
 					{
 						$results['errors']++;
-						$this->addErrorOutput("error when adding student for applicationid $appid - ".
+						$this->addErrorOutput("Fehler beim Hinzufügen des Studierden mit applicationid $appid - ".
 							$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']);
 					}
 				}
@@ -321,7 +321,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				$this->addErrorOutput($errorMessage);
 			}
 
-			$this->addErrorOutput("aborting outgoing save");
+			$this->addErrorOutput("Abbruch bei Speicherung des Incomings");
 			return null;
 		}
 
@@ -441,7 +441,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// Check if everything went ok during the transaction
 		if ($this->ci->db->trans_status() === false)
 		{
-			$this->addInfoOutput("rolling back...");
+			$this->addInfoOutput("Rollback...");
 			$this->ci->db->trans_rollback();
 			return null;
 		}
@@ -726,7 +726,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				{
 					if ($this->debugmode)
 					{
-						$this->addInfoOutput('lichtbild already exists, akte_id '.$aktecheckresp->retval[0]->akte_id);
+						$this->addInfoOutput('Lichtbild existiert bereits, akte_id '.$aktecheckresp->retval[0]->akte_id);
 					}
 				}
 				else
@@ -847,7 +847,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 					if (hasData($benutzercheckresp))
 					{
-						$this->addInfoOutput("benutzer with uid ".$benutzer['uid']." already exists");
+						$this->addInfoOutput("benutzer mit uid ".$benutzer['uid']." existiert bereits");
 						$benutzerresp_uid = $benutzer['uid'];
 					}
 					elseif (isSuccess($benutzercheckresp))

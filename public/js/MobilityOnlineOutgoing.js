@@ -5,7 +5,7 @@
 $(document).ready(function()
 	{
 		// set expand all Zahlungen link
-		$("#optionsPanel").append('&nbsp;&nbsp;<a id="showAllZahlungen"><i class="fa fa-money"></i>&nbsp;show all payments</a>');
+		$("#optionsPanel").append('&nbsp;&nbsp;<a id="showAllZahlungen"><i class="fa fa-money"></i>&nbsp;Alle Zahlungen anzeigen</a>');
 
 		// get outgoings
 		MobilityOnlineOutgoing.getOutgoing($("#studiensemester").val(), $("#studiengang_kz").val());
@@ -208,12 +208,12 @@ var MobilityOnlineOutgoing = {
 					}
 					else
 					{
-						$("#applicationsyncoutputtext").html("<div class='text-center'>No outgoings found!</div>");
+						$("#applicationsyncoutputtext").html("<div class='text-center'>Keine Outgoings gefunden!</div>");
 					}
 				},
 				errorCallback: function()
 				{
-					$("#applicationsyncoutputtext").html("<div class='text-center'>error occured while getting outgoings!</div>");
+					$("#applicationsyncoutputtext").html("<div class='text-center'>Fehler beim Holen der Outgoings!</div>");
 				}
 			}
 		);
@@ -247,9 +247,9 @@ var MobilityOnlineOutgoing = {
 						else
 						{
 							$("#applicationsyncoutputheading")
-								.append("<br />MOBILITY ONLINE OUTGOING SYNC FINISHED<br />"+
-									"<span id = 'nradd'>" +syncres.added.length + "</span> added, "+
-									"<span id = 'nrupdate'>" + syncres.updated.length + "</span> updated</div>")
+								.append("<br />MOBILITY ONLINE OUTGOING SYNC ENDE<br />"+
+									"<span id = 'nradd'>" +syncres.added.length + "</span> hinzugefügt, "+
+									"<span id = 'nrupdate'>" + syncres.updated.length + "</span> aktualisiert</div>")
 								.append("<br />-----------------------------------------------<br />");
 						}
 						MobilityOnlineOutgoing.refreshOutgoingsSyncStatus(syncres.added.concat(syncres.updated));
@@ -258,7 +258,7 @@ var MobilityOnlineOutgoing = {
 				errorCallback: function()
 				{
 					$("#applicationsyncoutputtext").html(
-						MobilityOnlineApplicationsHelper.getMessageHtml("error occured while syncing!", "error")
+						MobilityOnlineApplicationsHelper.getMessageHtml("Fehler beim Synchronisieren!", "error")
 					);
 				}
 			}
@@ -295,14 +295,14 @@ var MobilityOnlineOutgoing = {
 							let insertedMapping = FHC_AjaxClient.getData(data)
 							let insertedMoid = insertedMapping.mo_applicationid;
 							$("#applicationsyncoutputtext").html(
-								MobilityOnlineApplicationsHelper.getMessageHtml("successfully linked applicationid " + insertedMoid, "success")
+								MobilityOnlineApplicationsHelper.getMessageHtml("Applicationid " + insertedMoid + " erfolgreich verlinkt", "success")
 							);
 							initOutgoingSync(insertedMoid);
 						}
 					},
 					errorCallback: function()
 					{
-						$("#applicationsyncoutputtext").html(MobilityOnlineApplicationsHelper.getMessageHtml("error occured while linking mobility!", "error"));
+						$("#applicationsyncoutputtext").html(MobilityOnlineApplicationsHelper.getMessageHtml("Fehler beim Verlinken der Mobilität!", "error"));
 					}
 				}
 			);
@@ -400,11 +400,11 @@ var MobilityOnlineOutgoing = {
 
 					let bisiosHtml = "<div class='text-center'>";
 					let linkBtnHtml = "<div class='text-center'><button class='btn btn-default linkBisioBtn'>" +
-						"<i class='fa fa-link'></i>&nbsp;Link</button></div>";
+						"<i class='fa fa-link'></i>&nbsp;Verlinken</button></div>";
 					bisiosHtml += linkBtnHtml+"<br />";
 
 					bisiosHtml += "<div class='radio'>" +
-						"<label><input type='radio' name='bisiocheck' id='addNewBisio' value='null'>&nbsp;Add new mobility</label>" +
+						"<label><input type='radio' name='bisiocheck' id='addNewBisio' value='null'>&nbsp;Neue Mobilität hinzufügen</label>" +
 						"</div>";
 
 					for (let idx in existingBisios)
@@ -460,8 +460,8 @@ var MobilityOnlineOutgoing = {
 					$("#applicationsrow_"+outgoingobj.moid+" td").css("background-color", "#f5f5f5"); // color should stay after click
 
 					$("#applicationsyncoutputheading").html(
-						'<h4>Select correct fhcomplete mobility to link for '+outgoingobj.data.bisio.student_uid+', '+person.vorname+' '
-							+person.nachname+'</h4>'
+						'<h4>Richtige fhcomplete Mobilität zum Verlinken für '+outgoingobj.data.bisio.student_uid+', '+person.vorname+' '
+							+person.nachname+' auswählen</h4>'
 					)
 
 					$("#applicationsyncoutputtext").html(

@@ -68,12 +68,12 @@ var MobilityOnlineCourses = {
 					}
 					else
 					{
-						$("#lvs").html("<p>" + (FHC_AjaxClient.isError(data) ? FHC_AjaxClient.getError(data) : "error when getting courses") + "</p>");
+						$("#lvs").html("<p>" + (FHC_AjaxClient.isError(data) ? FHC_AjaxClient.getError(data) : "Fehler beim Holen der Kurse") + "</p>");
 					}
 				},
 				errorCallback: function(jqXHR, textStatus, errorThrown)
 				{
-					FHC_DialogLib.alertError("error when getting courses!");
+					FHC_DialogLib.alertError("Fehler beim Holen der Kurse!");
 				}
 			}
 		);
@@ -81,7 +81,7 @@ var MobilityOnlineCourses = {
 	syncLvs: function(studiensemester)
 	{
 		FHC_AjaxClient.showVeil();
-		$(".fhc-ajaxclient-veil").append("<div class='veil-text'>Synchronising...</div>");
+		$(".fhc-ajaxclient-veil").append("<div class='veil-text'>Synchronisiere...</div>");
 
 		FHC_AjaxClient.ajaxCallPost(
 			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/syncLvs',
@@ -102,7 +102,7 @@ var MobilityOnlineCourses = {
 				},
 				errorCallback: function(jqXHR, textStatus, errorThrown)
 				{
-					$("#lvsyncoutput").html("<div class='text-center'>error occured while syncing!</div>");
+					$("#lvsyncoutput").html("<div class='text-center'>Fehler beim Synchronisieren!</div>");
 					FHC_AjaxClient.hideVeil();
 				}
 			}

@@ -15,7 +15,7 @@
 	<div class="col-xs-4 form-group">
 		<label>Studiengang</label>
 		<select class="form-control" name="studiengang_kz" id="studiengang_kz">
-			<option value="" selected="selected">Select Studiengang...</option>';
+			<option value="" selected="selected">Studiengang wählen...</option>';
 			<option value="all">Alle</option>
 			<?php
 			$typ = '';
@@ -37,6 +37,6 @@
 	</div>
 	<div class="col-xs-1">
 		<label id="refreshBtnLabel">&nbsp;</label>
-		<button class="btn btn-default" id="refreshBtn" title="Reload applications"><i class="fa fa-download"></i></button>
+		<button class="btn btn-default" id="refreshBtn" title="MO Bewerbungen aktualisieren"><i class="fa fa-download"></i></button>
 	</div>
 </div>

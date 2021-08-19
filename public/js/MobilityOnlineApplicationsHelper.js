@@ -1,3 +1,6 @@
+/**
+ * Helper providing functionalities commonly used when managing applications (by Incoming and Outgoing sync)
+ */
 var MobilityOnlineApplicationsHelper = {
 	setSelectAllApplicationsEvent: function()
 	{

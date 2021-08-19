@@ -95,6 +95,6 @@ class MobilityOnlineCourses extends Auth_Controller
 		if (isSuccess($lvdata))
 			$this->outputJsonSuccess($lvdata->retval);
 		else
-			$this->outputJsonError("Error when getting courses");
+			$this->outputJsonError("Fehler beim Holen der Kurse");
 	}
 }

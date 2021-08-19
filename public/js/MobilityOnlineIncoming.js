@@ -58,7 +58,7 @@ $(document).ready(function()
 						}
 						else
 						{
-							FHC_DialogLib.alertError("non-numeric post max size!");
+							FHC_DialogLib.alertError("Maximale POST Größe nicht numerisch!");
 						}
 					}
 				};
@@ -171,12 +171,12 @@ var MobilityOnlineIncoming = {
 					}
 					else
 					{
-						$("#applicationsyncoutputtext").html("<div class='text-center'>No incomings found!</div>");
+						$("#applicationsyncoutputtext").html("<div class='text-center'>Keine Incomings gefunden!</div>");
 					}
 				},
 				errorCallback: function()
 				{
-					$("#applicationsyncoutputtext").html("<div class='text-center'>error occured while getting incomings!</div>");
+					$("#applicationsyncoutputtext").html("<div class='text-center'>Fehler beim Holen der Incomings!</div>");
 				}
 			}
 		);
@@ -220,7 +220,7 @@ var MobilityOnlineIncoming = {
 							else
 							{
 								$("#applicationsyncoutputheading")
-									.append("<br />MOBILITY ONLINE INCOMINGS SYNC FINISHED<br /><span id = 'nradd'>"+syncres.added+"</span> added, <span id = 'nrupdate'>"+syncres.updated+"</span> updated</div>")
+									.append("<br />MOBILITY ONLINE INCOMINGS SYNC ENDE<br /><span id = 'nradd'>"+syncres.added+"</span> hinzugefügt, <span id = 'nrupdate'>"+syncres.updated+"</span> aktualisiert</div>")
 									.append("<br />-----------------------------------------------<br />");
 							}
 							MobilityOnlineIncoming.refreshIncomingsSyncStatus();
@@ -228,7 +228,7 @@ var MobilityOnlineIncoming = {
 					},
 					errorCallback: function()
 					{
-						$("#applicationsyncoutputtext").html("<div class='text-center'>error occured while syncing!</div>");
+						$("#applicationsyncoutputtext").html("<div class='text-center'>Fehler beim Synchronisieren!</div>");
 					}
 				}
 			);
@@ -306,7 +306,7 @@ var MobilityOnlineIncoming = {
 				},
 				errorCallback: function()
 				{
-					FHC_DialogLib.alertError("error when refreshing FHC column!");
+					FHC_DialogLib.alertError("Fehler beim Aktualisieren des Sync Status!");
 				}
 			}
 		);
@@ -320,7 +320,7 @@ var MobilityOnlineIncoming = {
 				successCallback: callback,
 				errorCallback: function()
 				{
-					FHC_DialogLib.alertError("error when getting post max size!");
+					FHC_DialogLib.alertError("Fehler beim Holen der maximalen POST Größe!");
 				}
 			}
 		);

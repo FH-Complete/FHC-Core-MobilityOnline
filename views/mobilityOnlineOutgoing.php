@@ -30,7 +30,7 @@
 			<div class="container-fluid">
 				<div class="row">
 					<div class="col-xs-12">
-						<h3 class="page-header text-center">MobilityOnline Outgoing Synchronisation</h3>
+						<h3 class="page-header text-center">MobilityOnline Outgoingsynchronisierung</h3>
 					</div>
 				</div>
 				<?php $this->load->view('extensions/FHC-Core-MobilityOnline/subviews/selectionHeader.php'); ?>
@@ -41,7 +41,7 @@
 							array(
 								'applicationType' => 'Outgoings',
 								'columnnames' => array(
-									'Name', 'Uid', 'E-Mail', 'Aufh.von', 'Aufh.bis', 'Zahlungen', 'ID', 'Gesynct'
+									'Name', 'Uid', 'E-Mail', 'Aufh.von', 'Aufh.bis', 'Auszlg.', 'ID', 'Gesynct'
 								)
 							)
 					); ?>
