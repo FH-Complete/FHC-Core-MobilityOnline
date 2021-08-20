@@ -27,16 +27,16 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Executes sync of incomings for a Studiensemester from MO to FHC. Adds or updates incomings.
-	 * @param $studiensemester
-	 * @param $outgoings
+	 * @param string $studiensemester
+	 * @param array $outgoings
 	 * @return array syncoutput containing info about failures/success
 	 */
 	public function startOutgoingSync($studiensemester, $outgoings)
 	{
 		$results = array('added' => array(), 'updated' => array(), 'errors' => 0, 'syncoutput' => array());
-		$studcount = count($outgoings);
+		$studCount = count($outgoings);
 
-		if (empty($outgoings) || !is_array($outgoings) || $studcount <= 0)
+		if (empty($outgoings) || !is_array($outgoings) || $studCount <= 0)
 		{
 			$this->addInfoOutput('Keine Outgoings für Sync gefunden! Abbruch.');
 		}
@@ -44,17 +44,17 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			foreach ($outgoings as $outgoing)
 			{
-				$outgoingdata = $outgoing['data'];
-				$appid = $outgoing['moid'];
+				$outgoingData = $outgoing['data'];
+				$appId = $outgoing['moid'];
 
 				$infhccheck_bisio_id = null;
-				$bisioIdRes = $this->_checkBisioInFhc($appid);
+				$bisioIdRes = $this->_checkBisioInFhc($appId);
 
 				if (isError($bisioIdRes))
 				{
 					$results['errors']++;
-					$this->addErrorOutput("Fehler beim Verlinken des Studierden mit applicationid $appid - " .
-						$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname']);
+					$this->addErrorOutput("Fehler beim Verlinken des Studierden mit applicationid $appId - " .
+						$outgoingData['person']['vorname'] . " " . $outgoingData['person']['nachname']);
 				}
 				else
 				{
@@ -64,29 +64,29 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 						$infhccheck_bisio_id = getData($bisioIdRes);
 					}
 
-					$student_uid = $this->saveOutgoing($appid, $outgoingdata, $infhccheck_bisio_id);
+					$student_uid = $this->saveOutgoing($appId, $outgoingData, $infhccheck_bisio_id);
 
 					if (isset($student_uid))
 					{
 						if (isset($infhccheck_bisio_id))
 						{
-							$results['updated'][] = $appid;
-							$actiontext = 'aktualisiert';
+							$results['updated'][] = $appId;
+							$actionText = 'aktualisiert';
 						}
 						else
 						{
-							$results['added'][] = $appid;
-							$actiontext = 'hinzugefügt';
+							$results['added'][] = $appId;
+							$actionText = 'hinzugefügt';
 						}
 
-						$this->addSuccessOutput("Student mit applicationid $appid - " .
-							$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname'] . " erfolgreich $actiontext");
+						$this->addSuccessOutput("Student mit applicationid $appId - " .
+							$outgoingData['person']['vorname'] . " " . $outgoingData['person']['nachname'] . " erfolgreich $actionText");
 					}
 					else
 					{
 						$results['errors']++;
-						$this->addErrorOutput("Fehler beim Synchronisieren des Studierenden mit applicationid $appid - " .
-							$outgoingdata['person']['vorname'] . " " . $outgoingdata['person']['nachname']);
+						$this->addErrorOutput("Fehler beim Synchronisieren des Studierenden mit applicationid $appId - " .
+							$outgoingData['person']['vorname'] . " " . $outgoingData['person']['nachname']);
 					}
 				}
 			}
@@ -98,10 +98,10 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Converts MobilityOnline application to fhcomplete array (with person, prestudent...)
-	 * @param $moapp MobilityOnline application
+	 * @param object $moApp MobilityOnline application
 	 * @return array with fhcomplete table arrays
 	 */
-	public function mapMoAppToOutgoing($moapp, $bankdata = null, $nominationData = null)
+	public function mapMoAppToOutgoing($moApp, $bankdata = null, $nominationData = null)
 	{
 		$fieldMappings = $this->conffieldmappings[self::MOOBJECTTYPE];
 		$bisioMappings = $fieldMappings['bisio'];
@@ -119,32 +119,32 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$elementvalueBooleanFields = array($bisioinfoMappings['ist_praktikum'],
 			$bisioinfoMappings['ist_masterarbeit'], $bisioinfoMappings['ist_beihilfe']);
 
-		foreach ($fieldMappings as $fhctable)
+		foreach ($fieldMappings as $fhcTable)
 		{
-			foreach ($fhctable as $value)
+			foreach ($fhcTable as $value)
 			{
-				if (isset($moapp->applicationDataElements))
+				if (isset($moApp->applicationDataElements))
 				{
 					// find mobility online application data fields
-					foreach ($moapp->applicationDataElements as $element)
+					foreach ($moApp->applicationDataElements as $element)
 					{
 						if ($element->elementName === $value)
 						{
 							if (in_array($element->elementName, $comboboxValueFields) && isset($element->comboboxFirstValue))
 							{
-								$moapp->$value = $element->comboboxFirstValue;
+								$moApp->$value = $element->comboboxFirstValue;
 							}
 							elseif (in_array($element->elementName, $comboboxSecondValueFields) && isset($element->comboboxSecondValue))
 							{
-								$moapp->$value = $element->comboboxSecondValue;
+								$moApp->$value = $element->comboboxSecondValue;
 							}
 							elseif (in_array($element->elementName, $elementvalueBooleanFields) && isset($element->elementValueBoolean))
 							{
-								$moapp->$value = $element->elementValueBoolean;
+								$moApp->$value = $element->elementValueBoolean;
 							}
 							else
 							{
-								$moapp->$value = $element->elementValue;
+								$moApp->$value = $element->elementValue;
 							}
 						}
 					}
@@ -153,32 +153,32 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		// Nation
-		$moBisionation = $moapp->{$bisioMappings['nation_code']};
+		$moBisionation = $moApp->{$bisioMappings['nation_code']};
 
 		$moNations = array(
 			$bisioMappings['nation_code'] => $moBisionation
 		);
 
-		$fhcnations = $this->ci->NationModel->load();
+		$fhcNations = $this->ci->NationModel->load();
 
-		if (hasData($fhcnations))
+		if (hasData($fhcNations))
 		{
-			foreach ($fhcnations->retval as $fhcNation)
+			foreach ($fhcNations->retval as $fhcNation)
 			{
 				// trying to get nations by bezeichnung
 				foreach ($moNations as $configBez => $mooNation)
 				{
 					if ($fhcNation->kurztext === $mooNation || $fhcNation->langtext === $mooNation || $fhcNation->engltext === $mooNation)
 					{
-						if (isset($moapp->{$configBez}))
-							$moapp->{$configBez} = $fhcNation->nation_code;
+						if (isset($moApp->{$configBez}))
+							$moApp->{$configBez} = $fhcNation->nation_code;
 					}
 				}
 			}
 		}
 
-		$fhcobj = $this->convertToFhcFormat($moapp, self::MOOBJECTTYPE);
-		$fhcbankdata = $this->convertToFhcFormat($bankdata, 'bankdetails');
+		$fhcObj = $this->convertToFhcFormat($moApp, self::MOOBJECTTYPE);
+		$fhcBankData = $this->convertToFhcFormat($bankdata, 'bankdetails');
 
 		// payments
 		$payments = array();
@@ -219,19 +219,19 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 		}
 
-		$fhcobj = array_merge($fhcobj, $fhcbankdata, array('zahlungen' => $payments));
+		$fhcObj = array_merge($fhcObj, $fhcBankData, array('zahlungen' => $payments));
 
-		return $fhcobj;
+		return $fhcObj;
 	}
 
 	/**
 	 * Saves an outgoing
-	 * @param $appid
-	 * @param $outgoing
-	 * @param $bisio_id
+	 * @param int $appId
+	 * @param array $outgoing
+	 * @param int $bisio_id
 	 * @return string prestudent_id of saved prestudent
 	 */
-	public function saveOutgoing($appid, $outgoing, $bisio_id_existing)
+	public function saveOutgoing($appId, $outgoing, $bisio_id_existing)
 	{
 		//error check for missing data etc.
 		$errors = $this->fhcObjHasError($outgoing, self::MOOBJECTTYPE);
@@ -280,7 +280,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$person_id = getData($personRes)[0]->person_id;
 
 			// bisio
-			$bisio_id = $this->_saveBisio($appid, $bisio_id_existing, $bisio);
+			$bisio_id = $this->_saveBisio($appId, $bisio_id_existing, $bisio);
 
 			if (isset($bisio_id))
 			{
@@ -397,22 +397,22 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Gets MobilityOnline outgoings for a fhcomplete studiensemester
-	 * @param $studiensemester
-	 * @param $studiengang_kz as in fhc db
+	 * @param string $studiensemester
+	 * @param int $studiengang_kz as in fhc db
 	 * @return array with applications
 	 */
 	public function getOutgoing($studiensemester, $studiengang_kz = null)
 	{
-		$studiensemestermo = $this->mapSemesterToMo($studiensemester);
-		$semestersforsearch = array($studiensemestermo);
-		$searcharrays = array();
+		$studiensemesterMo = $this->mapSemesterToMo($studiensemester);
+		$semestersForSearch = array($studiensemesterMo);
+		$searchArrays = array();
 		$apps = array();
 
-		$stgvaluemappings = $this->valuemappings['frommo']['studiengang_kz'];
-		$mostgname = $this->conffieldmappings['incomingcourse']['mostudiengang']['bezeichnung'];
+		$stgValuemappings = $this->valuemappings['frommo']['studiengang_kz'];
+		$moStgName = $this->conffieldmappings['incomingcourse']['mostudiengang']['bezeichnung'];
 
 		// searchobject to search outgoings
-		$searcharray = array(
+		$searchArray = array(
 			'applicationType' => 'OUT',
 			'personType' => 'S',
 			'furtherSearchRestrictions' => array()
@@ -429,36 +429,36 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$flagObj->elementName = $flagName;
 			$flagObj->elementValueBoolean = $flagValue;
 			$flagObj->elementType = 'boolean';
-			$searcharray['furtherSearchRestrictions'][] = $flagObj;
+			$searchArray['furtherSearchRestrictions'][] = $flagObj;
 		}
 
 		// Also search for Outgoings who have entered Studienjahr as their Semester
-		$studienjahrsemestermo = $this->mapSemesterToMoStudienjahr($studiensemester);
-		if (isset($studienjahrsemestermo))
-			$semestersforsearch[] = $studienjahrsemestermo;
+		$studienjahrSemesterMo = $this->mapSemesterToMoStudienjahr($studiensemester);
+		if (isset($studienjahrSemesterMo))
+			$semestersForSearch[] = $studienjahrSemesterMo;
 
-		foreach ($semestersforsearch as $semesterforsearch)
+		foreach ($semestersForSearch as $semesterForSearch)
 		{
-			$searcharray['semesterDescription'] = $semesterforsearch;
+			$searchArray['semesterDescription'] = $semesterForSearch;
 
 			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
 			{
-				foreach ($stgvaluemappings as $mobez => $stg_kz)
+				foreach ($stgValuemappings as $mobez => $stg_kz)
 				{
 					if ($stg_kz === (int)$studiengang_kz)
 					{
-						$searcharray[$mostgname] = $mobez;
-						$searcharrays[] = $searcharray;
+						$searchArray[$moStgName] = $mobez;
+						$searchArrays[] = $searchArray;
 					}
 				}
 			}
 			else
 			{
-				$searcharrays[] = $searcharray;
+				$searchArrays[] = $searchArray;
 			}
 		}
 
-		foreach ($searcharrays as $sarr)
+		foreach ($searchArrays as $sarr)
 		{
 			$searchObj = $this->getSearchObj(
 				self::MOOBJECTTYPE,
@@ -477,19 +477,19 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Links a MO application with a bisio in fhcomplete.
-	 * @param $moid
-	 * @param $bisio_id
+	 * @param int $moId
+	 * @param int $bisio_id
 	 * @return object
 	 */
-	public function linkBisio($moid, $bisio_id)
+	public function linkBisio($moId, $bisio_id)
 	{
-		return $this->ci->MobisioidzuordnungModel->insert(array('bisio_id' => $bisio_id, 'mo_applicationid' => $moid));
+		return $this->ci->MobisioidzuordnungModel->insert(array('bisio_id' => $bisio_id, 'mo_applicationid' => $moId));
 	}
 
 	/**
 	 * Gets outgoings (applications) with additional data
-	 * @param $apps
-	 * @param $studiensemester for check if in mapping table
+	 * @param array $apps
+	 * @param string $studiensemester for check if in mapping table
 	 * @return array with applications
 	 */
 	private function _getOutgoingExtended($apps)
@@ -498,20 +498,20 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		foreach ($apps as $application)
 		{
-			$appid = $application->applicationID;
-			$bankdata = $this->ci->MoGetAppModel->getBankAccountDetails($appid);
-			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appid);
+			$appId = $application->applicationID;
+			$bankData = $this->ci->MoGetAppModel->getBankAccountDetails($appId);
+			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appId);
 
-			$fhcobj = $this->mapMoAppToOutgoing($application, $bankdata, $nominationData);
+			$fhcobj = $this->mapMoAppToOutgoing($application, $bankData, $nominationData);
 
 			$fhcobj_extended = new StdClass();
-			$fhcobj_extended->moid = $appid;
+			$fhcobj_extended->moid = $appId;
 
 			$errors = $this->fhcObjHasError($fhcobj, self::MOOBJECTTYPE);
 			$fhcobj_extended->error = $errors->error;
 			$fhcobj_extended->errorMessages = $errors->errorMessages;
 
-			$found_bisio_id = $this->_checkBisioInFhc($appid);
+			$found_bisio_id = $this->_checkBisioInFhc($appId);
 
 			if (isError($found_bisio_id))
 			{
@@ -557,32 +557,32 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts bisio for a student or updates an existing one.
-	 * @param $appid
-	 * @param $bisio_id
-	 * @param $bisio
+	 * @param int $appId
+	 * @param int $bisio_id
+	 * @param array $bisio
 	 * @return int|null bisio_id of inserted or updated bisio if successful, null otherwise.
 	 */
-	private function _saveBisio($appid, $bisio_id, $bisio)
+	private function _saveBisio($appId, $bisio_id, $bisio)
 	{
 		// if linked in sync table, update, otherwise insert
 		if (isset($bisio_id))
 		{
 			$this->stamp('update', $bisio);
-			$bisioresult = $this->ci->BisioModel->update($bisio_id, $bisio);
-			$this->log('update', $bisioresult, 'bisio');
+			$bisioResult = $this->ci->BisioModel->update($bisio_id, $bisio);
+			$this->log('update', $bisioResult, 'bisio');
 		}
 		else
 		{
 			$this->stamp('insert', $bisio);
-			$bisioresult = $this->ci->BisioModel->insert($bisio);
-			$this->log('insert', $bisioresult, 'bisio');
+			$bisioResult = $this->ci->BisioModel->insert($bisio);
+			$this->log('insert', $bisioResult, 'bisio');
 
-			if (hasData($bisioresult))
+			if (hasData($bisioResult))
 			{
-				$bisio_id = getData($bisioresult);
+				$bisio_id = getData($bisioResult);
 
 				// link new bisio to mo bisio
-				$this->ci->MobisioidzuordnungModel->insert(array('bisio_id' => $bisio_id, 'mo_applicationid' => $appid));
+				$this->ci->MobisioidzuordnungModel->insert(array('bisio_id' => $bisio_id, 'mo_applicationid' => $appId));
 			}
 		}
 
@@ -591,8 +591,8 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts bankverbindung for a student or updates an existing one.
-	 * @param $bankverbindung
-	 * @param $bisio_id_existing for check if it is a new save
+	 * @param array $bankverbindung
+	 * @param int $bisio_id_existing for check if it is a new save
 	 * @return int|null bankverbindung_id of inserted or updated bankverbindung if successful, null otherwise.
 	 */
 	private function _saveBankverbindung($bankverbindung, $bisio_id_existing)
@@ -613,16 +613,16 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				// Bankverbindung already exists and it's not first insert - update
 				$bankverbindung_id = getData($bankverbindungRes)[0]->bankverbindung_id;
 				$this->stamp('update', $bisio);
-				$bankverbindungresp = $this->ci->BankverbindungModel->update($bankverbindung_id, $bankverbindung);
-				$this->log('update', $bankverbindungresp, 'bankverbindung');
+				$bankverbindungResp = $this->ci->BankverbindungModel->update($bankverbindung_id, $bankverbindung);
+				$this->log('update', $bankverbindungResp, 'bankverbindung');
 			}
 			else
 			{
 				// new Bankverbindung
 				$this->stamp('insert', $bankverbindung);
-				$bankverbindungresp = $this->ci->BankverbindungModel->insert($bankverbindung);
-				$this->log('insert', $bankverbindungresp, 'bankverbindung');
-				$bankverbindung_id = getData($bankverbindungresp)[0];
+				$bankverbindungResp = $this->ci->BankverbindungModel->insert($bankverbindung);
+				$this->log('insert', $bankverbindungResp, 'bankverbindung');
+				$bankverbindung_id = getData($bankverbindungResp)[0];
 			}
 		}
 
@@ -631,7 +631,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts Zahlung (konto) for a student or updates an existing one.
-	 * @param $zahlung
+	 * @param array $zahlung
 	 * @return int|null buchungsnr of inserted or updated konto Buchung if successful, null otherwise.
 	 */
 	private function _saveZahlung($zahlung)
@@ -677,14 +677,14 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Check if bisio is already in fhcomplete by checking sync table.
-	 * @param $appid
+	 * @param int $appId
 	 * @return object error or success with found id if in fhcomplete, success with null if not in fhcomplete
 	 */
-	private function _checkBisioInFhc($appid)
+	private function _checkBisioInFhc($appId)
 	{
 		$infhccheck_bisio_id = null;
 		$this->ci->MobisioidzuordnungModel->addSelect('bisio_id');
-		$bisioIdRes = $this->ci->MobisioidzuordnungModel->loadWhere(array('mo_applicationid' => $appid));
+		$bisioIdRes = $this->ci->MobisioidzuordnungModel->loadWhere(array('mo_applicationid' => $appId));
 
 		if (isError($bisioIdRes))
 			return $bisioIdRes;
@@ -699,7 +699,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Check if payment is already in fhcomplete by checking sync table.
-	 * @param $mo_referenz_nr
+	 * @param string $mo_referenz_nr
 	 * @return object error or success with found buchungsnr if in fhcomplete, success with null if not in fhcomplete
 	 */
 	private function _checkPaymentInFhc($mo_referenz_nr)

@@ -23,7 +23,6 @@ class Mobilityonlineapi_model extends CI_Model
 
 	/**
 	 * Establisches connection with soap client
-	 * @return void |null
 	 */
 	protected function setSoapClient()
 	{
@@ -49,8 +48,8 @@ class Mobilityonlineapi_model extends CI_Model
 
 	/**
 	 * Performs generic call of wsdl service
-	 * @param $function name of function offered by wsdl service to call
-	 * @param $data
+	 * @param string $function name of function offered by wsdl service to call
+	 * @param array $data data to pass
 	 * @return object returned by called function if successful call, null otherwise
 	 */
 	protected function performCall($function, $data)

@@ -28,17 +28,17 @@ $(document).ready(function()
 		$("#applicationsyncbtn").click(
 			function()
 			{
-				let incomingelem = $("#applications input[type=checkbox]:checked");
+				let incomingElem = $("#applications input[type=checkbox]:checked");
 				let incomings = [];
-				incomingelem.each(
+				incomingElem.each(
 					function()
 					{
 						for (let incoming in MobilityOnlineIncoming.incomings)
 						{
-							let moinc = MobilityOnlineIncoming.incomings[incoming];
-							if (moinc.moid == $(this).val())
+							let moInc = MobilityOnlineIncoming.incomings[incoming];
+							if (moInc.moid == $(this).val())
 							{
-								incomings.push(moinc);
+								incomings.push(moInc);
 								break;
 							}
 						}
@@ -100,63 +100,63 @@ var MobilityOnlineIncoming = {
 
 						for (let incoming in incomings)
 						{
-							let incomingobj = incomings[incoming];
-							let incomingdata = incomingobj.data;
+							let incomingObj = incomings[incoming];
+							let incomingData = incomingObj.data;
 
-							let person = incomingdata.person;
-							let hasError = incomingobj.error;
-							let chkbxstring, stgnotsettxt, errorclass, newicon;
-							chkbxstring = stgnotsettxt = errorclass = "";
+							let person = incomingData.person;
+							let hasError = incomingObj.error;
+							let chkbxString, stgNotSetTxt, errorClass, newIcon;
+							chkbxString = stgNotSetTxt = errorClass = "";
 
 							// show errors in tooltip if sync not possible
 							if (hasError)
 							{
-								errorclass = " class='inactive' data-toggle='tooltip' title='";
-								let firstmsg = true;
-								for (let i in incomingobj.errorMessages)
+								errorClass = " class='inactive' data-toggle='tooltip' title='";
+								let firstMsg = true;
+								for (let i in incomingObj.errorMessages)
 								{
-									if (!firstmsg)
-										errorclass += ', ';
-									errorclass += incomingobj.errorMessages[i];
-									firstmsg = false;
+									if (!firstMsg)
+										errorClass += ', ';
+									errorClass += incomingObj.errorMessages[i];
+									firstMsg = false;
 								}
-								errorclass += "'";
+								errorClass += "'";
 							}
 							else
 							{
-								chkbxstring = "<input type='checkbox' value='" + incomingobj.moid + "' name='applications[]'>";
+								chkbxString = "<input type='checkbox' value='" + incomingObj.moid + "' name='applications[]'>";
 							}
 
 							// courses from MobilityOnline
-							let coursesstring = '';
-							let firstcourse = true;
+							let coursesString = '';
+							let firstCourse = true;
 
-							for (let courseidx in incomingdata.mocourses)
+							for (let courseIdx in incomingData.mocourses)
 							{
-								let course = incomingdata.mocourses[courseidx];
-								if (!firstcourse)
-									coursesstring += ' | ';
-								coursesstring += course.number + ': ' + course.name;
-								firstcourse = false;
+								let course = incomingData.mocourses[courseIdx];
+								if (!firstCourse)
+									coursesString += ' | ';
+								coursesString += course.number + ': ' + course.name;
+								firstCourse = false;
 							}
 
-							if (incomingobj.infhc)
+							if (incomingObj.infhc)
 							{
-								newicon = "<i id='infhcicon_"+incomingobj.moid+"' class='fa fa-check'></i><input type='hidden' id='infhc_"+incomingobj.moid+"' class='infhc' value='1'>";
+								newIcon = "<i id='infhcicon_"+incomingObj.moid+"' class='fa fa-check'></i><input type='hidden' id='infhc_"+incomingObj.moid+"' class='infhc' value='1'>";
 							}
 							else
 							{
-								newicon = "<i id='infhcicon_"+incomingobj.moid+"' class='fa fa-times'></i><input type='hidden' id='infhc_"+incomingobj.moid+"' class='infhc' value='0'>";
+								newIcon = "<i id='infhcicon_"+incomingObj.moid+"' class='fa fa-times'></i><input type='hidden' id='infhc_"+incomingObj.moid+"' class='infhc' value='0'>";
 							}
 
 							$("#applications").append(
-								"<tr" + errorclass + ">" +
-								"<td class='text-center'>" + chkbxstring + "</td>" +
+								"<tr" + errorClass + ">" +
+								"<td class='text-center'>" + chkbxString + "</td>" +
 								"<td>" + person.nachname + ", " + person.vorname + "</td>" +
-								"<td>" + incomingdata.kontaktmail.kontakt + "</td>" +
-								"<td>" + incomingdata.pipelineStatusDescription + "</td>" +
-								"<td>" + coursesstring + "</td>" +
-								"<td class='text-center'>" + newicon + "</td>" +
+								"<td>" + incomingData.kontaktmail.kontakt + "</td>" +
+								"<td>" + incomingData.pipelineStatusDescription + "</td>" +
+								"<td>" + coursesString + "</td>" +
+								"<td class='text-center'>" + newIcon + "</td>" +
 								"</tr>"
 							);
 
@@ -186,12 +186,12 @@ var MobilityOnlineIncoming = {
 		let incomingJson = JSON.stringify(incomings);
 
 		// post data might be too big - then split in in half. factor 3.5 approx. scales up to actual data size
-		let postlength = incomingJson.length + 3.5 * incomings.length;
+		let postLength = incomingJson.length + 3.5 * incomings.length;
 
-		if (postlength > maxPostSize)
+		if (postLength > maxPostSize)
 		{
-			let indexhalf = incomings.length / 2;
-			let incomingsPartOne = incomings.splice(0, indexhalf);
+			let indexHalf = incomings.length / 2;
+			let incomingsPartOne = incomings.splice(0, indexHalf);
 			let incomingsPartTwo = incomings;
 			MobilityOnlineIncoming.syncIncomings(incomingsPartOne, studiensemester, maxPostSize);
 			MobilityOnlineIncoming.syncIncomings(incomingsPartTwo, studiensemester, maxPostSize);
@@ -208,19 +208,19 @@ var MobilityOnlineIncoming = {
 					successCallback: function (data, textStatus, jqXHR) {
 						if (FHC_AjaxClient.hasData(data))
 						{
-							let syncres = FHC_AjaxClient.getData(data);
+							let syncRes = FHC_AjaxClient.getData(data);
 
-							MobilityOnlineApplicationsHelper.writeSyncOutput(syncres.syncoutput);
+							MobilityOnlineApplicationsHelper.writeSyncOutput(syncRes.syncoutput);
 
 							if ($("#applicationsyncoutputheading").text().length > 0)
 							{
-								$("#nradd").text(parseInt($("#nradd").text()) + syncres.added);
-								$("#nrupdate").text(parseInt($("#nrupdate").text()) + syncres.updated);
+								$("#nradd").text(parseInt($("#nradd").text()) + syncRes.added);
+								$("#nrupdate").text(parseInt($("#nrupdate").text()) + syncRes.updated);
 							}
 							else
 							{
 								$("#applicationsyncoutputheading")
-									.append("<br />MOBILITY ONLINE INCOMINGS SYNC ENDE<br /><span id = 'nradd'>"+syncres.added+"</span> hinzugefügt, <span id = 'nrupdate'>"+syncres.updated+"</span> aktualisiert</div>")
+									.append("<br />MOBILITY ONLINE INCOMINGS SYNC ENDE<br /><span id = 'nradd'>"+syncRes.added+"</span> hinzugefügt, <span id = 'nrupdate'>"+syncRes.updated+"</span> aktualisiert</div>")
 									.append("<br />-----------------------------------------------<br />");
 							}
 							MobilityOnlineIncoming.refreshIncomingsSyncStatus();
@@ -239,67 +239,67 @@ var MobilityOnlineIncoming = {
 	 */
 	refreshIncomingsSyncStatus: function()
 	{
-		let moidsel = $("#applications input[name='applications[]']");
-		let moids = [];
+		let moidSel = $("#applications input[name='applications[]']");
+		let moIds = [];
 
-		$(moidsel).each(
+		$(moidSel).each(
 			function()
 			{
-				moids.push($(this).val());
+				moIds.push($(this).val());
 			}
 		);
 
 		FHC_AjaxClient.ajaxCallPost(
 			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/checkMoidsInFhc',
 			{
-				"moids": moids
+				"moids": moIds
 			},
 			{
 				successCallback: function(data, textStatus, jqXHR)
 				{
 					if (FHC_AjaxClient.hasData(data))
 					{
-						let moidres = FHC_AjaxClient.getData(data)
+						let moIdRes = FHC_AjaxClient.getData(data)
 
-						for (let moid in moidres)
+						for (let moId in moIdRes)
 						{
-							let prestudent_id = moidres[moid];
-							let infhc = $.isNumeric(prestudent_id);
+							let prestudent_id = moIdRes[moId];
+							let inFhc = $.isNumeric(prestudent_id);
 
 							// refresh JS array
 							for (let incoming in MobilityOnlineIncoming.incomings)
 							{
-								let incomingobj = MobilityOnlineIncoming.incomings[incoming];
+								let incomingObj = MobilityOnlineIncoming.incomings[incoming];
 
-								if (incomingobj.moid === parseInt(moid))
+								if (incomingObj.moid === parseInt(moId))
 								{
-									if (infhc)
+									if (inFhc)
 									{
-										incomingobj.infhc = true;
-										incomingobj.prestudent_id = prestudent_id;
+										incomingObj.infhc = true;
+										incomingObj.prestudent_id = prestudent_id;
 									}
 									else
 									{
-										incomingobj.infhc = false;
+										incomingObj.infhc = false;
 									}
 									break;
 								}
 							}
 
 							// refresh Incomings Table "in FHC" field
-							let infhciconel = $("#infhcicon_" + moid);
-							let infhcel = $("#infhc_" + moid);
+							let inFhcIconEl = $("#infhcicon_" + moId);
+							let inFhcEl = $("#infhc_" + moId);
 
-							infhciconel.removeClass();
-							if (infhc)
+							inFhcIconEl.removeClass();
+							if (inFhc)
 							{
-								infhcel.val("1");
-								infhciconel.addClass("fa fa-check");
+								inFhcEl.val("1");
+								inFhcIconEl.addClass("fa fa-check");
 							}
 							else
 							{
-								infhcel.val("0");
-								infhciconel.addClass("fa fa-times");
+								inFhcEl.val("0");
+								inFhcIconEl.addClass("fa fa-times");
 							}
 						}
 					}

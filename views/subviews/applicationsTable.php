@@ -19,8 +19,8 @@
 				<thead>
 				<tr>
 					<th></th>
-					<?php foreach ($columnnames as $columnname): ?>
-						<th class="text-center"><?php echo $columnname ?></th>
+					<?php foreach ($columnNames as $columnName): ?>
+						<th class="text-center"><?php echo $columnName ?></th>
 					<?php endforeach; ?>
 				</tr>
 				</thead>

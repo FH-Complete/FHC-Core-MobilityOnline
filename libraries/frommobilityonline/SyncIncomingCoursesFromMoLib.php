@@ -26,11 +26,11 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Converts MobilityOnline course to fhcomplete course
-	 * Finds course in synctable and loads them from fhcomplete
-	 * @param $course
-	 * @param $studiensemester
-	 * @param $uid
+	 * Converts MobilityOnline course to fhcomplete course.
+	 * Finds course in synctable and loads them from fhcomplete.
+	 * @param object $course
+	 * @param string $studiensemester
+	 * @param string $uid
 	 * @return array
 	 */
 	public function mapMoIncomingCourseToLv($course, $studiensemester, $uid)
@@ -73,27 +73,27 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Fills fhccourse with necessary data before displaying, adds Lehreinheiten to the course.
-	 * @param $lehrveranstaltung_id
-	 * @param $uid for getting group assignments or lehreinheiten
-	 * @param $studiensemester_kurzbz
-	 * @param $fhccourse to be filled
+	 * @param int $lehrveranstaltung_id
+	 * @param string $uid for getting group assignments or lehreinheiten
+	 * @param string $studiensemester_kurzbz
+	 * @param array $fhcCourse to be filled
 	 */
-	public function fillFhcCourse($lehrveranstaltung_id, $uid, $studiensemester_kurzbz, &$fhccourse)
+	public function fillFhcCourse($lehrveranstaltung_id, $uid, $studiensemester_kurzbz, &$fhcCourse)
 	{
 		$this->ci->LehrveranstaltungModel->addSelect('lehrveranstaltung_id, tbl_lehrveranstaltung.bezeichnung AS lvbezeichnung, incoming');
 
-		$lvresult = $this->ci->LehrveranstaltungModel->loadWhere(
+		$lvResult = $this->ci->LehrveranstaltungModel->loadWhere(
 			array(
 				'tbl_lehrveranstaltung.lehrveranstaltung_id' => $lehrveranstaltung_id
 			)
 		);
 
-		if (hasData($lvresult))
+		if (hasData($lvResult))
 		{
-			$lv = $lvresult->retval[0];
-			$fhccourse['lehrveranstaltung']['lehrveranstaltung_id'] = $lv->lehrveranstaltung_id;
-			$fhccourse['lehrveranstaltung']['fhcbezeichnung'] = $lv->lvbezeichnung;
-			$fhccourse['lehrveranstaltung']['incomingplaetze'] = $lv->incoming;
+			$lv = $lvResult->retval[0];
+			$fhcCourse['lehrveranstaltung']['lehrveranstaltung_id'] = $lv->lehrveranstaltung_id;
+			$fhcCourse['lehrveranstaltung']['fhcbezeichnung'] = $lv->lvbezeichnung;
+			$fhcCourse['lehrveranstaltung']['incomingplaetze'] = $lv->incoming;
 
 			//get studiengäng(e) and semester for LV
 			$this->ci->LehrveranstaltungModel->addSelect('tbl_studiengang.studiengang_kz, tbl_studiengang.typ, tbl_studiengang.kurzbz AS studiengang_kurzbz, tbl_studiengang.bezeichnung, tbl_studienplan_lehrveranstaltung.semester');
@@ -103,24 +103,24 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 			$this->ci->LehrveranstaltungModel->addJoin('lehre.tbl_studienordnung', 'studienordnung_id', 'LEFT');
 			$this->ci->LehrveranstaltungModel->addJoin('public.tbl_studiengang', 'tbl_studienordnung.studiengang_kz = tbl_studiengang.studiengang_kz', 'LEFT');
 
-			$lvdataresult = $this->ci->LehrveranstaltungModel->loadWhere(
+			$lvDataResult = $this->ci->LehrveranstaltungModel->loadWhere(
 				array(
 					'tbl_lehrveranstaltung.lehrveranstaltung_id' => $lehrveranstaltung_id,
 					'tbl_studienplan_semester.studiensemester_kurzbz' => $studiensemester_kurzbz
 				)
 			);
 
-			$fhccourse['studiengaenge'] = array();
-			$fhccourse['ausbildungssemester'] = array();
+			$fhcCourse['studiengaenge'] = array();
+			$fhcCourse['ausbildungssemester'] = array();
 
-			if (hasData($lvdataresult))
+			if (hasData($lvDataResult))
 			{
-				foreach ($lvdataresult->retval as $lvdata)
+				foreach ($lvDataResult->retval as $lvData)
 				{
 					$found = false;
-					foreach ($fhccourse['studiengaenge'] as $studiengangobj)
+					foreach ($fhcCourse['studiengaenge'] as $studiengangObj)
 					{
-						if ($studiengangobj->studiengang_kz == $lvdata->studiengang_kz)
+						if ($studiengangObj->studiengang_kz == $lvData->studiengang_kz)
 						{
 							$found = true;
 							break;
@@ -130,16 +130,16 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 					if (!$found)
 					{
 						$studiengang = new StdClass();
-						$studiengang->studiengang_kz = $lvdata->studiengang_kz;
-						$studiengang->kuerzel = mb_strtoupper($lvdata->typ . $lvdata->studiengang_kurzbz);
-						$studiengang->bezeichnung = $lvdata->bezeichnung;
-						$fhccourse['studiengaenge'][] = $studiengang;
+						$studiengang->studiengang_kz = $lvData->studiengang_kz;
+						$studiengang->kuerzel = mb_strtoupper($lvData->typ . $lvData->studiengang_kurzbz);
+						$studiengang->bezeichnung = $lvData->bezeichnung;
+						$fhcCourse['studiengaenge'][] = $studiengang;
 					}
 
 					$found = false;
-					foreach ($fhccourse['ausbildungssemester'] as $ausbildungssemobj)
+					foreach ($fhcCourse['ausbildungssemester'] as $ausbildungsSemObj)
 					{
-						if ($ausbildungssemobj == $lvdata->semester)
+						if ($ausbildungsSemObj == $lvData->semester)
 						{
 							$found = true;
 							break;
@@ -148,22 +148,22 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 					if (!$found)
 					{
-						$fhccourse['ausbildungssemester'][] = $lvdata->semester;
+						$fhcCourse['ausbildungssemester'][] = $lvData->semester;
 					}
 				}
 			}
 
 			//get Lehreinheiten, number of students, directly assigned for Lv
-			if (isset($fhccourse['lehrveranstaltung']['lehrveranstaltung_id']) &&
-				is_numeric($fhccourse['lehrveranstaltung']['lehrveranstaltung_id']))
+			if (isset($fhcCourse['lehrveranstaltung']['lehrveranstaltung_id']) &&
+				is_numeric($fhcCourse['lehrveranstaltung']['lehrveranstaltung_id']))
 			{
-				$fhccourse['lehreinheiten'] = $this->ci->LehreinheitModel->getLesForLv($fhccourse['lehrveranstaltung']['lehrveranstaltung_id'], $studiensemester_kurzbz, false);
+				$fhcCourse['lehreinheiten'] = $this->ci->LehreinheitModel->getLesForLv($fhcCourse['lehrveranstaltung']['lehrveranstaltung_id'], $studiensemester_kurzbz, false);
 
 				$anz_incomings = 0;
 
 				$incoming_prestudent_ids = array();
 
-				foreach ($fhccourse['lehreinheiten'] as $lehreinheit)
+				foreach ($fhcCourse['lehreinheiten'] as $lehreinheit)
 				{
 					$lehreinheit->directlyAssigned = false;
 
@@ -192,20 +192,20 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 					$lehreinheit->anz_teilnehmer = $anz_teilnehmer;
 
-					$directlyassigned = $this->ci->LehreinheitgruppeModel->getDirectGroupAssignment($uid, $lehreinheit->lehreinheit_id);
+					$directlyAssigned = $this->ci->LehreinheitgruppeModel->getDirectGroupAssignment($uid, $lehreinheit->lehreinheit_id);
 
-					if (hasData($directlyassigned))
+					if (hasData($directlyAssigned))
 						$lehreinheit->directlyAssigned = true;
 				}
 
-				$fhccourse['lehrveranstaltung']['anz_incomings'] = $anz_incomings;
+				$fhcCourse['lehrveranstaltung']['anz_incomings'] = $anz_incomings;
 			}
 		}
 	}
 
 	/**
-	 * Gets incomings with courses for a studiensemester
-	 * @param $studiensemester
+	 * Gets incomings with courses for a studiensemester.
+	 * @param string$studiensemester
 	 * @return array with prestudents
 	 */
 	public function getIncomingWithCourses($studiensemester, $studiengang_kz = null)
@@ -222,18 +222,18 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 				if (hasData($prestudent))
 				{
-					$prestudentobj = $prestudent->retval;
+					$prestudentObj = $prestudent->retval;
 
 					// if semester is not the one in MobilityOnline, check semesters based on stay duration
 					if ($studiensemester !== $syncedIncomingId->studiensemester_kurzbz)
 					{
-						$prestudentstati = $this->ci->PrestudentstatusModel->load(array('prestudent_id' => $syncedIncomingId->prestudent_id));
+						$prestudentStatus = $this->ci->PrestudentstatusModel->load(array('prestudent_id' => $syncedIncomingId->prestudent_id));
 
 						$semFound = false;
 
-						if (hasData($prestudentstati))
+						if (hasData($prestudentStatus))
 						{
-							foreach (getData($prestudentstati) as $status)
+							foreach (getData($prestudentStatus) as $status)
 							{
 								if ($status->studiensemester_kurzbz === $studiensemester)
 								{
@@ -249,31 +249,31 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 					$courses = $this->ci->MoGetAppModel->getCoursesOfApplication($syncedIncomingId->mo_applicationid);
 
-					$prestudentobj->lvs = array();
-					$prestudentobj->nonMoLvs = array();
+					$prestudentObj->lvs = array();
+					$prestudentObj->nonMoLvs = array();
 
 					if (isset($courses) && is_array($courses))
 					{
 						foreach ($courses as $course)
 						{
-							$fhclv = $this->mapMoIncomingCourseToLv($course, $studiensemester, $prestudentobj->uid);
+							$fhcLv = $this->mapMoIncomingCourseToLv($course, $studiensemester, $prestudentObj->uid);
 
-							if (!$course->deleted && isset($fhclv))
-								$prestudentobj->lvs[] = $fhclv;
+							if (!$course->deleted && isset($fhcLv))
+								$prestudentObj->lvs[] = $fhcLv;
 						}
 					}
 
-					$additionalCourses = $this->ci->LehrveranstaltungModel->getLvsByStudent($prestudentobj->uid, $studiensemester);
+					$additionalCourses = $this->ci->LehrveranstaltungModel->getLvsByStudent($prestudentObj->uid, $studiensemester);
 
 					//additional courses in fhcomplete, but not in MobilityOnline
 					if (hasData($additionalCourses))
 					{
 						foreach ($additionalCourses->retval as $additionalCourse)
 						{
-							$fhclv = array();
+							$fhcLv = array();
 
 							$found = false;
-							foreach ($prestudentobj->lvs as $molv)
+							foreach ($prestudentObj->lvs as $molv)
 							{
 								if (isset($molv['lehrveranstaltung']['lehrveranstaltung_id'])
 									&& $molv['lehrveranstaltung']['lehrveranstaltung_id'] === $additionalCourse->lehrveranstaltung_id
@@ -285,17 +285,17 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 							}
 							if (!$found)
 							{
-								$this->fillFhcCourse($additionalCourse->lehrveranstaltung_id, $prestudentobj->uid, $studiensemester, $fhclv);
-								$prestudentobj->nonMoLvs[] = $fhclv;
+								$this->fillFhcCourse($additionalCourse->lehrveranstaltung_id, $prestudentObj->uid, $studiensemester, $fhcLv);
+								$prestudentObj->nonMoLvs[] = $fhcLv;
 							}
 						}
 					}
 
 					//sort courses alphabetically
-					usort($prestudentobj->lvs, array($this, '_cmpCourses'));
-					usort($prestudentobj->nonMoLvs, array($this, '_cmpCourses'));
+					usort($prestudentObj->lvs, array($this, '_cmpCourses'));
+					usort($prestudentObj->nonMoLvs, array($this, '_cmpCourses'));
 
-					$prestudents[] = $prestudentobj;
+					$prestudents[] = $prestudentObj;
 				}
 			}
 		}
@@ -303,10 +303,10 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Compares two courses by Bezeichnung in MobilityOnline for sort
-	 * @param $a
-	 * @param $b
-	 * @return int
+	 * Compares two courses by Bezeichnung in MobilityOnline for sort.
+	 * @param array $a frist course
+	 * @param array $b second course
+	 * @return int 1 if $a comes after $b, 0 when equal, -1 otherwiese
 	 */
 	private function _cmpCourses($a, $b)
 	{
@@ -324,13 +324,13 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 		}
 		else
 		{
-			$amobez = strtolower($a['lehrveranstaltung']['mobezeichnung']);
-			$bmobez = strtolower($b['lehrveranstaltung']['mobezeichnung']);
+			$aMoBez = strtolower($a['lehrveranstaltung']['mobezeichnung']);
+			$bMoBez = strtolower($b['lehrveranstaltung']['mobezeichnung']);
 
-			if ($amobez == $bmobez)
+			if ($aMoBez == $bMoBez)
 				return 0;
 
-			return $amobez > $bmobez ? 1 : -1;
+			return $aMoBez > $bMoBez ? 1 : -1;
 		}
 	}
 }

@@ -31,9 +31,9 @@ $(document).ready(function()
 		$("#applicationsyncbtn").click(
 			function()
 			{
-				let outgoingelem = $("#applications input[type=checkbox]:checked");
+				let outgoingElem = $("#applications input[type=checkbox]:checked");
 				let outgoings = [];
-				outgoingelem.each(
+				outgoingElem.each(
 					function()
 					{
 						outgoings.push(MobilityOnlineOutgoing._findOutgoingByMoid($(this).val())[0]);
@@ -81,66 +81,66 @@ var MobilityOnlineOutgoing = {
 						// loop for building table rows of application table
 						for (let outgoing in outgoings)
 						{
-							let outgoingobj = outgoings[outgoing];
-							let outgoingdata = outgoingobj.data;
+							let outgoingObj = outgoings[outgoing];
+							let outgoingData = outgoingObj.data;
 
-							let person = outgoingdata.person;
-							let hasError = outgoingobj.error;
-							let chkbxString, stgnotsettxt, errorClass, newicon;
-							chkbxString = stgnotsettxt = errorClass = "";
-							let moid = outgoingobj.moid;
-							let student_uid = outgoingdata.bisio.student_uid;
+							let person = outgoingData.person;
+							let hasError = outgoingObj.error;
+							let chkbxString, stgNotSetTxt, errorClass, newIcon;
+							chkbxString = stgNotSetTxt = errorClass = "";
+							let moId = outgoingObj.moid;
+							let student_uid = outgoingData.bisio.student_uid;
 							let vorname = person.vorname;
 							let nachname = person.nachname;
-							let gerdateVon = MobilityOnlineOutgoing._formatDateGerman(outgoingdata.bisio.von);
-							let gerdateBis = MobilityOnlineOutgoing._formatDateGerman(outgoingdata.bisio.bis);
-							let zahlungen = outgoingdata.zahlungen;
+							let gerdateVon = MobilityOnlineOutgoing._formatDateGerman(outgoingData.bisio.von);
+							let gerdateBis = MobilityOnlineOutgoing._formatDateGerman(outgoingData.bisio.bis);
+							let zahlungen = outgoingData.zahlungen;
 
 							// show errors in tooltip if sync not possible
 							if (hasError)
 							{
 								errorClass = " class='inactive' data-toggle='tooltip' title='";
 								let firstMsg = true;
-								for (let i in outgoingobj.errorMessages)
+								for (let i in outgoingObj.errorMessages)
 								{
 									if (!firstMsg)
 										errorClass += ', ';
-									errorClass += outgoingobj.errorMessages[i];
+									errorClass += outgoingObj.errorMessages[i];
 									firstMsg = false;
 								}
 								errorClass += "'";
 							}
 							else
 							{
-								chkbxString = "<input type='checkbox' value='" + moid + "' name='applications[]'>";
+								chkbxString = "<input type='checkbox' value='" + moId + "' name='applications[]'>";
 							}
 
-							if (outgoingobj.infhc)
+							if (outgoingObj.infhc)
 							{
-								newicon = "<i id='infhcicon_"+moid+"' class='fa fa-check'></i><input type='hidden' id='infhc_"+moid+"' class='infhc' value='1'>";
+								newIcon = "<i id='infhcicon_"+moId+"' class='fa fa-check'></i><input type='hidden' id='infhc_"+moId+"' class='infhc' value='1'>";
 							}
 							else
 							{
-								newicon = "<i id='infhcicon_"+moid+"' class='fa fa-times'></i><input type='hidden' id='infhc_"+moid+"' class='infhc' value='0'>";
+								newIcon = "<i id='infhcicon_"+moId+"' class='fa fa-times'></i><input type='hidden' id='infhc_"+moId+"' class='infhc' value='0'>";
 							}
 
 							// show expandable payment number
 							let paymentNumberString = zahlungen.length > 0 ?
-								"<button id='paymentNo_"+moid+"' type='button' class='btn btn-default btn-xs paymentNo'>" +
+								"<button id='paymentNo_"+moId+"' type='button' class='btn btn-default btn-xs paymentNo'>" +
 								"<i class='fa fa-caret-right'></i> "+zahlungen.length+"</button>" : zahlungen.length;
 
 							// render right hand table with MO data
 							applicationsRowHtml =
-								"<tr id='applicationsrow_"+moid+"'" + errorClass + ">" +
-								"<td class='text-center' id='checkboxcell_"+moid+"'>" + chkbxString + "</td>" +
+								"<tr id='applicationsrow_"+moId+"'" + errorClass + ">" +
+								"<td class='text-center' id='checkboxcell_"+moId+"'>" + chkbxString + "</td>" +
 								"<td>" + nachname + ", " + vorname + "</td>" +
 								"<td>" + student_uid + "</td>" +
-								"<td>" + outgoingdata.kontaktmail.kontakt + "</td>" +
+								"<td>" + outgoingData.kontaktmail.kontakt + "</td>" +
 								"<td class='text-center'>" + gerdateVon + "</td>" +
 								"<td class='text-center'>" + gerdateBis + "</td>" +
 								"<td class='text-center'>" + paymentNumberString + "</td>" +
-								"<td class='text-center'>" + moid + "</td>" +
-								"<td class='text-center' id='infhciconcell_"+outgoingobj.moid+"'>" + newicon + "</td>" +
+								"<td class='text-center'>" + moId + "</td>" +
+								"<td class='text-center' id='infhciconcell_"+outgoingObj.moid+"'>" + newIcon + "</td>" +
 								"</tr>";
 
 							$("#applicationstbl").append(applicationsRowHtml);
@@ -148,7 +148,7 @@ var MobilityOnlineOutgoing = {
 							// setting events
 
 							// show payments for one bisio event
-							$("#paymentNo_"+moid).click(
+							$("#paymentNo_"+moId).click(
 								function(e)
 								{
 									// if existing bisio, do not show bisio in left box
@@ -156,21 +156,21 @@ var MobilityOnlineOutgoing = {
 
 									if (zahlungen.length > 0)
 									{
-										if ($(".zahlungrow_" + moid).length > 0)
+										if ($(".zahlungrow_" + moId).length > 0)
 										{
-											$(".zahlungrow_" + moid).remove();
-											$("#paymentNo_"+moid+" i").removeClass('fa-caret-down').addClass('fa-caret-right');
+											$(".zahlungrow_" + moId).remove();
+											$("#paymentNo_"+moId+" i").removeClass('fa-caret-down').addClass('fa-caret-right');
 										}
 										else
 										{
-											MobilityOnlineOutgoing._showZahlungen(moid, zahlungen);
+											MobilityOnlineOutgoing._showZahlungen(moId, zahlungen);
 										}
 									}
 								}
 							);
 
 							// show existing bisios in left box
-							MobilityOnlineOutgoing._setExistingBisiosEvents(outgoingobj);
+							MobilityOnlineOutgoing._setExistingBisiosEvents(outgoingObj);
 
 							// number of applications selected via checkboxes
 							$("#applications input[type=checkbox][name='applications[]']").change(
@@ -191,10 +191,10 @@ var MobilityOnlineOutgoing = {
 							{
 								for (let outgoing in outgoings)
 								{
-									let outgoingobj = outgoings[outgoing];
-									let zahlungen = outgoingobj.data.zahlungen;
+									let outgoingObj = outgoings[outgoing];
+									let zahlungen = outgoingObj.data.zahlungen;
 
-									MobilityOnlineOutgoing._showZahlungen(outgoingobj.moid, zahlungen);
+									MobilityOnlineOutgoing._showZahlungen(outgoingObj.moid, zahlungen);
 								}
 							}
 						);
@@ -231,28 +231,28 @@ var MobilityOnlineOutgoing = {
 				{
 					if (FHC_AjaxClient.hasData(data))
 					{
-						let syncres = FHC_AjaxClient.getData(data);
+						let syncRes = FHC_AjaxClient.getData(data);
 
 						$("#applications td").css("background-color", ""); // remove background color of applications table
 
-						MobilityOnlineApplicationsHelper.writeSyncOutput(syncres.syncoutput);
+						MobilityOnlineApplicationsHelper.writeSyncOutput(syncRes.syncoutput);
 
 						$("#applicationsyncoutputtext").append(data.retval.syncoutput);
 
 						if ($("#applicationsyncoutputheading").text().length > 0)
 						{
-							$("#nradd").text(parseInt($("#nradd").text()) + syncres.added.length);
-							$("#nrupdate").text(parseInt($("#nrupdate").text()) + syncres.updated.length);
+							$("#nradd").text(parseInt($("#nradd").text()) + syncRes.added.length);
+							$("#nrupdate").text(parseInt($("#nrupdate").text()) + syncRes.updated.length);
 						}
 						else
 						{
 							$("#applicationsyncoutputheading")
 								.append("<br />MOBILITY ONLINE OUTGOING SYNC ENDE<br />"+
-									"<span id = 'nradd'>" +syncres.added.length + "</span> hinzugefügt, "+
-									"<span id = 'nrupdate'>" + syncres.updated.length + "</span> aktualisiert</div>")
+									"<span id = 'nradd'>" +syncRes.added.length + "</span> hinzugefügt, "+
+									"<span id = 'nrupdate'>" + syncRes.updated.length + "</span> aktualisiert</div>")
 								.append("<br />-----------------------------------------------<br />");
 						}
-						MobilityOnlineOutgoing.refreshOutgoingsSyncStatus(syncres.added.concat(syncres.updated));
+						MobilityOnlineOutgoing.refreshOutgoingsSyncStatus(syncRes.added.concat(syncRes.updated));
 					}
 				},
 				errorCallback: function()
@@ -315,35 +315,35 @@ var MobilityOnlineOutgoing = {
 	{
 		for (let idx in synced_moids)
 		{
-			let moid = synced_moids[idx];
+			let moId = synced_moids[idx];
 
 			// refresh JS array
 			for (let outgoing in MobilityOnlineOutgoing.outgoings)
 			{
-				let outgoingsobj = MobilityOnlineOutgoing.outgoings[outgoing];
+				let outgoingsObj = MobilityOnlineOutgoing.outgoings[outgoing];
 
-				if (outgoingsobj.moid === parseInt(moid))
+				if (outgoingsObj.moid === parseInt(moId))
 				{
-					outgoingsobj.infhc = true;
+					outgoingsObj.infhc = true;
 					break;
 				}
 			}
 
 			// refresh Outgoings Table "in FHC" field
-			let infhciconel = $("#infhcicon_" + moid);
-			let infhcel = $("#infhc_" + moid);
+			let inFhcIconEl = $("#infhcicon_" + moId);
+			let inFhcEl = $("#infhc_" + moId);
 
-			infhciconel.removeClass();
-			infhcel.val("1");
-			infhciconel.addClass("fa fa-check");
+			inFhcIconEl.removeClass();
+			inFhcEl.val("1");
+			inFhcIconEl.addClass("fa fa-check");
 
 			// refresh zahlungen infhc flags too
-			let zlginfhciconel = $(".zlgInFhc_"+moid);
-			let zlginfhcel = $("#infhc_" + moid);
+			let zlgInFhcIconEl = $(".zlgInFhc_"+moId);
+			let zlginfhcel = $("#infhc_" + moId);
 
-			zlginfhciconel.removeClass();
+			zlgInFhcIconEl.removeClass();
 			zlginfhcel.val("1");
-			zlginfhciconel.addClass("fa fa-check");
+			zlgInFhcIconEl.addClass("fa fa-check");
 		}
 	},
 	_showZahlungen: function(moid, zahlungen)

@@ -86,21 +86,21 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 		$errors = '';
 		$hasError = $changed = false;
 
-		foreach ($lehreinheitassignments as $lehreinheitassignment)
+		foreach ($lehreinheitassignments as $lehreinheitAssignment)
 		{
-			$grpassignment = $this->LehreinheitgruppeModel->getDirectGroupAssignment(
-				$lehreinheitassignment['uid'],
-				$lehreinheitassignment['lehreinheit_id']
+			$grpAssignment = $this->LehreinheitgruppeModel->getDirectGroupAssignment(
+				$lehreinheitAssignment['uid'],
+				$lehreinheitAssignment['lehreinheit_id']
 			);
 
-			if (isSuccess($grpassignment))
+			if (isSuccess($grpAssignment))
 			{
-				if ($lehreinheitassignment['assigned'] === 'true')
+				if ($lehreinheitAssignment['assigned'] === 'true')
 				{
-					if (!hasData($grpassignment))
+					if (!hasData($grpAssignment))
 					{
 						$changed = true;
-						$direktUserAddResult = $this->LehreinheitgruppeModel->direktUserAdd($lehreinheitassignment['uid'], $lehreinheitassignment['lehreinheit_id']);
+						$direktUserAddResult = $this->LehreinheitgruppeModel->direktUserAdd($lehreinheitAssignment['uid'], $lehreinheitAssignment['lehreinheit_id']);
 						if (isError($direktUserAddResult))
 						{
 							$hasError = true;
@@ -110,12 +110,12 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 						}
 					}
 				}
-				elseif ($lehreinheitassignment['assigned'] === 'false')
+				elseif ($lehreinheitAssignment['assigned'] === 'false')
 				{
-					if (hasData($grpassignment))
+					if (hasData($grpAssignment))
 					{
 						$changed = true;
-						$direktUserDeleteResult = $this->LehreinheitgruppeModel->direktUserDelete($lehreinheitassignment['uid'], $lehreinheitassignment['lehreinheit_id']);
+						$direktUserDeleteResult = $this->LehreinheitgruppeModel->direktUserDelete($lehreinheitAssignment['uid'], $lehreinheitAssignment['lehreinheit_id']);
 						if (isError($direktUserDeleteResult))
 						{
 							$hasError = true;
@@ -146,24 +146,24 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 	 */
 	public function getFhcCourses()
 	{
-		$lvids = $this->input->post('lvids');
+		$lvIds = $this->input->post('lvids');
 		$uid = $this->input->post('uid');
 		$studiensemester = $this->input->post('studiensemester');
-		$fhccourses = array();
+		$fhcCourses = array();
 
 		if (!isset($studiensemester) || !isset($uid))
 			$this->outputJsonError("Parameter fehlen");
 
-		if (isset($lvids) && is_array($lvids))
+		if (isset($lvIds) && is_array($lvIds))
 		{
-			foreach ($lvids as $lvid)
+			foreach ($lvIds as $lvid)
 			{
-				$fhclv = array();
-				$this->syncincomingcoursesfrommolib->fillFhcCourse($lvid, $uid, $studiensemester, $fhclv);
-				$fhccourses[] = $fhclv;
+				$fhcLv = array();
+				$this->syncincomingcoursesfrommolib->fillFhcCourse($lvid, $uid, $studiensemester, $fhcLv);
+				$fhcCourses[] = $fhcLv;
 			}
 		}
 
-		$this->outputJsonSuccess($fhccourses);
+		$this->outputJsonSuccess($fhcCourses);
 	}
 }

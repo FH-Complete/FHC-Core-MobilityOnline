@@ -32,22 +32,21 @@ class MobilityOnlineIncoming extends Auth_Controller
 
 	/**
 	 * Index Controller
-	 * @return void
 	 */
 	public function index()
 	{
 		$this->load->library('WidgetLib');
 
 		$this->StudiensemesterModel->addOrder('start', 'DESC');
-		$studiensemesterdata = $this->StudiensemesterModel->load();
+		$studiensemesterData = $this->StudiensemesterModel->load();
 
-		if (isError($studiensemesterdata))
-			show_error($studiensemesterdata->retval);
+		if (isError($studiensemesterData))
+			show_error($studiensemesterData->retval);
 
-		$currsemdata = $this->StudiensemesterModel->getAktOrNextSemester();
+		$currSemData = $this->StudiensemesterModel->getAktOrNextSemester();
 
-		if (isError($currsemdata))
-			show_error($currsemdata->retval);
+		if (isError($currSemData))
+			show_error($currSemData->retval);
 
 		$studiengaenge = $this->MoFhcModel->getStudiengaenge();
 
@@ -56,8 +55,8 @@ class MobilityOnlineIncoming extends Auth_Controller
 
 		$this->load->view('extensions/FHC-Core-MobilityOnline/mobilityOnlineIncoming',
 			array(
-				'semester' => $studiensemesterdata->retval,
-				'currsemester' => $currsemdata->retval,
+				'semester' => $studiensemesterData->retval,
+				'currsemester' => $currSemData->retval,
 				'studiengaenge' => $studiengaenge->retval
 			)
 		);
@@ -73,9 +72,9 @@ class MobilityOnlineIncoming extends Auth_Controller
 		$incomings = $this->input->post('incomings');
 
 		$incomings = json_decode($incomings, true);
-		$syncoutput = $this->syncincomingsfrommolib->startIncomingSync($studiensemester, $incomings);
+		$syncOutput = $this->syncincomingsfrommolib->startIncomingSync($studiensemester, $incomings);
 
-		$this->outputJsonSuccess($syncoutput);
+		$this->outputJsonSuccess($syncOutput);
 	}
 
 	/**
@@ -83,9 +82,9 @@ class MobilityOnlineIncoming extends Auth_Controller
 	 */
 	public function getPostMaxSize()
 	{
-		$max_size_res = $this->syncfrommobilityonlinelib->getPostMaxSize();
+		$maxSizeRes = $this->syncfrommobilityonlinelib->getPostMaxSize();
 
-		$this->outputJsonSuccess($max_size_res);
+		$this->outputJsonSuccess($maxSizeRes);
 	}
 
 	/**
@@ -96,16 +95,16 @@ class MobilityOnlineIncoming extends Auth_Controller
 	{
 		$moids = $this->input->post('moids');
 
-		$moidsresult = array();
+		$moidsResult = array();
 		if (is_array($moids))
 		{
 			foreach ($moids as $moid)
 			{
-				$moidsresult[$moid] = $this->syncincomingsfrommolib->checkMoIdInFhc($moid);
+				$moidsResult[$moid] = $this->syncincomingsfrommolib->checkMoIdInFhc($moid);
 			}
 		}
 
-		$this->outputJsonSuccess($moidsresult);
+		$this->outputJsonSuccess($moidsResult);
 	}
 
 	/**
@@ -115,8 +114,8 @@ class MobilityOnlineIncoming extends Auth_Controller
 	{
 		$studiensemester = $this->input->get('studiensemester');
 		$studiengang_kz = $this->input->get('studiengang_kz');
-		$incomingdata = $this->syncincomingsfrommolib->getIncoming($studiensemester, $studiengang_kz);
+		$incomingData = $this->syncincomingsfrommolib->getIncoming($studiensemester, $studiengang_kz);
 
-		$this->outputJsonSuccess($incomingdata);
+		$this->outputJsonSuccess($incomingData);
 	}
 }

@@ -40,7 +40,7 @@
 							'extensions/FHC-Core-MobilityOnline/subviews/applicationsTable.php',
 							array(
 								'applicationType' => 'Incomings',
-								'columnnames' => array(
+								'columnNames' => array(
 									'Name', 'E-Mail', 'Letzter Status', 'Kurse', 'In FHC'
 								)
 							)

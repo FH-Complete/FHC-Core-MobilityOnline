@@ -19,7 +19,7 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 
 	/**
 	 * Adds course to MobilityOnline
-	 * @param $data coursedata, of type CoursePerSemesterDetails (see wsdl)
+	 * @param array $data coursedata, of type CoursePerSemesterDetails (see wsdl)
 	 * @return mixed CourseId of course added if successful, null otherwise
 	 */
 	public function addCoursePerSemester($data)
@@ -33,7 +33,7 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 
 	/**
 	 * Updates course in MobilityOnline
-	 * @param $data coursedata, of type CoursePerSemesterDetails (see wsdl)
+	 * @param array $data coursedata, of type CoursePerSemesterDetails (see wsdl)
 	 * @return bool true if successful, false otherwise
 	 */
 	public function updateCoursePerSemester($data)
@@ -47,12 +47,12 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 
 	/**
 	 * Removes course in MobilityOnline
-	 * @param $courseid id of course to remove
+	 * @param int $courseId id of course to remove
 	 * @return bool true if successful, false otherwise
 	 */
-	public function removeCoursePerSemesterByCourseID($courseid)
+	public function removeCoursePerSemesterByCourseID($courseId)
 	{
-		$success = $this->performCall('removeCoursePerSemesterByCourseID', array('courseID' => $courseid));
+		$success = $this->performCall('removeCoursePerSemesterByCourseID', array('courseID' => $courseId));
 		if (isset($success->return))
 			return $success->return;
 		else
@@ -61,9 +61,9 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 
 	/**
 	 * Removes courses in MobilityOnline
-	 * @param $semester Studiensemester of courses to delete
+	 * @param string $semester Studiensemester of courses to delete
 	 * (format e.g. "Sommersemester 2018" or "Wintersemester 2018/19"
-	 * @param $academicYear Studienjahr of courses to delete, e.g. "2018/2019"
+	 * @param string $academicYear Studienjahr of courses to delete, e.g. "2018/2019"
 	 * @return bool true if successful, false otherwise
 	 */
 	public function removeCoursesPerSemesterBySearchParameters($semester, $academicYear)

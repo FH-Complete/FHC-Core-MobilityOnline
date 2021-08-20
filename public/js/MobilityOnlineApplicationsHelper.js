@@ -8,8 +8,8 @@ var MobilityOnlineApplicationsHelper = {
 		$("#selectallapplications").click(
 			function()
 			{
-				let applicationelem = $("#applications input[type=checkbox][name='applications[]']");
-				applicationelem.each(
+				let applicationElem = $("#applications input[type=checkbox][name='applications[]']");
+				applicationElem.each(
 					function()
 					{
 						$(this).prop('checked', true);
@@ -52,13 +52,13 @@ var MobilityOnlineApplicationsHelper = {
 		$("#applicationsyncoutputheading").html("");
 		$("#applicationsyncoutputtext").html("<div class='text-center'>-</div>");
 	},
-	getMessageHtml: function(text, msgtype)
+	getMessageHtml: function(text, msgType)
 	{
 		let msg = text;
 
-		if (msgtype == 'success')
+		if (msgType == 'success')
 			msg = "<i class='fa fa-check text-success'></i> "+msg+"<br />";
-		else if (msgtype == 'error')
+		else if (msgType == 'error')
 			msg = "<span class='text-danger'><i class='fa fa-times'></i> "+msg+"</span><br />";
 
 		return msg;

@@ -40,7 +40,7 @@
 							'extensions/FHC-Core-MobilityOnline/subviews/applicationsTable.php',
 							array(
 								'applicationType' => 'Outgoings',
-								'columnnames' => array(
+								'columnNames' => array(
 									'Name', 'Uid', 'E-Mail', 'Aufh.von', 'Aufh.bis', 'Auszlg.', 'ID', 'Gesynct'
 								)
 							)
