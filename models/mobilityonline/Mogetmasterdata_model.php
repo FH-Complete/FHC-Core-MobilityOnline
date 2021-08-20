@@ -19,7 +19,7 @@ class Mogetmasterdata_model extends Mobilityonlineapi_model
 
 	/**
 	 * Get courses by search parameters
-	 * @param $parameters search parameters
+	 * @param array $parameters search parameters
 	 * @return array|null
 	 */
 	public function getCoursesOfSemesterBySearchParameters($parameters)
@@ -39,7 +39,7 @@ class Mogetmasterdata_model extends Mobilityonlineapi_model
 
 	/**
 	 * Get study fields of an institution
-	 * @param $parameters search parameters
+	 * @param array $parameters search parameters
 	 * @return array|null
 	 */
 	public function getStudyFieldsOfInstitution($institutionid)

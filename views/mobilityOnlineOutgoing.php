@@ -13,10 +13,10 @@
 			'tablesorter' => true,
 			'navigationwidget' => true,
 			'customJSs' => array('public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineApplicationsHelper.js',
-								'public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineIncoming.js',
+								'public/extensions/FHC-Core-MobilityOnline/js/MobilityOnlineOutgoing.js',
 								'public/js/tablesort/tablesort.js'),
-			'customCSSs' => array('public/extensions/FHC-Core-MobilityOnline/css/MobilityOnline.css',
-								'public/css/sbadmin2/tablesort_bootstrap.css')
+			'customCSSs' => array('public/css/sbadmin2/tablesort_bootstrap.css',
+								'public/extensions/FHC-Core-MobilityOnline/css/MobilityOnline.css')
 		)
 	);
 ?>
@@ -30,7 +30,7 @@
 			<div class="container-fluid">
 				<div class="row">
 					<div class="col-xs-12">
-						<h3 class="page-header text-center">MobilityOnline Incomingsynchronisierung</h3>
+						<h3 class="page-header text-center">MobilityOnline Outgoingsynchronisierung</h3>
 					</div>
 				</div>
 				<?php $this->load->view('extensions/FHC-Core-MobilityOnline/subviews/selectionHeader.php'); ?>
@@ -39,9 +39,9 @@
 					<?php $this->load->view(
 							'extensions/FHC-Core-MobilityOnline/subviews/applicationsTable.php',
 							array(
-								'applicationType' => 'Incomings',
+								'applicationType' => 'Outgoings',
 								'columnNames' => array(
-									'Name', 'E-Mail', 'Letzter Status', 'Kurse', 'In FHC'
+									'Name', 'Uid', 'E-Mail', 'Aufh.von', 'Aufh.bis', 'Auszlg.', 'ID', 'Gesynct'
 								)
 							)
 					); ?>

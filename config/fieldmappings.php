@@ -5,18 +5,31 @@
  * ['fieldmappings']['mobilityonlineobject']['fhctable'] = array('fhcfieldname' => 'mobilityonlinefieldname')
  */
 
-$config['fieldmappings']['application']['person'] = array(
+// mappings used by multiple objects
+$personbasemapping =  array(
 	'vorname' => 'firstName',
 	'nachname' => 'lastName',
-	'staatsbuergerschaft' => 'lcd_id_nat',
-	'geschlecht' => 'bew_geschlecht',
-	'anrede' => 'bew_geschlecht',
-	'gebdatum' => 'bew_geb_datum',
-	'geburtsnation' => 'bew_geb_ort',
-	'sprache' => 'spr_id_komm',
-	'foto' => 'file',
-	'anmerkung' => 'bew_txt_gruende'
 );
+
+$bisiomappings = array(
+	'von' => 'bew_dat_von',
+	'bis' => 'bew_dat_bis',
+	'nation_code' => 'lcd_id_gast',
+	'mobilitaetsprogramm_code' => 'aust_prog_id'
+);
+
+$mailmapping = array('kontakt' => 'email');
+
+// person incoming
+$config['fieldmappings']['application']['person'] = $personbasemapping;
+$config['fieldmappings']['application']['person']['staatsbuergerschaft'] = 'lcd_id_nat';
+$config['fieldmappings']['application']['person']['geschlecht'] = 'bew_geschlecht';
+$config['fieldmappings']['application']['person']['anrede'] = 'bew_geschlecht';
+$config['fieldmappings']['application']['person']['gebdatum'] = 'bew_geb_datum';
+$config['fieldmappings']['application']['person']['geburtsnation'] = 'bew_geb_ort';
+$config['fieldmappings']['application']['person']['sprache'] = 'spr_id_komm';
+$config['fieldmappings']['application']['person']['foto'] = 'file';
+$config['fieldmappings']['application']['person']['anmerkung'] = 'bew_txt_gruende';
 
 $config['fieldmappings']['application']['prestudent'] = array(
 	'studiengang_kz' => 'studr_id',
@@ -35,13 +48,9 @@ $config['fieldmappings']['application']['akte'] = array(
 	'inhalt' => 'file'
 );
 
-$config['fieldmappings']['application']['bisio'] = array(
-	'von' => 'bew_dat_von',
-	'bis' => 'bew_dat_bis',
-	'universitaet' => 'inst_id_heim_name',
-	'nation_code' => 'lcd_id_gast',
-	'mobilitaetsprogramm_code' => 'aust_prog_id'
-);
+// bisio incoming
+$config['fieldmappings']['application']['bisio'] = $bisiomappings;
+$config['fieldmappings']['application']['bisio']['universitaet'] = 'inst_id_heim_name';
 
 $adressemapping = array(
 	'strasse' => 'street',
@@ -59,9 +68,7 @@ $config['fieldmappings']['address']['kontakttel'] = array(
 	'kontakt' => 'telNumber'
 );
 
-$config['fieldmappings']['application']['kontaktmail'] = array(
-	'kontakt' => 'email'
-);
+$config['fieldmappings']['application']['kontaktmail'] = $mailmapping;
 
 $config['fieldmappings']['application']['kontaktnotfall'] = array(
 	'kontakt' => 'bew_tel_nr_kontakt'
@@ -78,6 +85,14 @@ $config['fieldmappings']['application']['konto'] = array(
 	'studiengang_kz' => 'studr_id'
 );
 
+$config['fieldmappings']['application']['status_info'] = array(
+	'beworben' => 'is_mail_best_bew',
+	'registriert' => 'is_registriert',
+	'bestaetigt' => 'is_mail_best_reg',
+	'erfasst' => 'is_pers_daten_erf',
+	'abgeschlossen' => 'is_abgeschlossen'
+);
+
 $config['fieldmappings']['incomingcourse']['lehrveranstaltung'] = array(
 	'mobezeichnung' => 'hostCourseName',
 );
@@ -86,6 +101,57 @@ $config['fieldmappings']['incomingcourse']['mostudiengang'] = array(
 	'bezeichnung' => 'studyFieldDescription'
 );
 
+// person outgoing
+$config['fieldmappings']['applicationout']['person'] = $personbasemapping;
+
+// prestudent outgoing
+$config['fieldmappings']['applicationout']['prestudent'] = array(
+	'studiensemester_kurzbz' => 'sem_id',
+	'studiengang_kz' => 'studr_id'
+);
+
+// bisio outgoing
+$config['fieldmappings']['applicationout']['bisio'] = $bisiomappings;
+$config['fieldmappings']['applicationout']['bisio']['student_uid'] = 'bew_ber_matr_nr';
+$config['fieldmappings']['applicationout']['bisio']['universitaet'] = 'inst_id_gast';
+$config['fieldmappings']['applicationout']['bisio']['ects_erworben'] = 'bew_anz_ects2';
+$config['fieldmappings']['applicationout']['bisio']['ects_angerechnet'] = 'bew_anz_ects';
+
+$config['fieldmappings']['applicationout']['bisio_zweck'] = array(
+	'zweck_code' => 'aust_prog_id'
+);
+
+$config['fieldmappings']['applicationout']['bisio_aufenthaltfoerderung'] = array(
+	'aufenthaltfoerderung_code' => 'int_freifeld3'
+);
+
+// information about bisio which is not saved directly in fhcomplete
+$config['fieldmappings']['applicationout']['bisio_info'] = array(
+	'ist_praktikum' => 'is_praktikum',
+	'ist_masterarbeit' => 'bit_freifeld26',
+	'ist_beihilfe' => 'is_beihilfe'
+);
+
+// mailkontakt outgoing
+$config['fieldmappings']['applicationout']['kontaktmail'] = $mailmapping;
+
+// Bankkonto outgoing
+$config['fieldmappings']['bankdetails']['bankverbindung'] = array(
+	'iban' => 'iban',
+	'name' => 'bankName',
+	'bic' => 'swiftCode'
+);
+
+// Zahlungen (Konto) outgoing
+$config['fieldmappings']['payment']['konto']['betrag'] = 'paymentAmount';
+$config['fieldmappings']['payment']['buchungsinfo'] = array(
+	/*'mo_zahlung_id' => 'paymentId',*/
+	'mo_referenz_nr' => 'referenceNumber',
+	'mo_zahlungsgrund' => 'reasonOfPayment',
+	'angewiesen' => 'paymentAuthorised'
+);
+
+// Mappings for sync from FHC to MO
 $config['fieldmappings']['course'] = array(
 	'lv_bezeichnung' => 'courseName',
 	'studienjahr_kurzbz' => array('name' => 'academicYear', 'type' => 'description'),

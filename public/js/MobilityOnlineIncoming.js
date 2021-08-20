@@ -7,49 +7,58 @@ $(document).ready(function()
 		MobilityOnlineIncoming.getIncoming($("#studiensemester").val(), $("#studiengang_kz").val());
 
 		// get Incomings when Dropdown selected
+		let getIncomingFunc = function()
+		{
+			let studiensemester = $("#studiensemester").val();
+			let studiengang_kz = $("#studiengang_kz").val();
+			MobilityOnlineApplicationsHelper.resetSyncOutput();
+			MobilityOnlineIncoming.getIncoming(studiensemester, studiengang_kz);
+		}
+
+		// get Outgoings when Dropdown selected
 		$("#studiensemester,#studiengang_kz").change(
-			function()
-			{
-				var studiensemester = $("#studiensemester").val();
-				var studiengang_kz = $("#studiengang_kz").val();
-				$("#incomingsyncoutputheading").html("");
-				$("#incomingsyncoutputtext").html("<div class='text-center'>-</div>");
-				MobilityOnlineIncoming.getIncoming(studiensemester, studiengang_kz);
-			}
+			getIncomingFunc
+		);
+
+		$("#refreshBtn").click(
+			getIncomingFunc
 		);
 
 		//init sync
-		$("#incomingsyncbtn").click(
+		$("#applicationsyncbtn").click(
 			function()
 			{
-				var incomingelem = $("#incomings input[type=checkbox]:checked");
-				var incomings = [];
-				incomingelem.each(
+				let incomingElem = $("#applications input[type=checkbox]:checked");
+				let incomings = [];
+				incomingElem.each(
 					function()
 					{
-						for (var incoming in MobilityOnlineIncoming.incomings)
+						for (let incoming in MobilityOnlineIncoming.incomings)
 						{
-							var moinc = MobilityOnlineIncoming.incomings[incoming];
-							if (moinc.moid == $(this).val())
-								incomings.push(moinc)
+							let moInc = MobilityOnlineIncoming.incomings[incoming];
+							if (moInc.moid == $(this).val())
+							{
+								incomings.push(moInc);
+								break;
+							}
 						}
 					}
 				);
 
-				var syncIncomingsFunc = function (data) {
+				let syncIncomingsFunc = function (data) {
 					if (FHC_AjaxClient.hasData(data))
 					{
-						var maxPostSize = FHC_AjaxClient.getData(data);
+						let maxPostSize = FHC_AjaxClient.getData(data);
 						if ($.isNumeric(maxPostSize))
 						{
 							maxPostSize = (parseInt(maxPostSize));
-							$("#incomingsyncoutput div").empty();
+							$("#applicationsyncoutput div").empty();
 
 							MobilityOnlineIncoming.syncIncomings(incomings, $("#studiensemester").val(), maxPostSize);
 						}
 						else
 						{
-							FHC_DialogLib.alertError("non-numeric post max size!");
+							FHC_DialogLib.alertError("Maximale POST Größe nicht numerisch!");
 						}
 					}
 				};
@@ -59,39 +68,9 @@ $(document).ready(function()
 		);
 
 		//select all incoming checkboxes
-		$("#selectallincomings").click(
-			function()
-			{
-				var incomingelem = $("#incomings input[type=checkbox][name='incoming[]']");
-				incomingelem.each(
-					function()
-					{
-						$(this).prop('checked', true);
-					}
-				);
-				MobilityOnlineIncoming._refreshIncomingNumber();
-			}
-		);
-
+		MobilityOnlineApplicationsHelper.setSelectAllApplicationsEvent();
 		//select incoming checkboxes which are not in FHC yet
-		$("#selectnewincomings").click(
-			function()
-			{
-				var incomingelem = $("#incomings tr");
-				incomingelem.each(
-					function()
-					{
-						var infhc = $(this).find("input.infhc").val();
-
-						if (infhc === '0')
-							$(this).find("input[type=checkbox][name='incoming[]']").prop('checked', true);
-						else
-							$(this).find("input[type=checkbox][name='incoming[]']").prop('checked', false);
-					}
-				);
-				MobilityOnlineIncoming._refreshIncomingNumber();
-			}
-		);
+		MobilityOnlineApplicationsHelper.setSelectNewApplicationsEvent();
 	}
 );
 
@@ -99,7 +78,8 @@ var MobilityOnlineIncoming = {
 	incomings: null,
 	getIncoming: function(studiensemester, studiengang_kz)
 	{
-		if (studiensemester == null || studiensemester === "" || studiengang_kz == null || (!$.isNumeric(studiengang_kz) && studiengang_kz !== "all"))
+		if (studiensemester == null || studiensemester === "" || studiengang_kz == null
+			|| (!$.isNumeric(studiengang_kz) && studiengang_kz !== "all"))
 			return;
 
 		FHC_AjaxClient.ajaxCallGet(
@@ -111,107 +91,108 @@ var MobilityOnlineIncoming = {
 			{
 				successCallback: function(data, textStatus, jqXHR)
 				{
-					$("#incomings").empty();
+					$("#applications").empty();
 
 					if (FHC_AjaxClient.hasData(data))
 					{
-						var incomings = data.retval;
+						let incomings = FHC_AjaxClient.getData(data);
 						MobilityOnlineIncoming.incomings = incomings;
 
-						for (var incoming in incomings)
+						for (let incoming in incomings)
 						{
-							var incomingobj = incomings[incoming];
-							var incomingdata = incomingobj.data;
+							let incomingObj = incomings[incoming];
+							let incomingData = incomingObj.data;
 
-							var person = incomingdata.person;
-							var hasError = incomingobj.error;
-							var chkbxstring, stgnotsettxt, errorclass, newicon;
-							chkbxstring = stgnotsettxt = errorclass = "";
+							let person = incomingData.person;
+							let hasError = incomingObj.error;
+							let chkbxString, stgNotSetTxt, errorClass, newIcon;
+							chkbxString = stgNotSetTxt = errorClass = "";
 
 							// show errors in tooltip if sync not possible
 							if (hasError)
 							{
-								errorclass = " class='inactive' data-toggle='tooltip' title='";
-								var firstmsg = true;
-								for (var i in incomingobj.errorMessages)
+								errorClass = " class='inactive' data-toggle='tooltip' title='";
+								let firstMsg = true;
+								for (let i in incomingObj.errorMessages)
 								{
-									if (!firstmsg)
-										errorclass += ', ';
-									errorclass += incomingobj.errorMessages[i];
-									firstmsg = false;
+									if (!firstMsg)
+										errorClass += ', ';
+									errorClass += incomingObj.errorMessages[i];
+									firstMsg = false;
 								}
-								errorclass += "'";
+								errorClass += "'";
 							}
 							else
 							{
-								chkbxstring = "<input type='checkbox' value='" + incomingobj.moid + "' name='incoming[]'>";
+								chkbxString = "<input type='checkbox' value='" + incomingObj.moid + "' name='applications[]'>";
 							}
 
 							// courses from MobilityOnline
-							var coursesstring = '';
-							var firstcourse = true;
+							let coursesString = '';
+							let firstCourse = true;
 
-							for (var courseidx in incomingdata.mocourses)
+							for (let courseIdx in incomingData.mocourses)
 							{
-								var course = incomingdata.mocourses[courseidx];
-								if (!firstcourse)
-									coursesstring += ' | ';
-								coursesstring += course.number + ': ' + course.name;
-								firstcourse = false;
+								let course = incomingData.mocourses[courseIdx];
+								if (!firstCourse)
+									coursesString += ' | ';
+								coursesString += course.number + ': ' + course.name;
+								firstCourse = false;
 							}
 
-							if (incomingobj.infhc)
+							if (incomingObj.infhc)
 							{
-								newicon = "<i id='infhcicon_"+incomingobj.moid+"' class='fa fa-check'></i><input type='hidden' id='infhc_"+incomingobj.moid+"' class='infhc' value='1'>";
+								newIcon = "<i id='infhcicon_"+incomingObj.moid+"' class='fa fa-check'></i><input type='hidden' id='infhc_"+incomingObj.moid+"' class='infhc' value='1'>";
 							}
 							else
 							{
-								newicon = "<i id='infhcicon_"+incomingobj.moid+"' class='fa fa-times'></i><input type='hidden' id='infhc_"+incomingobj.moid+"' class='infhc' value='0'>";
+								newIcon = "<i id='infhcicon_"+incomingObj.moid+"' class='fa fa-times'></i><input type='hidden' id='infhc_"+incomingObj.moid+"' class='infhc' value='0'>";
 							}
 
-							$("#incomings").append(
-								"<tr" + errorclass + ">" +
-								"<td class='text-center'>" + chkbxstring + "</td>" +
+							$("#applications").append(
+								"<tr" + errorClass + ">" +
+								"<td class='text-center'>" + chkbxString + "</td>" +
 								"<td>" + person.nachname + ", " + person.vorname + "</td>" +
-								"<td>" + incomingdata.kontaktmail.kontakt + "</td>" +
-								"<td>" + incomingdata.pipelineStatusDescription + "</td>" +
-								"<td>" + coursesstring + "</td>" +
-								"<td class='text-center'>" + newicon + "</td>" +
+								"<td>" + incomingData.kontaktmail.kontakt + "</td>" +
+								"<td>" + incomingData.pipelineStatusDescription + "</td>" +
+								"<td>" + coursesString + "</td>" +
+								"<td class='text-center'>" + newIcon + "</td>" +
 								"</tr>"
 							);
 
-							$("#incomings input[type=checkbox][name='incoming[]']").change(
-								MobilityOnlineIncoming._refreshIncomingNumber
+							$("#applications input[type=checkbox][name='applications[]']").change(
+								MobilityOnlineApplicationsHelper.refreshApplicationsNumber
 							);
-							MobilityOnlineIncoming._refreshIncomingNumber();
+							MobilityOnlineApplicationsHelper.refreshApplicationsNumber();
 						}
-						var headers = {headers: { 0: { sorter: false, filter: false}, 5: {sorter: false, filter: false} }};
+						let headers = {headers: { 0: { sorter: false, filter: false}, 5: {sorter: false, filter: false} }};
 
-						Tablesort.addTablesorter("incomingstbl", [[1, 0], [2, 0]], ["filter"], 2, headers);
+						Tablesort.addTablesorter("applicationstbl", [[1, 0], [2, 0]], ["filter"], 2, headers);
 					}
 					else
 					{
-						$("#incomingsyncoutputtext").html("<div class='text-center'>No incomings found!</div>");
+						$("#applicationsyncoutputtext").html("<div class='text-center'>Keine Incomings gefunden!</div>");
 					}
 				},
 				errorCallback: function()
 				{
-					$("#incomingsyncoutputtext").html("<div class='text-center'>error occured while getting incomings!</div>");
+					$("#applicationsyncoutputtext").html("<div class='text-center'>Fehler beim Holen der Incomings!</div>");
 				}
 			}
 		);
 	},
 	syncIncomings: function(incomings, studiensemester, maxPostSize)
 	{
-		var incomingJson = JSON.stringify(incomings);
+		let incomingJson = JSON.stringify(incomings);
 
-		var postlength = incomingJson.length + 3.5 * incomings.length;
+		// post data might be too big - then split in in half. factor 3.5 approx. scales up to actual data size
+		let postLength = incomingJson.length + 3.5 * incomings.length;
 
-		if (postlength > maxPostSize)
+		if (postLength > maxPostSize)
 		{
-			var indexhalf = incomings.length / 2;
-			var incomingsPartOne = incomings.splice(0, indexhalf);
-			var incomingsPartTwo = incomings;//incomings.splice(indexhalf, incomings.length);
+			let indexHalf = incomings.length / 2;
+			let incomingsPartOne = incomings.splice(0, indexHalf);
+			let incomingsPartTwo = incomings;
 			MobilityOnlineIncoming.syncIncomings(incomingsPartOne, studiensemester, maxPostSize);
 			MobilityOnlineIncoming.syncIncomings(incomingsPartTwo, studiensemester, maxPostSize);
 		}
@@ -227,17 +208,19 @@ var MobilityOnlineIncoming = {
 					successCallback: function (data, textStatus, jqXHR) {
 						if (FHC_AjaxClient.hasData(data))
 						{
-							$("#incomingsyncoutputtext").append(data.retval.syncoutput);
+							let syncRes = FHC_AjaxClient.getData(data);
 
-							if ($("#incomingsyncoutputheading").text().length > 0)
+							MobilityOnlineApplicationsHelper.writeSyncOutput(syncRes.syncoutput);
+
+							if ($("#applicationsyncoutputheading").text().length > 0)
 							{
-								$("#noadd").text(parseInt($("#noadd").text()) + data.retval.added);
-								$("#noupdate").text(parseInt($("#noupdate").text()) + data.retval.updated);
+								$("#nradd").text(parseInt($("#nradd").text()) + syncRes.added);
+								$("#nrupdate").text(parseInt($("#nrupdate").text()) + syncRes.updated);
 							}
 							else
 							{
-								$("#incomingsyncoutputheading")
-									.append("<br />MOBILITY ONLINE INCOMINGS SYNC FINISHED<br /><span id = 'noadd'>"+data.retval.added+"</span> added, <span id = 'noupdate'>"+data.retval.updated+"</span> updated</div>")
+								$("#applicationsyncoutputheading")
+									.append("<br />MOBILITY ONLINE INCOMINGS SYNC ENDE<br /><span id = 'nradd'>"+syncRes.added+"</span> hinzugefügt, <span id = 'nrupdate'>"+syncRes.updated+"</span> aktualisiert</div>")
 									.append("<br />-----------------------------------------------<br />");
 							}
 							MobilityOnlineIncoming.refreshIncomingsSyncStatus();
@@ -245,7 +228,7 @@ var MobilityOnlineIncoming = {
 					},
 					errorCallback: function()
 					{
-						$("#incomingsyncoutputtext").html("<div class='text-center'>error occured while syncing!</div>");
+						$("#applicationsyncoutputtext").html("<div class='text-center'>Fehler beim Synchronisieren!</div>");
 					}
 				}
 			);
@@ -256,72 +239,74 @@ var MobilityOnlineIncoming = {
 	 */
 	refreshIncomingsSyncStatus: function()
 	{
-		var moidsel = $("#incomings input[name='incoming[]']");
-		var moids = [];
+		let moidSel = $("#applications input[name='applications[]']");
+		let moIds = [];
 
-		$(moidsel).each(
+		$(moidSel).each(
 			function()
 			{
-				moids.push($(this).val());
+				moIds.push($(this).val());
 			}
 		);
 
 		FHC_AjaxClient.ajaxCallPost(
 			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/checkMoidsInFhc',
 			{
-				"moids": moids
+				"moids": moIds
 			},
 			{
 				successCallback: function(data, textStatus, jqXHR)
 				{
 					if (FHC_AjaxClient.hasData(data))
 					{
-						for (var moid in data.retval)
+						let moIdRes = FHC_AjaxClient.getData(data)
+
+						for (let moId in moIdRes)
 						{
-							var prestudent_id = data.retval[moid];
-							var infhc = $.isNumeric(prestudent_id);
+							let prestudent_id = moIdRes[moId];
+							let inFhc = $.isNumeric(prestudent_id);
 
 							// refresh JS array
-							for (var incoming in MobilityOnlineIncoming.incomings)
+							for (let incoming in MobilityOnlineIncoming.incomings)
 							{
-								var incomingobj = MobilityOnlineIncoming.incomings[incoming];
+								let incomingObj = MobilityOnlineIncoming.incomings[incoming];
 
-								if (incomingobj.moid === parseInt(moid))
+								if (incomingObj.moid === parseInt(moId))
 								{
-									if (infhc)
+									if (inFhc)
 									{
-										incomingobj.infhc = true;
-										incomingobj.prestudent_id = prestudent_id;
+										incomingObj.infhc = true;
+										incomingObj.prestudent_id = prestudent_id;
 									}
 									else
 									{
-										incomingobj.infhc = false;
+										incomingObj.infhc = false;
 									}
 									break;
 								}
 							}
 
 							// refresh Incomings Table "in FHC" field
-							var infhciconel = $("#infhcicon_" + moid);
-							var infhcel = $("#infhc_" + moid);
+							let inFhcIconEl = $("#infhcicon_" + moId);
+							let inFhcEl = $("#infhc_" + moId);
 
-							infhciconel.removeClass();
-							if (infhc)
+							inFhcIconEl.removeClass();
+							if (inFhc)
 							{
-								infhcel.val("1");
-								infhciconel.addClass("fa fa-check");
+								inFhcEl.val("1");
+								inFhcIconEl.addClass("fa fa-check");
 							}
 							else
 							{
-								infhcel.val("0");
-								infhciconel.addClass("fa fa-times");
+								inFhcEl.val("0");
+								inFhcIconEl.addClass("fa fa-times");
 							}
 						}
 					}
 				},
 				errorCallback: function()
 				{
-					FHC_DialogLib.alertError("error when refreshing FHC column!");
+					FHC_DialogLib.alertError("Fehler beim Aktualisieren des Sync Status!");
 				}
 			}
 		);
@@ -335,15 +320,9 @@ var MobilityOnlineIncoming = {
 				successCallback: callback,
 				errorCallback: function()
 				{
-					FHC_DialogLib.alertError("error when getting post max size!");
+					FHC_DialogLib.alertError("Fehler beim Holen der maximalen POST Größe!");
 				}
 			}
 		);
-	},
-	_refreshIncomingNumber: function()
-	{
-		var length = $("#incomings input[type=checkbox][name='incoming[]']:checked").length;
-
-		$("#noincomings").text(length);
 	}
 };

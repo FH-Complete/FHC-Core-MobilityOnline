@@ -42,26 +42,26 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 	 * Uses 1. valuemappings in configs, 2. valuemappings in _replacementsarrToMo otherwise
 	 * Also uses fhc valuedefaults to fill moobject
 	 * takes unmodified fhcomplete value if field not found in valuemappings
-	 * @param $fhcobj fhcomplete object as received from fhc database
-	 * @param $objtype type of object, i.e. table, e.g. person
+	 * @param object $fhcObj fhcomplete object as received from fhc database
+	 * @param string $objType type of object, i.e. table, e.g. person
 	 * @return array with MobilityOnline fields and values
 	 */
-	protected function convertToMoFormat($fhcobj, $objtype)
+	protected function convertToMoFormat($fhcObj, $objType)
 	{
-		if (!isset($fhcobj))
+		if (!isset($fhcObj))
 			return array();
 
-		$fieldmappings = isset($this->conffieldmappings[$objtype]) ? $this->conffieldmappings[$objtype] : array();
-		$defaults = $this->_confmodefaults[$objtype];
-		$moobj = array();
-		$movalue = null;
+		$fieldmappings = isset($this->conffieldmappings[$objType]) ? $this->conffieldmappings[$objType] : array();
+		$defaults = $this->_confmodefaults[$objType];
+		$moObj = array();
+		$moValue = null;
 
-		foreach ($fhcobj as $name => $value)
+		foreach ($fhcObj as $name => $value)
 		{
 			if (!isset($fieldmappings[$name]))
 				continue;
 
-			$fhcvalue = $fhcobj->$name;
+			$fhcValue = $fhcObj->$name;
 
 			// null value - take default if exists
 			if (!isset($value))
@@ -69,36 +69,36 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 				if (isset($fieldmappings[$name]['default']))
 				{
 					if (isset($fieldmappings[$name]['type']) && isset($fieldmappings[$name]['name']))
-						$moobj[$fieldmappings[$name]['name']] = array($fieldmappings[$name]['type'] => $fieldmappings[$name]['default']);
+						$moObj[$fieldmappings[$name]['name']] = array($fieldmappings[$name]['type'] => $fieldmappings[$name]['default']);
 					else
-						$moobj[$fieldmappings[$name]] = $fieldmappings[$name]['default'];
+						$moObj[$fieldmappings[$name]] = $fieldmappings[$name]['default'];
 				}
 				continue;
 			}
 
-			$movalue = $this->getMoValue($name, $fhcvalue);
+			$moValue = $this->getMoValue($name, $fhcValue);
 
-			if (isset($fhcobj->$name) && isset($movalue))
+			if (isset($fhcObj->$name) && isset($moValue))
 			{
 				// if data has to be passed to MO as array, e.g. array('description' => 'bla')
 				if (isset($fieldmappings[$name]['type']) && isset($fieldmappings[$name]['name']))
 				{
 					// if multiple data values, e.g. Studiengangtyp Bachelor and Master
-					if (is_array($movalue))
+					if (is_array($moValue))
 					{
-						$moobj[$fieldmappings[$name]['name']] = array();
+						$moObj[$fieldmappings[$name]['name']] = array();
 
-						foreach ($movalue as $item)
+						foreach ($moValue as $item)
 						{
-							$moobj[$fieldmappings[$name]['name']][] = array($fieldmappings[$name]['type'] => $item);
+							$moObj[$fieldmappings[$name]['name']][] = array($fieldmappings[$name]['type'] => $item);
 						}
 					}
 					else
-						$moobj[$fieldmappings[$name]['name']] = array($fieldmappings[$name]['type'] => $movalue);
+						$moObj[$fieldmappings[$name]['name']] = array($fieldmappings[$name]['type'] => $moValue);
 				}
 				else
 				{
-					$moobj[$fieldmappings[$name]] = $movalue;
+					$moObj[$fieldmappings[$name]] = $moValue;
 				}
 			}
 		}
@@ -106,56 +106,56 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 		// add MO defaults (values with no equivalent in FHC)
 		foreach ($defaults as $default)
 		{
-			foreach ($default as $defaultkey => $defaultvalue)
+			foreach ($default as $defaultKey => $defaultValue)
 			{
-				if (!isset($moobj[$defaultkey]))
-					$moobj[$defaultkey] = $defaultvalue;
+				if (!isset($moObj[$defaultKey]))
+					$moObj[$defaultKey] = $defaultValue;
 			}
 		}
 
-		return $moobj;
+		return $moObj;
 	}
 
 	/**
 	 * Gets MobilityOnline value which maps to fhcomplete value.
 	 * Looks in valuemappings and replacementarray.
-	 * @param $fhcindex name of fhcomplete field in db
-	 * @param $fhcvalue fhcomplete value
+	 * @param string $fhcIndex name of fhcomplete field in db
+	 * @param mixed $fhcValue fhcomplete value
 	 * @return string
 	 */
-	protected function getMoValue($fhcindex, $fhcvalue)
+	protected function getMoValue($fhcIndex, $fhcValue)
 	{
 		$valuemappings = $this->valuemappings['tomo'];
 
-		$movalue = $fhcvalue;
+		$moValue = $fhcValue;
 
 		//if exists in valuemappings - take value
-		if (!empty($valuemappings[$fhcindex])
-			&& array_key_exists($movalue, $valuemappings[$fhcindex])
+		if (!empty($valuemappings[$fhcIndex])
+			&& array_key_exists($moValue, $valuemappings[$fhcIndex])
 		)
 		{
-			$movalue = $valuemappings[$fhcindex][$movalue];
+			$moValue = $valuemappings[$fhcIndex][$moValue];
 		}
 		else//otherwise look in replacements array
 		{
-			if (isset($this->_replacementsarrToMo[$fhcindex]))
+			if (isset($this->_replacementsarrToMo[$fhcIndex]))
 			{
-				foreach ($this->_replacementsarrToMo[$fhcindex] as $pattern => $replacement)
+				foreach ($this->_replacementsarrToMo[$fhcIndex] as $pattern => $replacement)
 				{
 					//if numeric index, execute callback
 					if (is_integer($pattern))
-						$movalue = $this->$replacement($movalue);
+						$moValue = $this->$replacement($moValue);
 					//otherwise replace with regex
 					elseif (is_string($replacement))
 					{
 						//add slashes for regex
 						$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
-						$movalue = preg_replace($pattern, $replacement, $movalue);
+						$moValue = preg_replace($pattern, $replacement, $moValue);
 					}
 				}
 			}
 		}
 
-		return $movalue;
+		return $moValue;
 	}
 }

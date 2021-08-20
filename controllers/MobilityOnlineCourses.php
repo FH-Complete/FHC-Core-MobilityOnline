@@ -36,27 +36,27 @@ class MobilityOnlineCourses extends Auth_Controller
 		$this->load->library('WidgetLib');
 
 		$this->StudiensemesterModel->addOrder('start', 'DESC');
-		$studiensemesterdata = $this->StudiensemesterModel->load();
+		$studiensemesterData = $this->StudiensemesterModel->load();
 
-		if (isError($studiensemesterdata))
-			show_error($studiensemesterdata->retval);
+		if (isError($studiensemesterData))
+			show_error($studiensemesterData->retval);
 
-		$currsemdata = $this->StudiensemesterModel->getAktOrNextSemester();
+		$currSemData = $this->StudiensemesterModel->getAktOrNextSemester();
 
-		if (isError($currsemdata))
-			show_error($currsemdata->retval);
+		if (isError($currSemData))
+			show_error($currSemData->retval);
 
-		$lvdata = $this->LehrveranstaltungModel->getLvsWithIncomingPlaces($currsemdata->retval[0]->studiensemester_kurzbz);
+		$lvData = $this->LehrveranstaltungModel->getLvsWithIncomingPlaces($currSemData->retval[0]->studiensemester_kurzbz);
 
-		if (isError($lvdata))
-			show_error($lvdata->retval);
+		if (isError($lvData))
+			show_error($lvData->retval);
 
 		$this->load->view(
 			'extensions/FHC-Core-MobilityOnline/mobilityOnlineCourses',
 			array(
-				'semester' => $studiensemesterdata->retval,
-				'currsemester' => $currsemdata->retval,
-				'lvs' => $lvdata->retval
+				'semester' => $studiensemesterData->retval,
+				'currsemester' => $currSemData->retval,
+				'lvs' => $lvData->retval
 			)
 		);
 	}
@@ -90,11 +90,11 @@ class MobilityOnlineCourses extends Auth_Controller
 	{
 		$studiensemester = $this->input->get('studiensemester');
 
-		$lvdata = $this->LehrveranstaltungModel->getLvsWithIncomingPlaces($studiensemester);
+		$lvData = $this->LehrveranstaltungModel->getLvsWithIncomingPlaces($studiensemester);
 
-		if (isSuccess($lvdata))
-			$this->outputJsonSuccess($lvdata->retval);
+		if (isSuccess($lvData))
+			$this->outputJsonSuccess($lvData->retval);
 		else
-			$this->outputJsonError("Error when getting courses");
+			$this->outputJsonError("Fehler beim Holen der Kurse");
 	}
 }

@@ -120,44 +120,68 @@ $config['valuemappings']['frommo']['zgvmas_code'] = array(
 $config['valuemappings']['frommo']['zgvmanation'] = $nations;
 
 $config['valuemappings']['frommo']['mobilitaetsprogramm_code'] = array(
+	'681' => 7, // Erasmus (Mundus)
+	'682' => 202, // Free Mover - selbst
 	'685' => 7, // Erasmus (Praktikum)
 	'688' => 7, // Erasmus (Semester)
-	'681' => 7, // Erasmus (Mundus)
-	'830' => 201, // Exchange Semester (with Bilateral Agreement)
-	'682' => 202, // Free Mover
-	'946' => 18 // Marshall Plan Scholarship
+	'830' => 201, // Exchange Semester (with Bilateral Agreement) - FH-Mob
+	'946' => 18, // Marshall Plan Scholarship - Marshall
+	'1037' => 14 // Auslandspraktikum (ohne Zuschuss)
 	/*	'Erasmus SMS' => 7,
 	'Erasmus SMP' => 7,*/
 	//'Erasmus (Studies)' => 7,
 );
 
 $config['valuemappings']['frommo']['buchungstyp_kurzbz'] = array(
-	'685' => array('OEH', 'Studiengebuehr'), // Buchungstyp depends on mobilitaetsprogramm_code
-	'688' => array('OEH', 'Studiengebuehr'),
-	'681' => array('OEH', 'Studiengebuehr'),
-	'830' => array('OEH', 'Studiengebuehr'),
+	'681' => array('OEH', 'Studiengebuehr'), // Buchungstyp depends on mobilitaetsprogramm_code
 	'682' => array('OEH', 'Studiengebuehr'),
+	'685' => array('OEH', 'Studiengebuehr'),
+	'688' => array('OEH', 'Studiengebuehr'),
+	'830' => array('OEH', 'Studiengebuehr'),
 	'946' => array('OEH', 'Studiengebuehr')
 );
 
 // if Betrag is not set here, default from tbl_buchungstyp is used
 $config['valuemappings']['frommo']['betrag'] = array(
-	'685' => array('Studiengebuehr' => 0.00),// Betrag depends on mobilitaetsprogramm_code
-	'688' => array('Studiengebuehr' => 0.00),
-	'681' => array('Studiengebuehr' => 0.00),
-	'830' => array('Studiengebuehr' => 0.00),
+	'681' => array('Studiengebuehr' => 0.00),// Betrag depends on mobilitaetsprogramm_code
 	'682' => array('Studiengebuehr' => 0.00),
+	'685' => array('Studiengebuehr' => 0.00),
+	'688' => array('Studiengebuehr' => 0.00),
+	'830' => array('Studiengebuehr' => 0.00),
 	'946' => array('Studiengebuehr' => 0.00)
+);
+
+$config['valuemappings']['frommo']['aufenthaltfoerderung_code'] = array(
+	'1100668' => 1, // EU-Förderung
+	'1100669' => 2, // Beihilfe von Bund, Land, Gemeinde
+	'1100670' => 3, // Förderung durch Universität/Hochschule
+	'1100671' => 4, // andere Förderung
+	'1100672' => 5 // keine Förderung
+);
+
+$config['valuemappings']['frommo']['zweck_code'] = array(
+	'1114418' => '1', // Studium
+	'1114419' => '2', // Praktikum
+	'1114420' => '3', // Studium und Praktikum
+	'1114421' => '4', // Diplom-/Masterarbeit bzw. Dissertation
+	// '1114422' => '7', TODO: Kurzzeitmobilität
+
+	// if zweck code is defined by Mobilitaetsprogramm (outgoingsync)
+	'685' => '2', // Erasmus (Praktikum) - Praktikum
+	'688' => '1', // Erasmus (Semester) - Studium
+	'830' => '1', // Exchange Semester (with Bilateral Agreement) - Studium
+	'946' => '4', // Marshall Plan Scholarship
+	'1037' => '2' // Auslandspraktikum (ohne Zuschuss)
 );
 
 $defaultbuchungen = array('OEH' => 'ÖH-Beitrag STG Semester', 'Studiengebuehr' => 'Studienbeitrag_Incoming');
 $config['valuemappings']['frommo']['buchungstext'] = array(
+	'681' => $defaultbuchungen,
+	'682' => $defaultbuchungen,
 	'685' => $defaultbuchungen,
 	'688' => $defaultbuchungen,
-	'681' => $defaultbuchungen,
 	'830' => $defaultbuchungen,
-	'946' => $defaultbuchungen,
-	'682' => $defaultbuchungen
+	'946' => $defaultbuchungen
 	/**'682' => array('OEH' => 'ÖH-Beitrag STG Semester',
 						  'Studiengebuehr' => 'Studienbeitrag STG Semester - Freemover',
 						  'Unkostenbeitrag' => 'Unkostenbeitrag STG Semester')**/

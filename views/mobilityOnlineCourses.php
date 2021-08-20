@@ -26,7 +26,7 @@
 			<div class="container-fluid">
 				<div class="row">
 					<div class="col-xs-12">
-						<h3 class="page-header text-center">MobilityOnline Courses Synchronisation</h3>
+						<h3 class="page-header text-center">MobilityOnline Kurssynchronisierung</h3>
 					</div>
 				</div>
 				<div class="row text-center">
@@ -48,14 +48,14 @@
 					<div class="col-xs-5">
 						<div class="well well-sm wellminheight">
 							<div class="text-center">
-								<h4>FH-Complete Courses</h4>
+								<h4>FH-Complete Kurse</h4>
 								<br />
-								<button class="btn btn-default" id="lvsyncbtn"><i class="fa fa-refresh"></i>&nbsp;Synchronise Courses</button>
+								<button class="btn btn-default" id="lvsyncbtn"><i class="fa fa-refresh"></i>&nbsp;Kurse synchronisieren</button>
 								<br />
 								<h4>
 									<span id="lvhead">
 										<span id="arrowtoggle"><i class="fa fa-chevron-right"></i>&nbsp;</span>
-										<span id="lvcount"><?php echo count($lvs) ?></span>&nbsp;courses with incoming places
+										<span id="lvcount"><?php echo count($lvs) ?></span>&nbsp;Kurse mit Incomingplätzen
 									</span>
 								</h4>
 							</div>
@@ -65,7 +65,7 @@
 					</div>
 					<div class="col-xs-7">
 						<div class="well well-sm wellminheight">
-							<h4 class="text-center">synchronisation output:</h4>
+							<h4 class="text-center">Synchronisierungsoutput:</h4>
 							<div id="lvsyncoutput" class="panel panel-body">
 								<div class="text-center">-</div>
 							</div>

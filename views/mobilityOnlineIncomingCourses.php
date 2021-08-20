@@ -29,7 +29,7 @@
 			<div class="container-fluid">
 				<div class="row">
 					<div class="col-xs-12">
-						<h3 class="page-header text-center">MobilityOnline Incoming Courses Assignment</h3>
+						<h3 class="page-header text-center">MobilityOnline Incoming Kurszuweisung</h3>
 					</div>
 				</div>
 				<div class="row text-center" id="syncIncomingInput">
@@ -49,7 +49,7 @@
 					<div class="col-xs-3 form-group">
 						<label>Studiengang</label>
 						<select class="form-control" name="studiengang_kz" id="studiengang_kz">
-							<option value="" selected="selected">Select Studiengang...</option>';
+							<option value="" selected="selected">Studiengang wählen...</option>';
 							<option value="all">Alle</option>
 							<?php
 							$typ = '';
@@ -70,8 +70,8 @@
 							<?php endforeach; ?>
 						</select>
 					</div>
-					<div class="col-xs-2" id="showSyncedIncomings" style="top: 25px"> <!---->
-						<button class="btn btn-default" id="showincomingsbtn">Show synchronised Incomings</button>
+					<div class="col-xs-2" id="showSyncedIncomings" style="top: 25px">
+						<button class="btn btn-default" id="showincomingsbtn">Synchronisierte Incomings anzeigen</button>
 					</div>
 				</div>
 				<div class="row" id="incomingprestudentsrow">
@@ -79,8 +79,8 @@
 						<div class="well well-sm wellminheight">
 							<div class="text-center">
 								<h4>MobilityOnline Incomings</h4>
-								<div id="noincomingstext">
-									<span id="totalCoursesAssigned">0</span>/<span id="totalCoursesFhc">0</span> courses assigned
+								<div id="nrapplicationstext">
+									<span id="totalCoursesAssigned">0</span>/<span id="totalCoursesFhc">0</span> Kurse zugewiesen
 								</div>
 							</div>
 							<div class="panel panel-body">
@@ -89,8 +89,8 @@
 										<tr>
 											<th class="text-center">Name</th>
 											<th class="text-center">E-Mail</th>
-											<th class="text-center">Courses assigned</th>
-											<th class="text-center">Assign courses</th>
+											<th class="text-center">Kurse hinzugefügt</th>
+											<th class="text-center">Kurse hinzufügen</th>
 										</tr>
 									</thead>
 									<tbody id="incomingprestudents">
@@ -113,7 +113,7 @@
 				<div class="row hidden" id="coursesassignment">
 					<div class="col-xs-6">
 						<div class="well well-sm" id="fhccourseswell">
-							<h4 class="text-center">FH-Complete Courses</h4>
+							<h4 class="text-center">FH-Complete Kurse</h4>
 							<div id="allfhcles" class="panel panel-body">
 								-
 							</div>
@@ -123,14 +123,14 @@
 					<div class="col-xs-6">
 						<div class="well well-sm wellminheight" id="mocourseswell">
 							<div class="text-center">
-								<h4>MobilityOnline Courses</h4>
+								<h4>MobilityOnline Kurse</h4>
 							</div>
 							<div class="panel panel-body" id="molvspnl">
 								<div class="panel panel-default">
 								<table class="table table-bordered table-condensed table-vertical-center" id="molvstbl">
 									<thead>
 									<tr>
-										<th class="text-center">Course</th>
+										<th class="text-center">Kurs</th>
 										<th class="text-center">Status</th>
 									</tr>
 									</thead>

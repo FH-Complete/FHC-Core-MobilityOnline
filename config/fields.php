@@ -99,11 +99,101 @@ $config['fhcfields']['application'] = array(
 	)
 );
 
+$config['fhcfields']['applicationout'] = array(
+	'prestudent' => array(
+		'studiengang_kz' => array(
+			'required' => true,
+			'name' => 'Studiengang',
+			'type' => 'integer',
+			'ref' => 'public.tbl_studiengang'),
+		'studiensemester_kurzbz' => array(
+			'required' => true,
+			'name' => 'Studiensemester',
+			'ref' => 'public.tbl_studiensemester')
+	),
+	'bisio' => array(
+		'student_uid' => array(
+			'required' => true,
+			'name' => 'Uid',
+			'ref' => 'public.tbl_student'),
+		'von' => array(
+			'required' => true,
+			'name' => 'Aufenthalt von',
+			'type' => 'date'),
+		'bis' => array(
+			'required' => true,
+			'name' => 'Aufenthalt bis',
+			'type' => 'date'),
+		'nation_code' => array(
+			'required' => true,
+			'name' => 'Nation',
+			'ref' => 'bis.tbl_nation'),
+		'mobilitaetsprogramm_code' => array(
+			'required' => true,
+			'name' => 'Austauschprogramm',
+			'type' => 'integer',
+			'ref' => 'bis.tbl_mobilitaetsprogramm'),
+		'ects_erworben' => array(
+			'required' => false,
+			'name' => 'ECTS erworben',
+			'type' => 'float'),
+		'ects_angerechnet' => array(
+			'required' => false,
+			'name' => 'ECTS angerechnet',
+			'type' => 'float')
+	),
+	'bisio_zweck' => array(
+		'zweck_code' => array(
+			'required' => false,
+			'name' => 'Aufenthaltszweck',
+			'type' => 'integer',
+			'ref' => 'bis.tbl_zweck')
+	),
+	'bisio_aufenthaltfoerderung' => array(
+		'aufenthaltfoerderung_code' => array(
+			'required' => false,
+			'name' => 'Aufenthaltsförderung',
+			'type' => 'integer',
+			'ref' => 'bis.tbl_bisio_aufenthaltfoerderung')
+	),
+/*	'bisio_info' => array(
+/*
+		'ist_praktikum' => array(
+			'required' => true,
+			'name' => 'Praktikum',
+			'type' => 'boolean'
+		),
+		'ist_masterarbeit' => array(
+			'required' => true,
+			'name' => 'Masterarbeit',
+			'type' => 'boolean'
+		)
+	),*/
+	'kontaktmail' => array(
+		'kontakt' => array(
+			'required' => true,
+			'name' => 'E-Mail-Adresse')
+	)
+);
+
+$config['fhcfields']['payment'] = array(
+	'konto' => array(
+		'betrag' =>
+			array('required' => true,
+				'name' => 'Betrag',
+				'type' => 'float'),
+		'buchungstyp_kurzbz' =>
+			array('required' => true,
+				'name' => 'Buchungstyp',
+				'ref' => 'public.tbl_buchungstyp')
+	)
+);
+
 /**
  * MobilityOnline fields for searching
  */
 
-$config['mofields']['application'] = array(
+$applicationSearchFields = array(
 	'firstName',
 	'lastName',
 	'secondLastName',
@@ -118,6 +208,9 @@ $config['mofields']['application'] = array(
 	'studyFieldDescription',
 	'login'
 );
+
+$config['mofields']['application'] = $applicationSearchFields;
+$config['mofields']['applicationout'] = $applicationSearchFields;
 
 $config['mofields']['course'] = array(
 	'semesterDescription',

@@ -17,7 +17,7 @@ $config['navigation_menu']['extensions/FHC-Core-MobilityOnline/*'] = array(
 	),
 	'MobilityOnline Courses sync' => array(
 		'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineCourses'),
-		'description' => 'Courses',
+		'description' => 'Kurse',
 		'icon' => 'graduation-cap'
 	),
 	'MobilityOnline Incoming sync' => array(
@@ -27,7 +27,12 @@ $config['navigation_menu']['extensions/FHC-Core-MobilityOnline/*'] = array(
 	),
 	'MobilityOnline Incoming courses assignment' => array(
 		'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineIncomingCourses'),
-		'description' => 'Incoming Courses',
+		'description' => 'Incoming Kurse',
 		'icon' => 'group'
-	)
+	),
+	'MobilityOnline Outgoing sync' => array(
+		'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineOutgoing'),
+		'description' => 'Outgoings',
+		'icon' => 'group'
+	),
 );

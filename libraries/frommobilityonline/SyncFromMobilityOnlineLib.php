@@ -12,20 +12,27 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	// fielddefinitions for error check before sync to FHC
 	protected $fhcconffields = array();
 
+	// types for syncouput
+	const ERROR_TYPE = 'error';
+	const SUCCESS_TYPE = 'success';
+	const INFO_TYPE = 'info';
+
 	// user saved in db insertvon, updatevon fields
 	const IMPORTUSER = 'mo_import';
-	protected $output = '';
 
-	// fhc string replacements for mo values
+	// output array containing errors, success etc messages when syncing
+	protected $output = array();
+
+	// fhc value replacements for mo values
 	private $_replacementsarrToFHC = array(
 		'gebdatum' => array(
-			0 => 'mapDateToFhc'
+			0 => '_mapDateToFhc'
 		),
 		'von' => array(
-			0 => 'mapDateToFhc'
+			0 => '_mapDateToFhc'
 		),
 		'bis' => array(
-			0 => 'mapDateToFhc'
+			0 => '_mapDateToFhc'
 		),
 		'studiengang_kz' => array(
 			'.+' => ''//empty string if no studiengang
@@ -37,7 +44,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			0 => 'replaceEmpty'
 		),
 		'zgvdatum' => array(
-			0 => 'mapDateToFhc'
+			0 => '_mapDateToFhc'
 		),
 		'zgvmas_code' => array(
 			0 => 'replaceEmpty'
@@ -46,13 +53,28 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			0 => 'replaceEmpty'
 		),
 		'zgvmadatum' => array(
-			0 => 'mapDateToFhc'
+			0 => '_mapDateToFhc'
 		),
 		'inhalt' => array(
-			0 => 'resizeBase64ImageBig'
+			0 => '_resizeBase64ImageBig'
 		),
 		'foto' => array(
-			0 => 'resizeBase64ImageSmall'
+			0 => '_resizeBase64ImageSmall'
+		),
+		'student_uid' => array(
+			0 => 'replaceEmpty'
+		),
+		'aufenthaltfoerderung_code' => array(
+			0 => 'replaceEmpty'
+		),
+		'zweck_code' => array(
+			0 => 'replaceEmpty'
+		),
+		'ects_erworben' => array(
+			0 => '_mapEctsToFhc'
+		),
+		'ects_angerechnet' => array(
+			0 => '_mapEctsToFhc'
 		)
 		/*,
 		'lehrveranstaltung_id' => array(
@@ -75,115 +97,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MobilityonlinefhcModel');
 	}
 
-	/**
-	 * Converts MobilityOnline object to fhcomplete object
-	 * Uses only fields defined in fieldmappings config
-	 * Uses 1. valuemappings in configs, 2. valuemappings in _replacementsarrToFHC otherwise
-	 * Also uses fhc valuedefaults to fill fhcobject
-	 * takes unmodified MobilityOnline value if field not found in valuemappings
-	 * @param $moobj MobilityOnline object as received from API
-	 * @param $objtype type of object, e.g. application
-	 * @return array with fhcomplete fields and values
-	 */
-	protected function convertToFhcFormat($moobj, $objtype)
-	{
-		if (!isset($moobj))
-			return array();
 
-		$defaults = isset($this->_conffhcdefaults[$objtype]) ? $this->_conffhcdefaults[$objtype] : array();
-
-		// cases where value is different format in MO than in FHC -> valuemappings in config
-		$fhcobj = array();
-		$fhcvalue = null;
-
-		$moobjfieldmappings = $this->conffieldmappings[$objtype];
-
-		foreach ($moobjfieldmappings as $fhctable => $mapping)
-		{
-			foreach ($moobj as $name => $value)
-			{
-				$fhcindeces = array();
-
-				//get all fieldmappings (string or 'name' array key match the MO name)
-				foreach ($mapping as $fhcidx => $moval)
-				{
-					if ($moval === $name || (isset($moval['name']) && $moval['name'] === $name))
-						$fhcindeces[] = $fhcidx;
-				}
-
-				$movalue = $moobj->$name;
-
-				if (!empty($fhcindeces))
-				{
-					foreach ($fhcindeces as $fhcindex)
-					{
-						//if value is in object returned from MO, extract value
-						if (is_object($movalue) && isset($mapping[$fhcindex]['type']))
-						{
-							$configtype = $mapping[$fhcindex]['type'];
-							$movalue = $moobj->$name->$configtype;
-						}
-
-						$fhcvalue = $this->getFHCValue($fhcindex, $movalue);
-
-						$fhcobj[$fhctable][$fhcindex] = $fhcvalue;
-					}
-				}
-			}
-		}
-
-		// add FHC defaults (values with no equivalent in MO)
-		foreach ($defaults as $fhckey => $fhcdefault)
-		{
-			foreach ($fhcdefault as $defaultkey => $defaultvalue)
-			{
-				if (!isset($fhcobj[$fhckey][$defaultkey]))
-					$fhcobj[$fhckey][$defaultkey] = $defaultvalue;
-			}
-		}
-
-		return $fhcobj;
-	}
-
-	/**
-	 * Gets fhcomplete value which maps to MobilityOnline value.
-	 * Looks in valuemappings and replacementarray.
-	 * @param $fhcindex name of fhcomplete field in db
-	 * @param $movalue MobilityOnline value
-	 * @return string
-	 */
-	protected function getFHCValue($fhcindex, $movalue)
-	{
-		$valuemappings = $this->valuemappings['frommo'];
-		$fhcvalue = $movalue;
-		//if exists in valuemappings - take value
-		if (!empty($valuemappings[$fhcindex])
-			&& array_key_exists($fhcvalue, $valuemappings[$fhcindex])
-		)
-		{
-			$fhcvalue = $valuemappings[$fhcindex][$fhcvalue];
-		}
-		else//otherwise look in replacements array
-		{
-			if (isset($this->_replacementsarrToFHC[$fhcindex]))
-			{
-				foreach ($this->_replacementsarrToFHC[$fhcindex] as $pattern => $replacement)
-				{
-					//if numeric index, execute callback
-					if (is_integer($pattern))
-						$fhcvalue = $this->$replacement($fhcvalue);
-					//otherwise replace with regex
-					elseif (is_string($replacement))
-					{
-						//add slashes for regex
-						$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
-						$fhcvalue = preg_replace($pattern, $replacement, $fhcvalue);
-					}
-				}
-			}
-		}
-		return $fhcvalue;
-	}
+	/** ---------------------------------------------- Public methods ------------------------------------------------*/
 
 	/**
 	 * Gets sync output string
@@ -196,161 +111,195 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 	/**
 	 * Gets object for searching an Object in MobilityOnline API
-	 * @param $objtype Type of object to search.
-	 * @param $searchparams Fields with values to search for.
+	 * @param string $objType Type of object to search.
+	 * @param array $searchParams Fields with values to search for.
+	 * @param bool $withSpecifiedElementsForReturn limit result to only certain applicationElements
 	 * @return array the object containing search parameters.
 	 */
-	public function getSearchObj($objtype, $searchparams)
+	public function getSearchObj($objType, $searchParams, $withSpecifiedElementsForReturn = true)
 	{
-		$searchobj = array();
+		$searchObj = array();
 
-		$fields = $this->moconffields[$objtype];
+		$fields = $this->moconffields[$objType];
 
 		//prefill - also non-searched fields need to be passed with null
 		foreach ($fields as $field)
 		{
-			$searchobj[$field] = null;
+			$searchObj[$field] = null;
 		}
 
-		if (is_array($searchparams))
+		if (is_array($searchParams))
 		{
-			foreach ($searchparams as $paramname => $param)
+			foreach ($searchParams as $paramName => $param)
 			{
-				$searchobj[$paramname] = $param;
+				$searchObj[$paramName] = $param;
 			}
 		}
 
-		return $searchobj;
+		// specify elements to be included in searchresult
+		if ($withSpecifiedElementsForReturn === true)
+		{
+			$searchObj['specifiedElementsForReturn'] = array();
+			$uniqueFieldmappingMoNames = array();
+
+			$moobjFieldmappings = $this->conffieldmappings[$objType];
+
+			foreach ($moobjFieldmappings as $fhcTable => $mapping)
+			{
+				foreach ($mapping as $name => $value)
+				{
+					if (!(in_array($value, $uniqueFieldmappingMoNames)))
+					{
+						$elementToReturn = new StdClass();
+						$elementToReturn->elementName = $value;
+						$searchObj['specifiedElementsForReturn'][] = $elementToReturn;
+						$uniqueFieldmappingMoNames[] = $value;
+					}
+				}
+			}
+		}
+
+		return $searchObj;
 	}
 
 	/**
 	 * Checks if fhcomplete object has errors, e.g. missing fields, thus cannot be inserted in db.
-	 * @param $fhcobj
-	 * @param $objtype
-	 * @return StdClass object with properties bollean for has Error and array with errormessages
+	 * @param array $fhcObj
+	 * @param string $objType
+	 * @return StdClass object with properties boolean for has Error and array with errormessages
 	 */
-	public function fhcObjHasError($fhcobj, $objtype)
+	public function fhcObjHasError($fhcObj, $objType)
 	{
-		$hasError = new StdClass();
-		$hasError->error = false;
-		$hasError->errorMessages = array();
-		$allfields = $this->fhcconffields[$objtype];
+		$hasErrorObj = new StdClass();
+		$hasErrorObj->error = false;
+		$hasErrorObj->errorMessages = array();
+		$allFields = $this->fhcconffields[$objType];
 
-		foreach ($allfields as $table => $fields)
+		foreach ($allFields as $table => $fields)
 		{
-			if (array_key_exists($table, $fhcobj))
+			if (array_key_exists($table, $fhcObj))
 			{
 				foreach ($fields as $field => $params)
 				{
-					$haserror = false;
-					$errortext = '';
+					$hasError = false;
+					$errorText = '';
 					$required = isset($params['required']) && $params['required'];
 
-					if (isset($fhcobj[$table][$field]))
+					if (isset($fhcObj[$table][$field]))
 					{
-						$value = $fhcobj[$table][$field];
+						$value = $fhcObj[$table][$field];
 
-						if ($required && !is_numeric($value) && isEmptyString($value))
+						if ($required && !is_numeric($value) && !is_bool($value) && isEmptyString($value))
 						{
-							$haserror = true;
-							$errortext = 'is missing';
+							$hasError = true;
+							$errorText = 'fehlt';
 						}
 						else
 						{
 							// right data type?
-							$wrongdatatype = false;
+							$wrongDataType = false;
 							if (isset($params['type']))
 							{
 								switch($params['type'])
 								{
 									case 'integer':
+										if (!is_int($value) && !ctype_digit($value))
+										{
+											$wrongDataType = true;
+										}
+										break;
+									case 'float':
 										if (!is_numeric($value))
 										{
-											$wrongdatatype = true;
+											$wrongDataType = true;
 										}
 										break;
 									case 'boolean':
 										if (!is_bool($value))
 										{
-											$wrongdatatype = true;
+											$wrongDataType = true;
 										}
 										break;
 									case 'date':
 										if (!$this->_validateDate($value))
 										{
-											$wrongdatatype = true;
+											$wrongDataType = true;
 										}
 										break;
 									case 'base64':
 										if (!base64_encode(base64_decode($value, true)) === $value)
-											$wrongdatatype = true;
+											$wrongDataType = true;
 										break;
 									case 'string':
 										if (!is_string($value))
 										{
-											$wrongdatatype = true;
+											$wrongDataType = true;
 										}
 										break;
 								}
 							}
 							elseif (!is_string($value))
 							{
-								$wrongdatatype = true;
+								$wrongDataType = true;
 							}
 							else
 							{
 								$params['type'] = 'string';
 							}
 
-							if ($wrongdatatype)
+							if ($wrongDataType)
 							{
-								$haserror = true;
-								$errortext = 'has wrong data type';
+								$hasError = true;
+								$errorText = 'hat falschen Datentyp';
 							}
-							elseif (!$haserror)
+							elseif (!$hasError)
 							{
 								// right string length?
 								if (($params['type'] === 'string' || $params['type'] === 'base64') &&
 									!$this->ci->MobilityonlinefhcModel->checkLength($table, $field, $value))
 								{
-									$haserror = true;
-									$errortext = "is too long ($value)";
+									$hasError = true;
+									$errorText = "ist zu lang ($value)";
 								}
 								// value referenced with foreign key exists?
 								elseif (isset($params['ref']))
 								{
-									$fkfield = isset($params['reffield']) ? $params['reffield'] : $field;
-									$foreignkeyexists = $this->ci->MobilityonlinefhcModel->valueExists($params['ref'], $fkfield, $value);
+									$fkField = isset($params['reffield']) ? $params['reffield'] : $field;
+									$foreignkeyExists = $this->ci->MobilityonlinefhcModel->valueExists($params['ref'], $fkField, $value);
 
-									if (!hasData($foreignkeyexists))
+									if (!hasData($foreignkeyExists))
 									{
-										$haserror = true;
-										$errortext = 'has no match in FHC';
+										$hasError = true;
+										$errorText = 'hat kein Equivalent in FHC';
 									}
 								}
 							}
 						}
 					}
 					elseif ($required)
-						$haserror = true;
-
-					if ($haserror)
 					{
-						$fieldname = isset($params['name']) ? $params['name'] : ucfirst($field);
+						$hasError = true;
+						$errorText = 'existiert nicht';
+					}
 
-						$hasError->errorMessages[] = ucfirst($table).": $fieldname ".$errortext;
-						$hasError->error = true;
+					if ($hasError)
+					{
+						$fieldName = isset($params['name']) ? $params['name'] : ucfirst($field);
+
+						$hasErrorObj->errorMessages[] = ucfirst($table).": $fieldName ".$errorText;
+						$hasErrorObj->error = true;
 					}
 				}
 			}
 			else
 			{
-				$hasError->errorMessages[] = "data missing: $table";
-				$hasError->error = true;
+				// if required table not present in object - show error
+				$hasErrorObj->errorMessages[] = "Daten fehlen: $table";
+				$hasErrorObj->error = true;
 			}
 		}
 
-		return $hasError;
+		return $hasErrorObj;
 	}
 
 	/**
@@ -365,24 +314,207 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$post_max_size = ini_get('post_max_size');
 
-		$max_size_res = $this->extractPostMaxSize($post_max_size);
+		$max_size_res = $this->_extractPostMaxSize($post_max_size);
 
 		if (!isset($max_size_res))
 		{
 			$config = $this->ci->config->item('FHC-Core-MobilityOnline');
 			$post_max_size = $config['post_max_size'];
-			$max_size_res = $this->extractPostMaxSize($post_max_size);
+			$max_size_res = $this->_extractPostMaxSize($post_max_size);
 		}
 
 		return $max_size_res;
 	}
 
+	/** ---------------------------------------------- Protected methods ------------------------------------------------*/
+
+	/**
+	 * Converts MobilityOnline object to fhcomplete object
+	 * Uses only fields defined in fieldmappings config
+	 * Uses 1. valuemappings in configs, 2. valuemappings in _replacementsarrToFHC otherwise
+	 * Also uses fhc valuedefaults to fill fhcobject
+	 * takes unmodified MobilityOnline value if field not found in valuemappings
+	 * @param object $moObj MobilityOnline object as received from API
+	 * @param string $objType type of object, e.g. application
+	 * @return array with fhcomplete fields and values
+	 */
+	protected function convertToFhcFormat($moObj, $objType)
+	{
+		if (!isset($moObj))
+			return array();
+
+		$defaults = isset($this->_conffhcdefaults[$objType]) ? $this->_conffhcdefaults[$objType] : array();
+
+		// cases where value is different format in MO than in FHC -> valuemappings in config
+		$fhcObj = array();
+		$fhcValue = null;
+
+		$moobjFieldmappings = $this->conffieldmappings[$objType];
+
+		foreach ($moobjFieldmappings as $fhcTable => $mapping)
+		{
+			foreach ($moObj as $name => $value)
+			{
+				$fhcIndeces = array();
+
+				//get all fieldmappings (string or 'name' array key match the MO name)
+				foreach ($mapping as $fhcIdx => $moVal)
+				{
+					if ($moVal === $name || (isset($moVal['name']) && $moVal['name'] === $name))
+						$fhcIndeces[] = $fhcIdx;
+				}
+
+				$moValue = $moObj->$name;
+
+				if (!empty($fhcIndeces))
+				{
+					foreach ($fhcIndeces as $fhcIndex)
+					{
+						// if value is in object returned from MO, extract value
+
+						// if data is returned as array, type is name of field where value is stored
+						if (is_object($moValue) && isset($mapping[$fhcIndex]['type']))
+						{
+							$configType = $mapping[$fhcIndex]['type'];
+							$moValue = $moObj->$name->$configType;
+						}
+
+						// convert extracted value to fhc value
+						$fhcValue = $this->getFHCValue($fhcIndex, $moValue);
+
+						$fhcObj[$fhcTable][$fhcIndex] = $fhcValue;
+					}
+				}
+			}
+		}
+
+		// add FHC defaults (values with no equivalent in MO)
+		foreach ($defaults as $fhcKey => $fhcDefault)
+		{
+			foreach ($fhcDefault as $defaultKey => $defaultValue)
+			{
+				if (!isset($fhcObj[$fhcKey][$defaultKey]))
+					$fhcObj[$fhcKey][$defaultKey] = $defaultValue;
+			}
+		}
+
+		return $fhcObj;
+	}
+
+	/**
+	 * Gets fhcomplete value which maps to MobilityOnline value.
+	 * Looks in valuemappings and replacementarray.
+	 * @param string $fhcIndex name of fhcomplete field in db
+	 * @param mixed $moValue MobilityOnline value
+	 * @return string
+	 */
+	protected function getFHCValue($fhcIndex, $moValue)
+	{
+		$valuemappings = $this->valuemappings['frommo'];
+		$fhcValue = $moValue;
+		//if exists in valuemappings - take value
+		if (!empty($valuemappings[$fhcIndex])
+			&& isset($valuemappings[$fhcIndex][$fhcValue])
+		)
+		{
+			$fhcValue = $valuemappings[$fhcIndex][$fhcValue];
+		}
+		else//otherwise look in replacements array
+		{
+			if (isset($this->_replacementsarrToFHC[$fhcIndex]))
+			{
+				foreach ($this->_replacementsarrToFHC[$fhcIndex] as $pattern => $replacement)
+				{
+					//if numeric index, execute callback
+					if (is_integer($pattern))
+						$fhcValue = $this->$replacement($fhcValue);
+					//otherwise replace with regex
+					elseif (is_string($replacement))
+					{
+						//add slashes for regex
+						$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
+						$fhcValue = preg_replace($pattern, $replacement, $fhcValue);
+					}
+				}
+			}
+		}
+		return $fhcValue;
+	}
+
+	/**
+	 * Outputs success or error of a db modification.
+	 * @param string $modtype insert, update,...
+	 * @param object $response of db action
+	 * @param string $table database table
+	 */
+	protected function log($modtype, $response, $table)
+	{
+		if ($this->debugmode)
+		{
+			if (isSuccess($response))
+			{
+				if (is_array($response->retval))
+					$id = implode('; ', $response->retval);
+				else
+					$id = $response->retval;
+
+				$this->_setOutput(self::INFO_TYPE, "$table $modtype erfolgreich, Id " . $id);
+			}
+			else
+			{
+				$this->_setOutput(self::ERROR_TYPE, "$table $modtype Fehler");
+			}
+		}
+	}
+
+	/**
+	 * Sets timestamp and importuser for insert/update.
+	 * @param string $modtype
+	 * @param array $arr to be filled with data
+	 */
+	protected function stamp($modtype, &$arr)
+	{
+		$idx = $modtype.'amum';
+		$arr[$idx] = date('Y-m-d H:i:s', time());
+		$idx = $modtype.'von';
+		$arr[$idx] = self::IMPORTUSER;
+	}
+
+	/**
+	 * Adds error syncoutput.
+	 * @param string $text
+	 */
+	protected function addErrorOutput($text)
+	{
+		$this->_setOutput(self::ERROR_TYPE, $text);
+	}
+
+	/**
+	 * Adds info syncoutput.
+	 * @param string $text
+	 */
+	protected function addInfoOutput($text)
+	{
+		$this->_setOutput(self::INFO_TYPE, $text);
+	}
+
+	/**
+	 * Adds success syncoutput.
+	 * @param string $text
+	 */
+	protected function addSuccessOutput($text)
+	{
+		$this->_setOutput(self::SUCCESS_TYPE, $text);
+	}
+
+	/** ---------------------------------------------- Private methods -----------------------------------------------*/
+
 	/**
 	 * Extracts numeric post size from post_max_size string.
-	 * @param $post_max_size
+	 * @param int $post_max_size
 	 * @return string|null
 	 */
-	private function extractPostMaxSize($post_max_size)
+	private function _extractPostMaxSize($post_max_size)
 	{
 		$max_size_res = null;
 
@@ -392,9 +524,9 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		}
 		else
 		{
-			$sizeregex = '/\d+([KMG])/';
+			$sizeRegex = '/\d+([KMG])/';
 
-			if (preg_match($sizeregex ,$post_max_size))
+			if (preg_match($sizeRegex ,$post_max_size))
 			{
 				preg_match_all('/\d+/', $post_max_size, $size);
 				preg_match_all('/\D+/', $post_max_size, $unit);
@@ -432,15 +564,15 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 	/**
 	 * Converts MobilityOnline date to fhcomplete date format.
-	 * @param $modate
-	 * @return mixed
+	 * @param string $moDate
+	 * @return string fhcomplete date
 	 */
-	private function mapDateToFhc($modate)
+	private function _mapDateToFhc($moDate)
 	{
 		$pattern = '/^(\d{1,2}).(\d{1,2}).(\d{4})$/';
-		if (preg_match($pattern, $modate))
+		if (preg_match($pattern, $moDate))
 		{
-			$date = DateTime::createFromFormat('d.m.Y', $modate);
+			$date = DateTime::createFromFormat('d.m.Y', $moDate);
 			return date_format($date, 'Y-m-d');
 		}
 		else
@@ -448,44 +580,60 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
-	 * Makes sure base 64 image is not bigger than thumbnail size.
-	 * @param $moimage
-	 * @return string|null
+	 * Converts MobilityOnline ects amount to fhcomplete format.
+	 * @param float $moEcts
+	 * @return float fhcomplete ects
 	 */
-	private function resizeBase64ImageSmall($moimage)
+	private function _mapEctsToFhc($moEcts)
 	{
-		return $this->resizeBase64Image($moimage, 101, 130);
+		$pattern = '/^(\d+),(\d{2})$/';
+		if (preg_match($pattern, $moEcts))
+		{
+			return (float) str_replace(',', '.', $moEcts);
+		}
+		else
+			return null;
+	}
+
+	/**
+	 * Makes sure base 64 image is not bigger than thumbnail size.
+	 * @param string $moImage
+	 * @return string resized image
+	 */
+	private function _resizeBase64ImageSmall($moImage)
+	{
+		return $this->_resizeBase64Image($moImage, 101, 130);
 	}
 
 	/**
 	 * Makes sure base 64 image is not bigger than max fhc db image size.
-	 * @param $moimage
-	 * @return string|null
+	 * @param $moImage
+	 * @return string resized image
 	 */
-	private function resizeBase64ImageBig($moimage)
+	private function _resizeBase64ImageBig($moImage)
 	{
-		return $this->resizeBase64Image($moimage, 827, 1063);
+		return $this->_resizeBase64Image($moImage, 827, 1063);
 	}
 
 	/**
 	 * If $moimage width/height is greater than given width/height, crop image, otherwise encode it.
-	 * @param $moimage
-	 * @param $maxwidth
-	 * @param $maxheight
-	 * @return string|null
+	 * @param string $moImage
+	 * @param int $maxWidth
+	 * @param int $maxHeight
+	 * @return string possibly cropped, base64 encoded image
 	 */
-	private function resizeBase64Image($moimage, $maxwidth, $maxheight)
+	private function _resizeBase64Image($moImage, $maxWidth, $maxHeight)
 	{
-		$fhcimage = null;
+		$fhcImage = null;
 
 		//groesse begrenzen
-		$width = $maxwidth;
-		$height = $maxheight;
-		$image = imagecreatefromstring(base64_decode(base64_encode($moimage)));
+		$width = $maxWidth;
+		$height = $maxHeight;
+		$image = imagecreatefromstring(base64_decode(base64_encode($moImage)));
 
 		if ($image)
 		{
-			$uri = 'data://application/octet-stream;base64,' . base64_encode($moimage);
+			$uri = 'data://application/octet-stream;base64,' . base64_encode($moImage);
 			list($width_orig, $height_orig) = getimagesize($uri);
 
 			$ratio_orig = $width_orig/$height_orig;
@@ -510,53 +658,28 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				$contents =  ob_get_contents();
 				ob_end_clean();
 
-				$fhcimage = base64_encode($contents);
+				$fhcImage = base64_encode($contents);
 			}
 			else
-				$fhcimage = base64_encode($moimage);
+				$fhcImage = base64_encode($moImage);
 			imagedestroy($image);
 		}
 
-		return $fhcimage;
+		return $fhcImage;
 	}
 
 	/**
-	 * Outputs success or error of a db action.
-	 * @param $modtype insert, update,...
-	 * @param $response of db action
-	 * @param $table database table
+	 * Add text output to show as syncoutput.
+	 * @param string $type
+	 * @param string $text
 	 */
-	protected function log($modtype, $response, $table)
+	private function _setOutput($type, $text)
 	{
-		if ($this->debugmode)
-		{
-			if (isSuccess($response))
-			{
-				if (is_array($response->retval))
-					$id = implode('; ', $response->retval);
-				else
-					$id = $response->retval;
+		$outputObj = new stdClass();
 
-				$this->output .= "<br />$table $modtype successful, id " . $id;
-			}
-			else
-			{
-				$this->output .= "<br />$table $modtype error";
-			}
-		}
-	}
-
-	/**
-	 * Sets timestamp and importuser for insert/update.
-	 * @param $modtype
-	 * @param $arr
-	 */
-	protected function stamp($modtype, &$arr)
-	{
-		$idx = $modtype.'amum';
-		$arr[$idx] = date('Y-m-d H:i:s', time());
-		$idx = $modtype.'von';
-		$arr[$idx] = self::IMPORTUSER;
+		$outputObj->type = $type;
+		$outputObj->text = $text;
+		$this->output[] = $outputObj;
 	}
 
 	/**

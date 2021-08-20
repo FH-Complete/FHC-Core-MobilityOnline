@@ -50,27 +50,27 @@ class MobilityOnlineSyncLib
 
 	/**
 	 * Converts fhc studiensemester to MobilityOnline format - e.g. Wintersemester 2018/2019
-	 * @param $studiensemester_kurzbz
-	 * @return MobilityOnline studiensemester
+	 * @param string $studiensemester_kurzbz
+	 * @return string MobilityOnline studiensemester
 	 */
 	public function mapSemesterToMo($studiensemester_kurzbz)
 	{
-		$mosem = $studiensemester_kurzbz;
+		$moSem = $studiensemester_kurzbz;
 
 		$year = substr($studiensemester_kurzbz, -4, 4);
 
-		$mosem = preg_replace('/'.self::WINTERSEMESTER_PREFIX.'\d{4}/', 'Wintersemester '.
-			$year.'/'.($year + 1), $mosem);
+		$moSem = preg_replace('/'.self::WINTERSEMESTER_PREFIX.'\d{4}/', 'Wintersemester '.
+			$year.'/'.($year + 1), $moSem);
 
-		$mosem = str_replace(self::SOMMERSEMESTER_PREFIX, 'Sommersemester ', $mosem);
+		$moSem = str_replace(self::SOMMERSEMESTER_PREFIX, 'Sommersemester ', $moSem);
 
-		return $mosem;
+		return $moSem;
 	}
 
 	/**
 	 * Converts MobilityOnline Studienjahr to fhc semester.
 	 * Returns WS and SS for the Studienjahr.
-	 * @param $mo_studienjahr
+	 * @param string $mo_studienjahr
 	 * @return array
 	 */
 	public function mapMoStudienjahrToSemester($mo_studienjahr)
@@ -87,42 +87,42 @@ class MobilityOnlineSyncLib
 	/**
 	 * Converts fhc studiensemester to Studienjahr MobilityOnline format
 	 * (when Incoming give Studienjahr instead of semester)- e.g. Studienjahr 2018/2019
-	 * @param $studiensemester_kurzbz
+	 * @param string $studiensemester_kurzbz
 	 * @return null|string
 	 */
 	public function mapSemesterToMoStudienjahr($studiensemester_kurzbz)
 	{
-		$studienjahrsemestermo = null;
-		$semesteryear = substr($studiensemester_kurzbz, 2, 4);
+		$studienjahrSemesterMo = null;
+		$semesterYear = substr($studiensemester_kurzbz, 2, 4);
 
 		if (strstr($studiensemester_kurzbz, self::WINTERSEMESTER_PREFIX))
 		{
-			$studienjahrsemestermo = str_replace(self::WINTERSEMESTER_PREFIX, 'Studienjahr ', $studiensemester_kurzbz).'/'.($semesteryear + 1);
+			$studienjahrSemesterMo = str_replace(self::WINTERSEMESTER_PREFIX, 'Studienjahr ', $studiensemester_kurzbz).'/'.($semesterYear + 1);
 		}
 		elseif (strstr($studiensemester_kurzbz, self::SOMMERSEMESTER_PREFIX))
 		{
-			$studienjahrsemestermo = 'Studienjahr ' . ($semesteryear - 1) . '/'. $semesteryear;
+			$studienjahrSemesterMo = 'Studienjahr ' . ($semesterYear - 1) . '/'. $semesterYear;
 		}
 
-		return $studienjahrsemestermo;
+		return $studienjahrSemesterMo;
 	}
 
 	/**
 	 * Converts fhc studienjahr to MobilityOnline format - e.g. 2018/2019
-	 * @param $studienjahr_kurzbz
+	 * @param string $studienjahr_kurzbz
 	 * @return MobilityOnline studienjahr
 	 */
 	public function mapStudienjahrToMo($studienjahr_kurzbz)
 	{
-		$mojahr = $studienjahr_kurzbz;
+		$moJahr = $studienjahr_kurzbz;
 
 		$year = substr($studienjahr_kurzbz, 0, strpos($studienjahr_kurzbz, '/'));
 
-		$pattern = '/' . str_replace('/', '\/', $mojahr) . '/';
+		$pattern = '/' . str_replace('/', '\/', $moJahr) . '/';
 
-		$mojahr = preg_replace($pattern, $year.'/'.($year+1), $mojahr);
+		$moJahr = preg_replace($pattern, $year.'/'.($year+1), $moJahr);
 
-		return $mojahr;
+		return $moJahr;
 	}
 
 	/**
@@ -132,23 +132,23 @@ class MobilityOnlineSyncLib
 	{
 		$this->ci->load->model('organisation/Studiensemester_model', 'StudiensemesterModel');
 
-		$allstudiensemester = $this->ci->StudiensemesterModel->load();
+		$allStudiensemester = $this->ci->StudiensemesterModel->load();
 
-		if (hasData($allstudiensemester))
+		if (hasData($allStudiensemester))
 		{
-			foreach ($allstudiensemester->retval as $studiensemester)
+			foreach ($allStudiensemester->retval as $studiensemester)
 			{
-				$mostudiensemester = $this->mapSemesterToMo($studiensemester->studiensemester_kurzbz);
+				$moStudiensemester = $this->mapSemesterToMo($studiensemester->studiensemester_kurzbz);
 
-				$this->valuemappings['tomo']['studiensemester_kurzbz'][$studiensemester->studiensemester_kurzbz] = $mostudiensemester;
-				$this->valuemappings['frommo']['studiensemester_kurzbz'][$mostudiensemester] = $studiensemester->studiensemester_kurzbz;
+				$this->valuemappings['tomo']['studiensemester_kurzbz'][$studiensemester->studiensemester_kurzbz] = $moStudiensemester;
+				$this->valuemappings['frommo']['studiensemester_kurzbz'][$moStudiensemester] = $studiensemester->studiensemester_kurzbz;
 
 				//special case: instead of Studiensemester Incoming has Studienjahr in Mobility Online -> map with Wintersemester!
 				if (strstr($studiensemester->studiensemester_kurzbz, self::WINTERSEMESTER_PREFIX))
 				{
-					$mostudienjahrassemester = $this->mapSemesterToMoStudienjahr($studiensemester->studiensemester_kurzbz);
-					if (isset($mostudienjahrassemester))
-						$this->valuemappings['frommo']['studiensemester_kurzbz'][$mostudienjahrassemester] = $studiensemester->studiensemester_kurzbz;
+					$moStudienjahrAsSemester = $this->mapSemesterToMoStudienjahr($studiensemester->studiensemester_kurzbz);
+					if (isset($moStudienjahrAsSemester))
+						$this->valuemappings['frommo']['studiensemester_kurzbz'][$moStudienjahrAsSemester] = $studiensemester->studiensemester_kurzbz;
 				}
 			}
 		}
@@ -161,11 +161,11 @@ class MobilityOnlineSyncLib
 	{
 		$this->ci->load->model('organisation/Studienjahr_model', 'StudienjahrModel');
 
-		$allstudienjahre = $this->ci->StudienjahrModel->load();
+		$allSStudienjahre = $this->ci->StudienjahrModel->load();
 
-		if (hasData($allstudienjahre))
+		if (hasData($allSStudienjahre))
 		{
-			foreach ($allstudienjahre->retval as $studienjahr)
+			foreach ($allSStudienjahre->retval as $studienjahr)
 			{
 				$mojahr = $this->mapStudienjahrToMo($studienjahr->studienjahr_kurzbz);
 

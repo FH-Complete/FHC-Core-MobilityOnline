@@ -35,120 +35,109 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('education/studentlehrverband_model', 'StudentlehrverbandModel');
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 		$this->ci->load->model('codex/bisio_model', 'BisioModel');
-		$this->ci->load->model('codex/bisiozweck_model', 'BisioZweckModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moappidzuordnung_model', 'MoappidzuordnungModel');
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobilityonlinefhc_model', 'MoFhcModel');
 	}
 
 	/**
 	 * Executes sync of incomings for a Studiensemester from MO to FHC. Adds or updates incomings.
-	 * @param $studiensemester
-	 * @param $incomings
-	 * @return string syncoutput containing info about failures/success
+	 * @param string $studiensemester
+	 * @param array $incomings
+	 * @return array syncoutput containing info about failures/success
 	 */
 	public function startIncomingSync($studiensemester, $incomings)
 	{
-		$results = array('added' => 0, 'updated' => 0, 'errors' => 0, 'syncoutput' => '');
-		$studcount = count($incomings);
+		$results = array('added' => 0, 'updated' => 0, 'errors' => 0, 'syncoutput' => array());
+		$studCount = count($incomings);
 
-		if (empty($incomings) || !is_array($incomings) || $studcount <= 0)
+		if (empty($incomings) || !is_array($incomings) || $studCount <= 0)
 		{
-			$results['syncoutput']  .= "<div class='text-center'>No incomings found for sync! aborting.</div>";
+			$this->addInfoOutput("Keine Incoming für Sync gefunden! Abbruch.");
 		}
 		else
 		{
-			$first = true;
 			foreach ($incomings as $incoming)
 			{
-				$incomingdata = $incoming['data'];
-				$appid = $incoming['moid'];
+				$incomingData = $incoming['data'];
+				$appId = $incoming['moid'];
 
-				if (!$first)
-					$results['syncoutput'] .= "<br />";
-				$first = false;
-
-				$infhccheck_prestudent_id = $this->checkMoIdInFhc($appid);
+				$infhccheck_prestudent_id = $this->checkMoIdInFhc($appId);
 
 				if (isset($infhccheck_prestudent_id) && is_numeric($infhccheck_prestudent_id))
 				{
-					$results['syncoutput'] .= "<br />prestudent ".("for applicationid $appid ").$incomingdata['person']['vorname'].
-						" ".$incomingdata['person']['nachname']." already exists in fhcomplete - updating";
+					$this->addInfoOutput("Student für applicationid $appId ".$incomingData['person']['vorname'].
+						" ".$incomingData['person']['nachname']." existiert bereits in fhcomplete - aktualisieren");
 
-					$prestudent_id = $this->saveIncoming($incomingdata, $infhccheck_prestudent_id);
-
-					$saveIncomingOutput = $this->getOutput();
-
-					$results['syncoutput'] .= $saveIncomingOutput;
+					$prestudent_id = $this->saveIncoming($incomingData, $infhccheck_prestudent_id);
 
 					if (isset($prestudent_id) && is_numeric($prestudent_id))
 					{
 						$result = $this->ci->MoappidzuordnungModel->update(
-							array('mo_applicationid' => $appid, 'prestudent_id' => $prestudent_id, 'studiensemester_kurzbz' => $studiensemester),
+							array('mo_applicationid' => $appId, 'prestudent_id' => $prestudent_id, 'studiensemester_kurzbz' => $studiensemester),
 							array('updateamum' => 'NOW()')
 						);
 
 						if (hasData($result))
 						{
 							$results['updated']++;
-							$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> student for applicationid $appid - ".
-								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." successfully updated";
+							$this->addSuccessOutput("student for applicationid $appId - ".
+								$incomingData['person']['vorname']." ".$incomingData['person']['nachname']." erfolgreich aktualisiert");
 						}
 					}
 					else
 					{
 						$results['errors']++;
-						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when updating student for applicationid $appid - "
-							.$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']."</span>";
+						$this->addErrorOutput("Fehler beim Update des Studierenden mit applicationid $appId - "
+							.$incomingData['person']['vorname']." ".$incomingData['person']['nachname']);
 					}
 				}
 				else
 				{
-					$prestudent_id = $this->saveIncoming($incomingdata);
-
-					$saveIncomingOutput = $this->getOutput();
-
-					$results['syncoutput'] .= $saveIncomingOutput;
+					$prestudent_id = $this->saveIncoming($incomingData);
 
 					if (isset($prestudent_id) && is_numeric($prestudent_id))
 					{
 						$result = $this->ci->MoappidzuordnungModel->insert(
-							array('mo_applicationid' => $appid, 'prestudent_id' => $prestudent_id, 'studiensemester_kurzbz' => $studiensemester, 'insertamum' => 'NOW()')
+							array('mo_applicationid' => $appId, 'prestudent_id' => $prestudent_id, 'studiensemester_kurzbz' => $studiensemester, 'insertamum' => 'NOW()')
 						);
 
 						if (hasData($result))
 						{
 							$results['added']++;
-							$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> student for applicationid $appid - ".
-								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']." successfully added";
+							$this->addSuccessOutput("Student für applicationid $appId - ".
+								$incomingData['person']['vorname']." ".$incomingData['person']['nachname']." erfolgreich hinzugefügt");
 						}
 						else
 						{
 							$results['errors']++;
-							$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> mapping entry in db could not be added student for applicationid $appid - ".
-								$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']."</span>";
+							$this->addErrorOutput("Fehler bei Verlinkung in FHC Datenbank für Studierenden mit applicationid $appId - ".
+								$incomingData['person']['vorname']." ".$incomingData['person']['nachname']);
 						}
 					}
 					else
 					{
 						$results['errors']++;
-						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when adding student for applicationid $appid - ".
-							$incomingdata['person']['vorname']." ".$incomingdata['person']['nachname']."</span>";
+						$this->addErrorOutput("Fehler beim Hinzufügen des Studierden mit applicationid $appId - ".
+							$incomingData['person']['vorname']." ".$incomingData['person']['nachname']);
 					}
 				}
 			}
 		}
+
+		$results['syncoutput'] = $this->getOutput();
 		return $results;
 	}
 
 	/**
 	 * Converts MobilityOnline application to fhcomplete array (with person, prestudent...)
-	 * @param $moapp MobilityOnline application
-	 * @param $moaddr MobilityOnline adress of application
-	 * @param $photo of applicant
+	 * @param object $moApp MobilityOnline application
+	 * @param object $moAddr MobilityOnline adress of application
+	 * @param array $photo of applicant
 	 * @return array with fhcomplete table arrays
 	 */
-	public function mapMoAppToIncoming($moapp, $moaddr = null, $curraddr = null, $photo = null)
+	public function mapMoAppToIncoming($moApp, $moAddr = null, $currAddr = null, $photo = null)
 	{
 		$fieldmappings = $this->conffieldmappings[self::MOOBJECTTYPE];
 		$personmappings = $fieldmappings['person'];
@@ -160,28 +149,28 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$bisiomappings = $fieldmappings['bisio'];
 
 		//applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
-		$comboboxvaluefields = array($personmappings['staatsbuergerschaft'], $personmappings['sprache'], $prestudentstatusmappings['studiensemester_kurzbz'],
+		$comboboxValueFields = array($personmappings['staatsbuergerschaft'], $personmappings['sprache'], $prestudentstatusmappings['studiensemester_kurzbz'],
 									 $prestudentmappings['studiengang_kz'], $prestudentmappings['zgvnation'], $prestudentmappings['zgvmanation'],
 									 $bisiomappings['nation_code']);
 
-		foreach ($fieldmappings as $fhctable)
+		foreach ($fieldmappings as $fhcTable)
 		{
-			foreach ($fhctable as $value)
+			foreach ($fhcTable as $value)
 			{
-				if (isset($moapp->applicationDataElements))
+				if (isset($moApp->applicationDataElements))
 				{
 					// find mobility online application data fields
-					foreach ($moapp->applicationDataElements as $element)
+					foreach ($moApp->applicationDataElements as $element)
 					{
 						if ($element->elementName === $value)
 						{
-							if (in_array($element->elementName, $comboboxvaluefields) && isset($element->comboboxFirstValue))
+							if (in_array($element->elementName, $comboboxValueFields) && isset($element->comboboxFirstValue))
 							{
-								$moapp->$value = $element->comboboxFirstValue;
+								$moApp->$value = $element->comboboxFirstValue;
 							}
 							else
 							{
-								$moapp->$value = $element->elementValue;
+								$moApp->$value = $element->elementValue;
 							}
 						}
 					}
@@ -190,45 +179,45 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		// Nation
-		$monation = $moapp->{$personmappings['staatsbuergerschaft']};
-		$mobisionation = $moapp->{$bisiomappings['nation_code']};
-		$moaddrnation = isset($moaddr) ? $moaddr->{$adressemappings['nation']['name']}->description : null;
-		$curraddrnation = isset($curraddr) ? $curraddr->{$adressemappings['nation']['name']}->description : null;
+		$moNation = $moApp->{$personmappings['staatsbuergerschaft']};
+		$moBisioNation = $moApp->{$bisiomappings['nation_code']};
+		$moAddrNation = isset($moAddr) ? $moAddr->{$adressemappings['nation']['name']}->description : null;
+		$currAddrNation = isset($currAddr) ? $currAddr->{$adressemappings['nation']['name']}->description : null;
 
-		$mozgvnation = isset($prestudentmappings['zgvnation']) && isset($moapp->{$prestudentmappings['zgvnation']}) ? $moapp->{$prestudentmappings['zgvnation']} : null;
-		$mozgvmanation = isset($prestudentmappings['zgvmanation']) && isset($moapp->{$prestudentmappings['zgvmanation']}) ? $moapp->{$prestudentmappings['zgvmanation']} : null;
+		$moZgvNation = isset($prestudentmappings['zgvnation']) && isset($moApp->{$prestudentmappings['zgvnation']}) ? $moApp->{$prestudentmappings['zgvnation']} : null;
+		$mozgvMaNation = isset($prestudentmappings['zgvmanation']) && isset($moApp->{$prestudentmappings['zgvmanation']}) ? $moApp->{$prestudentmappings['zgvmanation']} : null;
 
-		$monations = array(
-			$personmappings['staatsbuergerschaft'] => $monation,
-			$bisiomappings['nation_code'] => $mobisionation,
-			$prestudentmappings['zgvnation'] => $mozgvnation,
-			$prestudentmappings['zgvmanation'] => $mozgvmanation
+		$moNations = array(
+			$personmappings['staatsbuergerschaft'] => $moNation,
+			$bisiomappings['nation_code'] => $moBisioNation,
+			$prestudentmappings['zgvnation'] => $moZgvNation,
+			$prestudentmappings['zgvmanation'] => $mozgvMaNation
 		);
 
-		$fhcnations = $this->ci->NationModel->load();
+		$fhcNations = $this->ci->NationModel->load();
 
-		if (hasData($fhcnations))
+		if (hasData($fhcNations))
 		{
-			foreach ($fhcnations->retval as $fhcnation)
+			foreach ($fhcNations->retval as $fhcNation)
 			{
 				// trying to get nations by bezeichnung
-				foreach ($monations as $configbez => $moonation)
+				foreach ($moNations as $configBez => $mooNation)
 				{
-					if ($fhcnation->kurztext === $moonation || $fhcnation->langtext === $moonation || $fhcnation->engltext === $moonation)
+					if ($fhcNation->kurztext === $mooNation || $fhcNation->langtext === $mooNation || $fhcNation->engltext === $mooNation)
 					{
-						if (isset($moapp->{$configbez}))
-							$moapp->{$configbez} = $fhcnation->nation_code;
+						if (isset($moApp->{$configBez}))
+							$moApp->{$configBez} = $fhcNation->nation_code;
 					}
 				}
 
-				if ($fhcnation->kurztext === $moaddrnation || $fhcnation->langtext === $moaddrnation || $fhcnation->engltext === $moaddrnation)
+				if ($fhcNation->kurztext === $moAddrNation || $fhcNation->langtext === $moAddrNation || $fhcNation->engltext === $moAddrNation)
 				{
-					$moaddr->{$adressemappings['nation']['name']} = $fhcnation->nation_code;
+					$moAddr->{$adressemappings['nation']['name']} = $fhcNation->nation_code;
 				}
 
-				if ($fhcnation->kurztext === $curraddrnation || $fhcnation->langtext === $curraddrnation || $fhcnation->engltext === $curraddrnation)
+				if ($fhcNation->kurztext === $currAddrNation || $fhcNation->langtext === $currAddrNation || $fhcNation->engltext === $currAddrNation)
 				{
-					$curraddr->{$adressemappings['nation']['name']} = $fhcnation->nation_code;
+					$currAddr->{$adressemappings['nation']['name']} = $fhcNation->nation_code;
 				}
 			}
 		}
@@ -236,67 +225,65 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// Lichtbild
 		if ($photo)
 		{
-			$moapp->{$aktemappings['inhalt']} = $photo[0]->{$aktemappings['inhalt']};
+			$moApp->{$aktemappings['inhalt']} = $photo[0]->{$aktemappings['inhalt']};
 		}
 
-		$fhcobj = $this->convertToFhcFormat($moapp, self::MOOBJECTTYPE);
+		$fhcObj = $this->convertToFhcFormat($moApp, self::MOOBJECTTYPE);
 
 		// add all Studiensemester for Prestudentstatus
 
 		// get all semesters from MO Semesterfield
-		$allsemesters = array($fhcobj['prestudentstatus']['studiensemester_kurzbz']);
-		$mostudjahr = $this->mapSemesterToMoStudienjahr($fhcobj['prestudentstatus']['studiensemester_kurzbz']);
+		$allSemesters = array($fhcObj['prestudentstatus']['studiensemester_kurzbz']);
+		$moStudjahr = $this->mapSemesterToMoStudienjahr($fhcObj['prestudentstatus']['studiensemester_kurzbz']);
 
 		// WS and SS if Studienjahr given in MO
-		if ($moapp->{$prestudentstatusmappings['studiensemester_kurzbz']} === $mostudjahr)
+		if ($moApp->{$prestudentstatusmappings['studiensemester_kurzbz']} === $moStudjahr)
 		{
-			$this->mapMoStudienjahrToSemester($mostudjahr);
-			$allsemesters = array_unique(array_merge($allsemesters, $this->mapMoStudienjahrToSemester($mostudjahr)));
+			$allSemesters = array_unique(array_merge($allSemesters, $this->mapMoStudienjahrToSemester($moStudjahr)));
 		}
 
 		// add Studiensemester for each semester in the stay time span of von - bis date
-		$studiensemesterres = $this->ci->StudiensemesterModel->getByDate($fhcobj['bisio']['von'], $fhcobj['bisio']['bis']);
+		$studiensemesterRes = $this->ci->StudiensemesterModel->getByDate($fhcObj['bisio']['von'], $fhcObj['bisio']['bis']);
 
-		if (hasData($studiensemesterres))
+		if (hasData($studiensemesterRes))
 		{
-			foreach ($studiensemesterres->retval as $semester)
+			foreach ($studiensemesterRes->retval as $semester)
 			{
 				$studiensemester_kurzbz = $semester->studiensemester_kurzbz;
-				if (!in_array($studiensemester_kurzbz, $allsemesters))
-					$allsemesters[] = $studiensemester_kurzbz;
+				if (!in_array($studiensemester_kurzbz, $allSemesters))
+					$allSemesters[] = $studiensemester_kurzbz;
 			}
 		}
 
-		$fhcobj['all_studiensemester_kurzbz'] = $allsemesters;
+		$fhcObj['all_studiensemester_kurzbz'] = $allSemesters;
 
 		// add last MO pipeline status
-		$fhcobj['pipelineStatus'] = 'not set';
-		$fhcobj['pipelineStatusDescription'] = 'no Status set';
+		$fhcObj['pipelineStatus'] = 'not set';
+		$fhcObj['pipelineStatusDescription'] = 'no Status set';
 
-		$valuesconfig = $this->ci->config->item('values');
-		$pipelinestati = $valuesconfig['pipelinestati'];
-		for ($i = count($pipelinestati) - 1; $i >= 0; $i--)
+		$pipelinestatus = $fieldmappings['status_info'];
+
+		foreach ($pipelinestatus as $status)
 		{
-			foreach ($moapp->nonUsedApplicationDataElements as $element)
+			foreach ($moApp->nonUsedApplicationDataElements as $element)
 			{
-				if (isset($element->elementName) && $element->elementName === $pipelinestati[$i]
+				if (isset($element->elementName) && $element->elementName === $status
 					&& isset($element->elementValueBoolean) && $element->elementValueBoolean === true)
 				{
-					$fhcobj['pipelineStatus'] = $element->elementName;
-					$fhcobj['pipelineStatusDescription'] = $element->elementDescription;
-					break 2;
+					$fhcObj['pipelineStatus'] = $element->elementName;
+					$fhcObj['pipelineStatusDescription'] = $element->elementDescription;
 				}
 			}
 		}
 
-		$fhcaddr = $this->convertToFhcFormat($moaddr, 'address');
-		$fhccurraddr = $this->convertToFhcFormat($curraddr, 'curraddress');
+		$fhcAddr = $this->convertToFhcFormat($moAddr, 'address');
+		$fhcCurrAddr = $this->convertToFhcFormat($currAddr, 'curraddress');
 
-		$fhcobj = array_merge($fhcobj, $fhcaddr, $fhccurraddr);
+		$fhcObj = array_merge($fhcObj, $fhcAddr, $fhcCurrAddr);
 
 		// courses
-		$fhcobj['mocourses'] = array();
-		$courses = $this->ci->MoGetAppModel->getCoursesOfApplication($moapp->applicationID);
+		$fhcObj['mocourses'] = array();
+		$courses = $this->ci->MoGetAppModel->getCoursesOfApplication($moApp->applicationID);
 
 		if (is_array($courses))
 		{
@@ -304,38 +291,37 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			{
 				if (!$course->deleted)
 				{
-					$coursedata = new stdClass();
-					$coursedata->number = $course->hostCourseNumber;
-					$coursedata->name = $course->hostCourseName;
-					$fhcobj['mocourses'][] = $coursedata;
+					$courseData = new stdClass();
+					$courseData->number = $course->hostCourseNumber;
+					$courseData->name = $course->hostCourseName;
+					$fhcObj['mocourses'][] = $courseData;
 				}
 			}
 		}
 
-		return $fhcobj;
+		return $fhcObj;
 	}
 
 	/**
 	 * Saves an incoming (pre-)student, i.e. adds him or updates it if prestudent_id is set
-	 * @param $incoming
-	 * @param $prestudent_id
+	 * @param array $incoming
+	 * @param int $prestudent_id
 	 * @return string prestudent_id of saved prestudent
 	 */
 	public function saveIncoming($incoming, $prestudent_id = null)
 	{
-		$this->output = '';
 		//error check for missing data etc.
 		$errors = $this->fhcObjHasError($incoming, self::MOOBJECTTYPE);
 
 		if ($errors->error)
 		{
-			$this->output .= "<br />ERROR! ";
+			$this->addErrorOutput("ERROR! ");
 			foreach ($errors->errorMessages as $errorMessage)
 			{
-				$this->output .= "$errorMessage";
+				$this->addErrorOutput($errorMessage);
 			}
 
-			$this->output .= "<br />aborting incoming save";
+			$this->addErrorOutput("Abbruch bei Speicherung des Incomings");
 			return null;
 		}
 
@@ -427,9 +413,11 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 						// bisio
 						$bisio['student_uid'] = $benutzerrespuid;
-						$bisio_id = $this->_saveBisio($bisio, $bisio_zweck);
+						$bisio_id = $this->_saveBisio($bisio);
 						$bisio_zweck['bisio_id'] = $bisio_id;
-						$this->_saveBisioZweck($bisio_zweck);
+						$bisio_zweckresult = $this->ci->MoFhcModel->saveBisioZweck($bisio_zweck);
+						if (hasData($bisio_zweckresult))
+							$this->log('insert', $bisio_zweckresult, 'bisio_zweck');
 					}
 
 					// Buchungen
@@ -453,7 +441,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// Check if everything went ok during the transaction
 		if ($this->ci->db->trans_status() === false)
 		{
-			$this->output .= "rolling back...";
+			$this->addInfoOutput("Rollback...");
 			$this->ci->db->trans_rollback();
 			return null;
 		}
@@ -465,77 +453,83 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Gets MobilityOnline incomings for a fhcomplete studiensemester
-	 * @param $studiensemester
+	 * Gets MobilityOnline incomings for a fhcomplete studiensemester, optionally from a Studiengang.
+	 * @param string $studiensemester
+	 * @param int $studiengang_kz as in fhc db
 	 * @return array with applications
 	 */
 	public function getIncoming($studiensemester, $studiengang_kz = null)
 	{
-		$studiensemestermo = $this->mapSemesterToMo($studiensemester);
-		$semestersforsearch = array($studiensemestermo);
-		$searcharrays = array();
-		$appids = array();
+		$studiensemesterMo = $this->mapSemesterToMo($studiensemester);
+		$semestersForSearch = array($studiensemesterMo);
+		$searchArrays = array();
+		$apps = array();
 
-		$stgvaluemappings = $this->valuemappings['frommo']['studiengang_kz'];
-		$mostgname = $this->conffieldmappings['incomingcourse']['mostudiengang']['bezeichnung'];
+		$stgValuemappings = $this->valuemappings['frommo']['studiengang_kz'];
+		$moStgName = $this->conffieldmappings['incomingcourse']['mostudiengang']['bezeichnung'];
+
+		// searchobject to search incomings
+		$searchArray = array(
+			'applicationType' => 'IN',
+			'personType' => 'S',
+			'furtherSearchRestrictions' => array('is_storniert' => false)
+		);
 
 		// Also search for Incomings who have entered Studienjahr as their Semester
-		$studienjahrsemestermo = $this->mapSemesterToMoStudienjahr($studiensemester);
-		if (isset($studienjahrsemestermo))
-			$semestersforsearch[] = $studienjahrsemestermo;
+		$studienjahrSemesterMo = $this->mapSemesterToMoStudienjahr($studiensemester);
+		if (isset($studienjahrSemesterMo))
+			$semestersForSearch[] = $studienjahrSemesterMo;
 
-		foreach ($semestersforsearch as $semesterforsearch)
+		foreach ($semestersForSearch as $semesterForSearch)
 		{
-			$searcharray = array('semesterDescription' => $semesterforsearch,
-							   'applicationType' => 'IN',
-							   'personType' => 'S');
+			$searchArray['semesterDescription'] = $semesterForSearch;
 
 			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
 			{
-				foreach ($stgvaluemappings as $mobez => $stg_kz)
+				foreach ($stgValuemappings as $mobez => $stg_kz)
 				{
 					if ($stg_kz === (int)$studiengang_kz)
 					{
-						$searcharray[$mostgname] = $mobez;
-						$searcharrays[] = $searcharray;
+						$searchArray[$moStgName] = $mobez;
+						$searchArrays[] = $searchArray;
 					}
 				}
 			}
 			else
 			{
-				$searcharrays[] = $searcharray;
+				$searchArrays[] = $searchArray;
 			}
 		}
 
-		foreach ($searcharrays as $searcharray)
+		foreach ($searchArrays as $sarr)
 		{
-			$appobj = $this->getSearchObj(
+			$searchObj = $this->getSearchObj(
 				self::MOOBJECTTYPE,
-				$searcharray
+				$sarr
 			);
 
-			$semappids = $this->ci->MoGetAppModel->getApplicationIds($appobj);
+			$semApps = $this->ci->MoGetAppModel->getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions($searchObj);
 
-			if (!isEmptyArray($semappids))
-				$appids = array_merge($appids, $semappids);
+			if (!isEmptyArray($semApps))
+				$apps = array_merge($apps, $semApps);
 		}
 
-		return $this->_getIncomingByIds($appids);
+		return $this->_getIncomingExtended($apps);
 	}
 
 	/**
 	 * Checks for a mobility online application id whether the application is saved in FH-Complete
 	 * returns prestudent_id if in FHC, null otherwise
-	 * @param $moid
-	 * @return number|null
+	 * @param int $moId
+	 * @return int|null
 	 */
-	public function checkMoIdInFhc($moid)
+	public function checkMoIdInFhc($moId)
 	{
 		$this->ci->PrestudentModel->addSelect('prestudent_id');
-		$appidzuordnung = $this->ci->MoappidzuordnungModel->loadWhere(array('mo_applicationid' => $moid));
-		if (hasData($appidzuordnung))
+		$appIdZuordnung = $this->ci->MoappidzuordnungModel->loadWhere(array('mo_applicationid' => $moId));
+		if (hasData($appIdZuordnung))
 		{
-			$prestudent_id = $appidzuordnung->retval[0]->prestudent_id;
+			$prestudent_id = $appIdZuordnung->retval[0]->prestudent_id;
 			$prestudent = $this->ci->PrestudentModel->load($prestudent_id);
 			if (hasData($prestudent))
 			{
@@ -553,36 +547,36 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Gets incomings (applications) by appids
+	 * Gets incomings (applications) by application ids
 	 * also checks if incomings already are in fhcomplete
 	 * (prestudent_id in tbl_mo_appidzuordnung table and tbl_prestudent)
-	 * @param $appids
-	 * @param $studiensemester for check if in mapping table
+	 * @param array $apps
 	 * @return array with applications
 	 */
-	private function _getIncomingByIds($appids)
+	private function _getIncomingExtended($apps)
 	{
 		$incomings = array();
 
-		foreach ($appids as $appid)
+		foreach ($apps as $application)
 		{
-			$application = $this->ci->MoGetAppModel->getApplicationById($appid);
-			$address = $this->ci->MoGetAppModel->getPermanentAddress($appid);
-			$currAddress = $this->ci->MoGetAppModel->getCurrentAddress($appid);
+			$appId = $application->applicationID;
 
-			$lichtbild = $this->ci->MoGetAppModel->getFilesOfApplication($appid, 'PASSFOTO');
+			$address = $this->ci->MoGetAppModel->getPermanentAddress($appId);
+			$currAddress = $this->ci->MoGetAppModel->getCurrentAddress($appId);
+
+			$lichtbild = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASSFOTO');
 
 			$fhcobj = $this->mapMoAppToIncoming($application, $address, $currAddress, $lichtbild);
 
 			$fhcobj_extended = new StdClass();
-			$fhcobj_extended->moid = $appid;
+			$fhcobj_extended->moid = $appId;
 			$fhcobj_extended->infhc = false;
 
 			$errors = $this->fhcObjHasError($fhcobj, self::MOOBJECTTYPE);
 			$fhcobj_extended->error = $errors->error;
 			$fhcobj_extended->errorMessages = $errors->errorMessages;
 
-			$found_prestudent_id = $this->checkMoIdInFhc($appid);
+			$found_prestudent_id = $this->checkMoIdInFhc($appId);
 
 			// mark as already in fhcomplete if prestudent is in mapping table
 			if (isset($found_prestudent_id) && is_numeric($found_prestudent_id))
@@ -603,34 +597,34 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts person or updates an existing one, if prestudent for person already exists.
-	 * @param $prestudent_id
-	 * @param $person
+	 * @param int $prestudent_id
+	 * @param array $person
 	 * @return int|null person_id of inserted/updated person
 	 */
 	private function _savePerson($prestudent_id, $person)
 	{
 		$person_id = null;
-		$prestudentcheckresp = isset($prestudent_id) && is_numeric($prestudent_id) ? $this->ci->PrestudentModel->load($prestudent_id) : null;
+		$prestudentCheckResp = isset($prestudent_id) && is_numeric($prestudent_id) ? $this->ci->PrestudentModel->load($prestudent_id) : null;
 
-		$update = hasData($prestudentcheckresp);
+		$update = hasData($prestudentCheckResp);
 
 		// update if prestudent already exists, insert otherwise
 		if ($update)
 		{
-			$person_id = $prestudentcheckresp->retval[0]->person_id;
+			$person_id = $prestudentCheckResp->retval[0]->person_id;
 			$this->stamp('update', $person);
-			$personresponse = $this->ci->PersonModel->update($person_id, $person);
-			$this->log('update', $personresponse, 'person');
+			$personResponse = $this->ci->PersonModel->update($person_id, $person);
+			$this->log('update', $personResponse, 'person');
 		}
 		else
 		{
 			$this->stamp('insert', $person);
-			$personresponse = $this->ci->PersonModel->insert($person);
-			if (isSuccess($personresponse))
+			$personResponse = $this->ci->PersonModel->insert($person);
+			if (isSuccess($personResponse))
 			{
-				$person_id = $personresponse->retval;
+				$person_id = $personResponse->retval;
 			}
-			$this->log('insert', $personresponse, 'person');
+			$this->log('insert', $personResponse, 'person');
 		}
 
 		return $person_id;
@@ -638,8 +632,8 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts Adresse for a person.
-	 * @param $person_id
-	 * @param $adresse
+	 * @param int $person_id
+	 * @param array $adresse
 	 * @return int|null adresse_id of inserted adresse, null if adresse already exists
 	 */
 	private function _saveAdresse($person_id, $adresse)
@@ -649,19 +643,19 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		$adresse_id = null;
 		// insert if there is no adress with same heimatadresse / zustelladresse values
-		$heimataddrresp = $this->ci->AdresseModel->loadWhere(array(
+		$heimatAddrResp = $this->ci->AdresseModel->loadWhere(array(
 				'person_id' => $person_id,
 				'heimatadresse' => $adresse['heimatadresse'],
 				'zustelladresse' => $adresse['zustelladresse']
 			));
 
-		if (isSuccess($heimataddrresp) && !hasData($heimataddrresp))
+		if (isSuccess($heimatAddrResp) && !hasData($heimatAddrResp))
 		{
 			$adresse['person_id'] = $person_id;
 			$this->stamp('insert', $adresse);
-			$addrresp = $this->ci->AdresseModel->insert($adresse);
-			$adresse_id = $addrresp->retval;
-			$this->log('insert', $addrresp, 'adresse');
+			$addrResp = $this->ci->AdresseModel->insert($adresse);
+			$adresse_id = $addrResp->retval;
+			$this->log('insert', $addrResp, 'adresse');
 		}
 
 		return $adresse_id;
@@ -669,9 +663,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts Kontakt for a person.
-	 * @param $person_id
-	 * @param $kontakt
-	 * @param $table
+	 * @param int $person_id
+	 * @param array $kontakt
+	 * @param string $table for log
 	 * @return int|null kontakt_id of inserted kontakt, null if Kontakt with given type already exists
 	 */
 	private function _saveKontakt($person_id, $kontakt, $table)
@@ -680,29 +674,29 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		if (isset($kontakt['kontakttyp']) && !isEmptyString($kontakt['kontakttyp']))
 		{
-			$kontaktresp = $this->ci->KontaktModel->loadWhere(array('person_id' => $person_id, 'kontakttyp' => $kontakt['kontakttyp']));
+			$kontaktResp = $this->ci->KontaktModel->loadWhere(array('person_id' => $person_id, 'kontakttyp' => $kontakt['kontakttyp']));
 
 			if (!empty($kontakt['kontakt']))
 			{
-				$kontaktfound = false;
-				if (hasData($kontaktresp))
+				$kontaktFound = false;
+				if (hasData($kontaktResp))
 				{
-					foreach ($kontaktresp->retval as $ktkt)
+					foreach ($kontaktResp->retval as $ktkt)
 					{
 						if ($ktkt->kontakt === $kontakt['kontakt'])
 						{
-							$kontaktfound = true;
+							$kontaktFound = true;
 							break;
 						}
 					}
 				}
 
-				if (isSuccess($kontaktresp) && !$kontaktfound)
+				if (isSuccess($kontaktResp) && !$kontaktFound)
 				{
 					$kontakt['person_id'] = $person_id;
 					$this->stamp('insert', $kontakt);
-					$kontaktresp = $kontaktinsresp = $this->ci->KontaktModel->insert($kontakt);
-					$kontakt_id = $kontaktresp->retval;
+					$kontaktResp = $kontaktinsresp = $this->ci->KontaktModel->insert($kontakt);
+					$kontakt_id = $kontaktResp->retval;
 					$this->log('insert', $kontaktinsresp, $table);
 				}
 			}
@@ -713,8 +707,8 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts a Lichtbild (picture) of a person as an akte.
-	 * @param $person_id
-	 * @param $akte
+	 * @param int $person_id
+	 * @param array $akte
 	 * @return int|null akte_id of inserted akte, null if Akte with given dokument_kurzbz already exists
 	 */
 	private function _saveLichtbild($person_id, $akte)
@@ -723,15 +717,15 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		if (isset($akte['dokument_kurzbz']) && !isEmptyString($akte['dokument_kurzbz']))
 		{
-			$aktecheckresp = $this->ci->AkteModel->loadWhere(array('person_id' => $person_id, 'dokument_kurzbz' => $akte['dokument_kurzbz']));
+			$aktecheckResp = $this->ci->AkteModel->loadWhere(array('person_id' => $person_id, 'dokument_kurzbz' => $akte['dokument_kurzbz']));
 
-			if (isSuccess($aktecheckresp))
+			if (isSuccess($aktecheckResp))
 			{
-				if (hasData($aktecheckresp))
+				if (hasData($aktecheckResp))
 				{
 					if ($this->debugmode)
 					{
-						$this->output .= '<br />lichtbild already exists, akte_id '.$aktecheckresp->retval[0]->akte_id;
+						$this->addInfoOutput('Lichtbild existiert bereits, akte_id '.$aktecheckResp->retval[0]->akte_id);
 					}
 				}
 				else
@@ -739,9 +733,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 					$akte['person_id'] = $person_id;
 					$akte['titel'] = 'Lichtbild_'.$person_id;
 					$this->stamp('insert', $akte);
-					$akteresp = $this->ci->AkteModel->insert($akte);
-					$akte_id = $akteresp->retval;
-					$this->log('insert', $akteresp, 'akte');
+					$akteResp = $this->ci->AkteModel->insert($akte);
+					$akte_id = $akteResp->retval;
+					$this->log('insert', $akteResp, 'akte');
 				}
 			}
 		}
@@ -751,38 +745,38 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts prestudent or updates an existing one.
-	 * @param $prestudent_id
-	 * @param $prestudent
+	 * @param int $prestudent_id
+	 * @param array $prestudent
 	 * @return int|null prestudent_id of inserted or updated prestudent if successful, null otherwise.
  	 */
 	private function _savePrestudent($prestudent_id, $prestudent)
 	{
 		$prestudent_id_response = null;
-		$prestudentcheckresp = isset($prestudent_id) && is_numeric($prestudent_id) ? $this->ci->PrestudentModel->load($prestudent_id) : null;
+		$prestudentCheckResp = isset($prestudent_id) && is_numeric($prestudent_id) ? $this->ci->PrestudentModel->load($prestudent_id) : null;
 
-		$update = hasData($prestudentcheckresp);
+		$update = hasData($prestudentCheckResp);
 
 		if ($update)
 		{
 			$this->stamp('update', $prestudent);
-			$prestudentresponse = $this->ci->PrestudentModel->update($prestudent_id, $prestudent);
-			$this->log('update', $prestudentresponse, 'prestudent');
+			$prestudentResponse = $this->ci->PrestudentModel->update($prestudent_id, $prestudent);
+			$this->log('update', $prestudentResponse, 'prestudent');
 		}
 		else
 		{
 			$this->stamp('insert', $prestudent);
-			$prestudentresponse = $this->ci->PrestudentModel->insert($prestudent);
-			$this->log('insert', $prestudentresponse, 'prestudent');
+			$prestudentResponse = $this->ci->PrestudentModel->insert($prestudent);
+			$this->log('insert', $prestudentResponse, 'prestudent');
 		}
-		$prestudent_id_response = $prestudentresponse->retval;
+		$prestudent_id_response = $prestudentResponse->retval;
 
 		return $prestudent_id_response;
 	}
 
 	/**
 	 * Inserts prestudentstatus for each given Studiensemester.
-	 * @param $studiensemarr all semester, for which a prestudentstatus entry should be generated
-	 * @param $prestudentstatus
+	 * @param string $studiensemarr all semester, for which a prestudentstatus entry should be generated
+	 * @param array $prestudentstatus
 	 * @return array containing inserted prestudentstatus primary keys
 	 */
 	private function _savePrestudentStatus($studiensemarr, $prestudentstatus)
@@ -797,10 +791,10 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				$prestudentstatus['studiensemester_kurzbz'] = $semester;
 				$prestudentstatus['datum'] = date('Y-m-d', time());
 				$this->stamp('insert', $prestudentstatus);
-				$prestudentstatusresponse = $this->ci->PrestudentstatusModel->insert($prestudentstatus);
-				if (hasData($prestudentstatusresponse))
-					$saved[] = $prestudentstatusresponse->retval;
-				$this->log('insert', $prestudentstatusresponse, 'prestudentstatus');
+				$prestudentstatusResponse = $this->ci->PrestudentstatusModel->insert($prestudentstatus);
+				if (hasData($prestudentstatusResponse))
+					$saved[] = $prestudentstatusResponse->retval;
+				$this->log('insert', $prestudentstatusResponse, 'prestudentstatus');
 			}
 		}
 
@@ -809,9 +803,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts benutzer and generates uid and activation key, if no benutzer already exists for given prestudent.
-	 * @param $matrikelnr for uid generation
-	 * @param $prestudent
-	 * @param $benutzer
+	 * @param string $matrikelnr for uid generation
+	 * @param array $prestudent
+	 * @param array $benutzer
 	 * @return string|null benutzer_uid of inserted benutzer if successful, null otherwise
 	 */
 	private function _saveBenutzer($matrikelnr, $prestudent, $benutzer)
@@ -819,18 +813,18 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$benutzerresp_uid = null;
 
 		$this->ci->StudentModel->addOrder('insertamum');
-		$benutzerstudcheckresp = $this->ci->StudentModel->loadWhere(array('prestudent_id' => $prestudent['prestudent_id']));
+		$benutzerstudCheckResp = $this->ci->StudentModel->loadWhere(array('prestudent_id' => $prestudent['prestudent_id']));
 
-		if (isSuccess($benutzerstudcheckresp))
+		if (isSuccess($benutzerstudCheckResp))
 		{
-			if (hasData($benutzerstudcheckresp))
+			if (hasData($benutzerstudCheckResp))
 			{
-				$benutzer['uid'] = $benutzerstudcheckresp->retval[0]->student_uid;
+				$benutzer['uid'] = $benutzerstudCheckResp->retval[0]->student_uid;
 				$benutzerresp_uid = $benutzer['uid'];
 
 				if ($this->debugmode)
 				{
-					$this->output .= "<br />benutzer for student ".$prestudent['prestudent_id'] ." already exists, uid " .$benutzer['uid'];
+					$this->addInfoOutput("benutzer for student ".$prestudent['prestudent_id'] ." already exists, uid " .$benutzer['uid']);
 				}
 			}
 			else
@@ -848,22 +842,22 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 					$benutzer['uid'] = generateUID($stg_bez, $jahr, $stg_typ, $matrikelnr);
 
 					//check for existing benutzer
-					$benutzercheckresp = $this->ci->BenutzerModel->loadWhere(array('uid' => $benutzer['uid']));
+					$benutzerCheckResp = $this->ci->BenutzerModel->loadWhere(array('uid' => $benutzer['uid']));
 
-					if (hasData($benutzercheckresp))
+					if (hasData($benutzerCheckResp))
 					{
-						$this->output .= "<br />benutzer with uid ".$benutzer['uid']." already exists";
+						$this->addInfoOutput("benutzer mit uid ".$benutzer['uid']." existiert bereits");
 						$benutzerresp_uid = $benutzer['uid'];
 					}
-					elseif (isSuccess($benutzercheckresp))
+					elseif (isSuccess($benutzerCheckResp))
 					{
 						$benutzer['aktivierungscode'] = generateActivationKey();
 						$this->stamp('insert', $benutzer);
-						$benutzerinscheckresp = $this->ci->BenutzerModel->insert($benutzer);
-						if (hasData($benutzerinscheckresp))
-							$benutzerresp_uid = $benutzerinscheckresp->retval['uid'];
+						$benutzerInsCheckResp = $this->ci->BenutzerModel->insert($benutzer);
+						if (hasData($benutzerInsCheckResp))
+							$benutzerresp_uid = $benutzerInsCheckResp->retval['uid'];
 
-						$this->log('insert', $benutzerinscheckresp, 'benutzer');
+						$this->log('insert', $benutzerInsCheckResp, 'benutzer');
 					}
 				}
 			}
@@ -874,10 +868,10 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts student or updates an existing one.
-	 * @param $student_uid of existing benutzer for the student
-	 * @param $matrikelnr
-	 * @param $prestudent for retrieving prestudent_id and studiengang_kz for student
-	 * @param $student
+	 * @param string $student_uid of existing benutzer for the student
+	 * @param string $matrikelnr
+	 * @param array $prestudent for retrieving prestudent_id and studiengang_kz for student
+	 * @param array $student
 	 * @return string|null student_uid of inserted/updated student if successful, null otherwise
 	 */
 	private function _saveStudent($student_uid, $matrikelnr, $prestudent, $student)
@@ -887,26 +881,26 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$student['prestudent_id'] = $prestudent['prestudent_id'];
 		$student['studiengang_kz'] = $prestudent['studiengang_kz'];
 
-		$studentcheckresp = $this->ci->StudentModel->loadWhere(array('student_uid' => $student_uid));
+		$studentCheckResp = $this->ci->StudentModel->loadWhere(array('student_uid' => $student_uid));
 
-		if (isSuccess($studentcheckresp))
+		if (isSuccess($studentCheckResp))
 		{
-			if (hasData($studentcheckresp))
+			if (hasData($studentCheckResp))
 			{
 				$this->stamp('update', $student);
-				$studentresponse = $this->ci->StudentModel->update(array('student_uid' => $student_uid), $student);
-				$this->log('update', $studentresponse, 'student');
+				$studentResponse = $this->ci->StudentModel->update(array('student_uid' => $student_uid), $student);
+				$this->log('update', $studentResponse, 'student');
 			}
 			else
 			{
 				$student['matrikelnr'] = $matrikelnr;
 				$this->stamp('insert', $student);
 				$student['student_uid'] = $student_uid;
-				$studentresponse = $this->ci->StudentModel->insert($student);
-				$this->log('insert', $studentresponse, 'student');
+				$studentResponse = $this->ci->StudentModel->insert($student);
+				$this->log('insert', $studentResponse, 'student');
 			}
 
-			$studentresp_uid = $studentresponse->retval['student_uid'];
+			$studentresp_uid = $studentResponse->retval['student_uid'];
 		}
 
 		return $studentresp_uid;
@@ -914,110 +908,79 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts studentlehrverband or updates an existing one for all given Studiensemester.
-	 * @param $studiensemarr all semester, for which a studentlehrverband entry should be generated
-	 * @param $studentlehrverband
+	 * @param array $studiensemarr all semester, for which a studentlehrverband entry should be generated
+	 * @param array $studentlehrverband
 	 * @return array containing inserted/updated studentlehrverband primary keys
 	 */
 	private function _saveStudentlehrverband($studiensemarr, $studentlehrverband)
 	{
-		$studentlehrverbandpk = array();
+		$studentlehrverbandPk = array();
 
 		if (is_array($studiensemarr))
 		{
 			foreach ($studiensemarr as $semester)
 			{
 				$studentlehrverband['studiensemester_kurzbz'] = $semester;
-				$studenlehrverbandcheckresp = $this->ci->StudentlehrverbandModel->load(array('student_uid' => $studentlehrverband['student_uid'], 'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']));
-				if (isSuccess($studenlehrverbandcheckresp))
+				$studenlehrverbandCheckResp = $this->ci->StudentlehrverbandModel->load(array('student_uid' => $studentlehrverband['student_uid'], 'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']));
+				if (isSuccess($studenlehrverbandCheckResp))
 				{
-					if (hasData($studenlehrverbandcheckresp))
+					if (hasData($studenlehrverbandCheckResp))
 					{
 						$this->stamp('update', $studentlehrverband);
-						$studentlehrverbandresponse = $this->ci->StudentlehrverbandModel->update(array('student_uid' => $studentlehrverband['student_uid'], 'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']), $studentlehrverband);
-						$this->log('update', $studentlehrverbandresponse, 'studentlehrverband');
+						$studentlehrverbandResponse = $this->ci->StudentlehrverbandModel->update(array('student_uid' => $studentlehrverband['student_uid'], 'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']), $studentlehrverband);
+						$this->log('update', $studentlehrverbandResponse, 'studentlehrverband');
 					}
 					else
 					{
 						$this->stamp('insert', $studentlehrverband);
-						$studentlehrverbandresponse = $this->ci->StudentlehrverbandModel->insert($studentlehrverband);
-						$this->log('insert', $studentlehrverbandresponse, 'studentlehrverband');
+						$studentlehrverbandResponse = $this->ci->StudentlehrverbandModel->insert($studentlehrverband);
+						$this->log('insert', $studentlehrverbandResponse, 'studentlehrverband');
 					}
-					$studentlehrverbandpk = $studentlehrverbandresponse->retval;
+					$studentlehrverbandPk = $studentlehrverbandResponse->retval;
 				}
 			}
 		}
 
-		return $studentlehrverbandpk;
+		return $studentlehrverbandPk;
 	}
 
 	/**
 	 * Inserts bisio for a student or updates an existing one.
-	 * @param $bisio
+	 * @param array $bisio
 	 * @return int|null bisio_id of inserted or updated bisio if successful, null otherwise.
 	 */
 	private function _saveBisio($bisio)
 	{
-		$bisiorespid = null;
+		$bisioRespId = null;
 
-		$bisiocheckresp = $this->ci->BisioModel->loadWhere(array('student_uid' => $bisio['student_uid']));
+		$bisiocheckResp = $this->ci->BisioModel->loadWhere(array('student_uid' => $bisio['student_uid']));
 
-		if (isSuccess($bisiocheckresp))
+		if (isSuccess($bisiocheckResp))
 		{
-			if (hasData($bisiocheckresp))
+			if (hasData($bisiocheckResp))
 			{
 				$this->stamp('update', $bisio);
-				$bisioresult = $this->ci->BisioModel->update($bisiocheckresp->retval[0]->bisio_id, $bisio);
-				$this->log('update', $bisioresult, 'bisio');
+				$bisioResult = $this->ci->BisioModel->update($bisiocheckResp->retval[0]->bisio_id, $bisio);
+				$this->log('update', $bisioResult, 'bisio');
 			}
 			else
 			{
 				$this->stamp('insert', $bisio);
-				$bisioresult = $this->ci->BisioModel->insert($bisio);
-				$this->log('insert', $bisioresult, 'bisio');
+				$bisioResult = $this->ci->BisioModel->insert($bisio);
+				$this->log('insert', $bisioResult, 'bisio');
 			}
 
-			$bisiorespid = $bisioresult->retval;
+			$bisioRespId = $bisioResult->retval;
 		}
 
-		return $bisiorespid;
-	}
-
-	/**
-	 * Inserts bisio_zweck for a student or updates an existing one.
-	 * @param $bisio_zweck
-	 * @return int|null bisio_id and zweck_id of inserted or updated bisio_zweck if successful, null otherwise.
-	 */
-	private function _saveBisioZweck($bisio_zweck)
-	{
-		$bisio_zweckid = null;
-
-		$bisiocheckresp = $this->ci->BisioZweckModel->loadWhere(array('bisio_id' => $bisio_zweck['bisio_id']));
-
-		if (isSuccess($bisiocheckresp))
-		{
-			if (hasData($bisiocheckresp))
-			{
-				$bisio_zweckresult = $this->ci->BisioZweckModel->update(array('bisio_id' => $bisio_zweck['bisio_id']),
-					array('zweck_code' => $bisio_zweck['zweck_code']));
-				$this->log('update', $bisio_zweckresult, 'bisio_zweck');
-			}
-			else
-			{
-				$bisio_zweckresult = $this->ci->BisioZweckModel->insert($bisio_zweck);
-				$this->log('insert', $bisio_zweckresult, 'bisio_zweck');
-			}
-
-			$bisio_zweckid = $bisio_zweckresult->retval;
-		}
-
-		return $bisio_zweckid;
+		return $bisioRespId;
 	}
 
 	/**
 	 * Inserts Kontobuchungen, adds data like Betrag, Buchungsverweis, Zahlungsreferenz.
 	 * Saves Gegenbuchung if Buchungsbetrag is 0.
 	 * Inserts all Buchungstypen present in the buchungstyp_kurzbz property array, if not already existing.
-	 * @param $konto
+	 * @param array $konto
 	 * @return array containing inserted buchungsnr
 	 */
 	private function _saveBuchungen($konto)
@@ -1030,11 +993,11 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$kontoToInsert = $konto;
 			foreach ($konto['buchungstyp_kurzbz'] as $buchungstyp_kurzbz)
 			{
-				$buchungstypres = $this->ci->BuchungstypModel->load($buchungstyp_kurzbz);
+				$buchungstypRes = $this->ci->BuchungstypModel->load($buchungstyp_kurzbz);
 
-				if (hasData($buchungstypres))
+				if (hasData($buchungstypRes))
 				{
-					$checkbuchungres = $this->ci->KontoModel->loadWhere(
+					$checkbuchungRes = $this->ci->KontoModel->loadWhere(
 						array(
 							'buchungstyp_kurzbz' => $buchungstyp_kurzbz,
 							'studiensemester_kurzbz' => $konto['studiensemester_kurzbz'],
@@ -1043,9 +1006,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 						)
 					);
 
-					if (isSuccess($checkbuchungres) && !hasData($checkbuchungres))
+					if (isSuccess($checkbuchungRes) && !hasData($checkbuchungRes))
 					{
-						$buchungstyp = $buchungstypres->retval[0];
+						$buchungstyp = $buchungstypRes->retval[0];
 						$kontoToInsert['buchungstyp_kurzbz'] = $buchungstyp_kurzbz;
 
 						if (isset($konto['betrag'][$buchungstyp_kurzbz]))
@@ -1060,16 +1023,16 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 						$kontoToInsert['buchungsdatum'] = date('Y-m-d');
 
-						$kontoinsertres = $this->ci->KontoModel->insert($kontoToInsert);
-						$this->log('insert', $kontoinsertres, 'konto');
+						$kontoInsertRes = $this->ci->KontoModel->insert($kontoToInsert);
+						$this->log('insert', $kontoInsertRes, 'konto');
 
-						if (hasData($kontoinsertres))
+						if (hasData($kontoInsertRes))
 						{
-							$kontoinsertid = $kontoinsertres->retval;
+							$kontoInsertId = $kontoInsertRes->retval;
 							// Zahlungsreferenz generieren
-							$zahlungsref = generateZahlungsreferenz($konto['studiengang_kz'], $kontoinsertid);
+							$zahlungsref = generateZahlungsreferenz($konto['studiengang_kz'], $kontoInsertId);
 
-							$zahlungsrefres = $this->ci->KontoModel->update($kontoinsertid, array('zahlungsreferenz' => $zahlungsref));
+							$zahlungsrefres = $this->ci->KontoModel->update($kontoInsertId, array('zahlungsreferenz' => $zahlungsref));
 
 							if (hasData($zahlungsrefres) && isset($konto['betrag'][$buchungstyp_kurzbz])
 								&& $konto['betrag'][$buchungstyp_kurzbz] == 0)
@@ -1077,11 +1040,11 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 								// Gegenbuchung wenn 0 Betrag
 								$gegenbuchung = $kontoToInsert;
 								$gegenbuchung['mahnspanne'] = 0;
-								$gegenbuchung['buchungsnr_verweis'] = $kontoinsertid;
+								$gegenbuchung['buchungsnr_verweis'] = $kontoInsertId;
 								$gegenbuchung['zahlungsreferenz'] = $zahlungsref;
 								$this->ci->KontoModel->insert($gegenbuchung);
 
-								$inserted_buchungen[] = $kontoinsertid;
+								$inserted_buchungen[] = $kontoInsertId;
 							}
 						}
 					}

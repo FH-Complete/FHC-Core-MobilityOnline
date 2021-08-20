@@ -14,12 +14,15 @@ class Mobilityonlinefhc_model extends DB_Model
 		parent::__construct();
 		$this->load->model('crm/prestudent_model', 'PrestudentModel');
 		$this->load->model('person/Kontakt_model', 'KontaktModel');
+		$this->load->model('codex/bisiozweck_model', 'BisioZweckModel');
+		$this->load->model('codex/bisioaufenthaltfoerderung_model', 'BisioAufenthaltfoerderungModel');
 	}
 
 	/**
 	 * Gets prestudent data of an incoming, including stay from and to date
-	 * @param $prestudent_id
-	 * @return mixed
+	 * @param int $prestudent_id
+	 * @param string $studiengang_kz
+	 * @return object prestudent data or error
 	 */
 	public function getIncomingPrestudent($prestudent_id, $studiengang_kz = null)
 	{
@@ -33,12 +36,12 @@ class Mobilityonlinefhc_model extends DB_Model
 		$this->PrestudentModel->addJoin('public.tbl_studiengang', 'studiengang_kz');
 		$this->PrestudentModel->addJoin('bis.tbl_bisio', 'uid = student_uid');
 
-		$whereparams = array('prestudent_id' => $prestudent_id);
+		$whereParams = array('prestudent_id' => $prestudent_id);
 
 		if (isset($studiengang_kz) && is_numeric($studiengang_kz))
-			$whereparams['studiengang_kz'] = $studiengang_kz;
+			$whereParams['studiengang_kz'] = $studiengang_kz;
 
-		$prestudent = $this->PrestudentModel->loadWhere($whereparams);
+		$prestudent = $this->PrestudentModel->loadWhere($whereParams);
 
 		$return = error('error occured while getting prestudent');
 
@@ -64,19 +67,19 @@ class Mobilityonlinefhc_model extends DB_Model
 
 				$phonenumber = hasData($phonekontakt) ? $phonekontakt->retval[0]->kontakt : '';
 
-				$prestudentobj = new StdClass();
+				$prestudentObj = new StdClass();
 
-				$prestudentobj->prestudent_id = $prestudent->prestudent_id;
-				$prestudentobj->vorname = $prestudent->vorname;
-				$prestudentobj->nachname = $prestudent->nachname;
-				$prestudentobj->uid = $prestudent->uid;
-				$prestudentobj->email = $mailkontakt->retval[0]->kontakt;
-				$prestudentobj->phonenumber = $phonenumber;
-				$prestudentobj->studiengang = $prestudent->bezeichnung;
-				$prestudentobj->stayfrom = $prestudent->von;
-				$prestudentobj->stayto = $prestudent->bis;
+				$prestudentObj->prestudent_id = $prestudent->prestudent_id;
+				$prestudentObj->vorname = $prestudent->vorname;
+				$prestudentObj->nachname = $prestudent->nachname;
+				$prestudentObj->uid = $prestudent->uid;
+				$prestudentObj->email = $mailkontakt->retval[0]->kontakt;
+				$prestudentObj->phonenumber = $phonenumber;
+				$prestudentObj->studiengang = $prestudent->bezeichnung;
+				$prestudentObj->stayfrom = $prestudent->von;
+				$prestudentObj->stayto = $prestudent->bis;
 
-				$return = success($prestudentobj);
+				$return = success($prestudentObj);
 			}
 		}
 
@@ -86,7 +89,7 @@ class Mobilityonlinefhc_model extends DB_Model
 	/**
 	 * Gets Studiengaenge from FHC which are used in MobilityOnline.
 	 * Used types and Studiengaenge are configured in values config.
-	 * @return mixed
+	 * @return object
 	 */
 	public function getStudiengaenge()
 	{
@@ -105,10 +108,10 @@ class Mobilityonlinefhc_model extends DB_Model
 
 	/**
 	 * Checks if a table column value exists in fhcomplete database
-	 * @param $table
-	 * @param $field
-	 * @param $value
-	 * @return mixed
+	 * @param string $table
+	 * @param string $field
+	 * @param string $value
+	 * @return object
 	 */
 	public function valueExists($table, $field, $value)
 	{
@@ -118,9 +121,9 @@ class Mobilityonlinefhc_model extends DB_Model
 
 	/**
 	 * Checks if a table column value has right length
-	 * @param $table
-	 * @param $field
-	 * @param $value
+	 * @param string $table
+	 * @param string $field
+	 * @param $string value
 	 * @return bool
 	 */
 	public function checkLength($table, $field, $value)
@@ -134,13 +137,121 @@ class Mobilityonlinefhc_model extends DB_Model
 		{
 			if (hasData($length))
 			{
-				$lengthdata = getData($length);
-				$lengthdata = $lengthdata[0]->character_maximum_length;
-				return !isset($lengthdata) || strlen($value) <= $lengthdata;
+				$lengthData = getData($length);
+				$lengthData = $lengthData[0]->character_maximum_length;
+				return !isset($lengthData) || strlen($value) <= $lengthData;
 			}
 			else
 				return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Gets bisiodata, including concatenated Zweck.
+	 * @param string $student_uid
+	 * @return object
+	 */
+	public function getBisio($student_uid)
+	{
+		$bisioqry = "SELECT tbl_bisio.bisio_id, tbl_bisio.von, tbl_bisio.bis, universitaet, 
+					tbl_mobilitaetsprogramm.beschreibung as mobilitaetsprogramm, ort, tbl_nation.langtext as nation,
+       				string_agg(tbl_zweck.bezeichnung, ', ') AS zweck
+					FROM bis.tbl_bisio
+					LEFT JOIN bis.tbl_mobilitaetsprogramm USING(mobilitaetsprogramm_code)
+					LEFT JOIN bis.tbl_nation USING (nation_code)
+					LEFT JOIN bis.tbl_bisio_zweck USING (bisio_id)
+					LEFT JOIN bis.tbl_zweck ON tbl_bisio_zweck.zweck_code = tbl_zweck.zweck_code
+					WHERE tbl_bisio.student_uid = ?
+					GROUP BY tbl_bisio.bisio_id, tbl_mobilitaetsprogramm.beschreibung, tbl_nation.langtext
+					ORDER BY tbl_bisio.von, tbl_bisio.updateamum, tbl_bisio.insertamum";
+
+		return  $this->execQuery($bisioqry, array($student_uid));
+	}
+
+	/**
+	 * Inserts bisio_zweck for a student if not present yet.
+	 * @param array $bisio_zweck
+	 * @return int|null bisio_id and zweck_id of inserted bisio_zweck if successful, null otherwise.
+	 */
+	public function saveBisioZweck($bisio_zweck)
+	{
+		if (!isset($bisio_zweck['zweck_code']))
+			return success(null);
+
+		$bisioCheckResp = $this->BisioZweckModel->loadWhere(
+			array(
+				'bisio_id' => $bisio_zweck['bisio_id'],
+				'zweck_code' => $bisio_zweck['zweck_code']
+			)
+		);
+
+		if (isError($bisioCheckResp))
+			return $bisioCheckResp;
+
+		if (!hasData($bisioCheckResp))
+			return $this->BisioZweckModel->insert($bisio_zweck);
+		else
+			return success(null);
+	}
+
+	/**
+	 * Inserts bisio Aufenthaltsförderung for a student if not present, updates if present.
+	 * @param array $bisio_aufenthaltfoerderung
+	 * @return int|null bisio_id and aufenthaltfoerderung_code of inserted aufenthaltfoerderung if successful, null otherwise.
+	 */
+	public function saveBisioAufenthaltfoerderung($bisio_aufenthaltfoerderung)
+	{
+		$result = null;
+
+		if (!isset($bisio_aufenthaltfoerderung['aufenthaltfoerderung_code']))
+			$result = success(null);
+		else
+		{
+			$bisioCheckResp = $this->BisioAufenthaltfoerderungModel->loadWhere(
+				array(
+					'bisio_id' => $bisio_aufenthaltfoerderung['bisio_id'],
+					'aufenthaltfoerderung_code' => $bisio_aufenthaltfoerderung['aufenthaltfoerderung_code']
+				)
+			);
+
+			if (isError($bisioCheckResp))
+				$result = $bisioCheckResp;
+			else
+			{
+				if (!hasData($bisioCheckResp))
+					$result = $this->BisioAufenthaltfoerderungModel->insert($bisio_aufenthaltfoerderung);
+				else
+					$result = success(null);
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Deletes all zweck entries for a bisio.
+	 * @param int $bisio_id
+	 * @param array $excludedZweckCodes zweck_code to exclude from deletion
+	 * @return object
+	 */
+	public function deleteBisioZweck($bisio_id, $excludedZweckCodes)
+	{
+		$qry = "DELETE FROM bis.tbl_bisio_zweck WHERE bisio_id = ? AND zweck_code NOT IN ?";
+
+		return  $this->execQuery($qry, array($bisio_id, $excludedZweckCodes));
+	}
+
+	/**
+	 * Deletes all aufenthaltfoerderung entries for a bisio.
+	 * @param int $bisio_id
+	 * @param array $excludedAufenthaltfoerderungCodes aufenthaltfoerderung_code to exclude from deletion
+	 * @return object
+	 */
+	public function deleteBisioAufenthaltfoerderung($bisio_id, $excludedAufenthaltfoerderungCodes)
+	{
+		$qry = "DELETE FROM bis.tbl_bisio_aufenthaltfoerderung WHERE bisio_id = ? AND aufenthaltfoerderung_code NOT IN ?";
+
+		return  $this->execQuery($qry, array($bisio_id, $excludedAufenthaltfoerderungCodes));
 	}
 }

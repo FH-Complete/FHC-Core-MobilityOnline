@@ -20,26 +20,26 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 	/**
 	 * Executes sync of courses for a Studiensemester from FHC to MO.
 	 * Adds, updates or deletes (if not in FHC anymore) courses.
-	 * @param $studiensemester
+	 * @param string $studiensemester
 	 * @return array containing syncoutput, errors, numer of added, updated, deleted courses
 	 */
 	public function startCoursesSync($studiensemester)
 	{
 		$fieldmappings = $this->ci->config->item('fieldmappings');
-		$coursename = $fieldmappings[self::MOOBJECTTYPE]['lv_bezeichnung'];
+		$courseName = $fieldmappings[self::MOOBJECTTYPE]['lv_bezeichnung'];
 
 		$results = array('added' => 0, 'updated' => 0, 'deleted' => 0, 'errors' => 0, 'syncoutput' => '');
 		$lvs = $this->ci->LehrveranstaltungModel->getLvsWithIncomingPlaces($studiensemester);
 
 		if (!hasData($lvs))
 		{
-			$results['syncoutput'] .= "No lvs found for sync! Aborting.";
+			$results['syncoutput'] .= "Keine Lvs für Sync gefunden! Abbruch.";
 		}
 		else
 		{
 			$lvcount = count($lvs->retval);
 
-			$results['syncoutput'] .= "<div class='text-center'>MOBILITY ONLINE COURSES SYNC start. $lvcount lvs to sync.";
+			$results['syncoutput'] .= "<div class='text-center'>MOBILITY ONLINE KURSSYNCHRONISIERUNG START. $lvcount Lvs zum Synchronisieren.";
 			$results['syncoutput'] .= '<br/>-----------------------------------------------</div>';
 			$results['syncoutput'] .= '<div class="lvsyncoutputtext">';
 
@@ -57,7 +57,7 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 
 				if (hasData($zuordnung))
 				{
-					$results['syncoutput'] .= "<p>lv $lvid - ".$course[$coursename]." already exists in Mobility Online - updating";
+					$results['syncoutput'] .= "<p>lv $lvid - ".$course[$courseName]." existiert bereits in Mobility Online - aktualisieren";
 
 					$zuordnung = $zuordnung->retval[0];
 
@@ -73,12 +73,12 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 						if (hasData($result))
 						{
 							$results['updated']++;
-							$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> lv $lvid - ".$course[$coursename]." successfully updated</p>";
+							$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> Lv $lvid - ".$course[$courseName]." erfolgreich aktualisiert</p>";
 						}
 					}
 					else
 					{
-						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> error when updating lv $lvid - ".$course[$coursename]."</span></p>";
+						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> Fehler beim Aktualisieren von Lv $lvid - ".$course[$courseName]."</span></p>";
 						$results['errors']++;
 					}
 				}
@@ -95,14 +95,14 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 						if (hasData($result))
 						{
 							$results['added']++;
-							$results['syncoutput'] .= "<p><i class='fa fa-check text-success'></i> lv $lvid - ".$course[$coursename]." successfully added</p>";
+							$results['syncoutput'] .= "<p><i class='fa fa-check text-success'></i> Lv $lvid - ".$course[$courseName]." erfolgreich hinzugefügt</p>";
 						}
 						else
-							$results['syncoutput'] .= "<p><span class='text-danger'><i class='fa fa-times'></i> mapping entry in db could not be added for course $lvid - ".$course[$coursename]."</span></p>";
+							$results['syncoutput'] .= "<p><span class='text-danger'><i class='fa fa-times'></i> Verlinkung konnte für Kurs $lvid - ".$course[$courseName]." nicht hinzugefügt werden</span></p>";
 					}
 					else
 					{
-						$results['syncoutput'] .= "<p><span class='text-danger'><i class='fa fa-times text-danger'></i> error when adding lv $lvid - ".$course[$coursename]."</span></p>";
+						$results['syncoutput'] .= "<p><span class='text-danger'><i class='fa fa-times text-danger'></i> Fehler beim Hinzufügen der lv $lvid - ".$course[$courseName]."</span></p>";
 						$results['errors']++;
 					}
 				}
@@ -123,21 +123,21 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 				}
 				if (!$found)
 				{
-					$results['syncoutput'] .= '<p>course with id '.$zo->lehrveranstaltung_id.' not present in fhcomplete, removing from MobilityOnline';
+					$results['syncoutput'] .= '<p>Kurs mit Id '.$zo->lehrveranstaltung_id.' ist nicht in fhcomplete, wird von Mobility Online entfernt';
 					$this->ci->MoSetMaModel->removeCoursePerSemesterByCourseID($zo->mo_lvid);
 					$result = $this->ci->MolvidzuordnungModel->delete(array('lehrveranstaltung_id' => $zo->lehrveranstaltung_id, 'studiensemester_kurzbz' => $zo->studiensemester_kurzbz));
 					if (hasData($result))
 					{
 						$results['deleted']++;
-						$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> course with id ".$zo->lehrveranstaltung_id." successfully deleted";
+						$results['syncoutput'] .= "<br /><i class='fa fa-check text-success'></i> Kurs mit Id ".$zo->lehrveranstaltung_id." erfolgreich gelöscht";
 					}
 					$results['syncoutput'] .= "</p>";
 				}
 			}
 			$results['syncoutput'] .= '</div>';
 			$results['syncoutput'] .= '<div class="text-center">-----------------------------------------------';
-			$results['syncoutput'] .= "<br />MOBILITY ONLINE COURSES SYNC FINISHED <br />".$results['added']." added, ".
-			$results['updated']." updated, ".$results['deleted']." deleted, ".$results['errors']." errors</div>";
+			$results['syncoutput'] .= "<br />MOBILITY ONLINE KURSSYNCHRONISERUNG ENDE <br />".$results['added']." hinzugefügt, ".
+			$results['updated']." aktualisiert, ".$results['deleted']." gelöscht, ".$results['errors']." Fehler</div>";
 		}
 
 		return $results;
@@ -145,44 +145,44 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 
 	/**
 	 * Initialises deletion of MO courses for a Studiensemester.
-	 * @param $studiensemester
+	 * @param string $studiensemester
 	 */
 	public function startCoursesDeletion($studiensemester)
 	{
-		$studienjahrres = $this->ci->StudiensemesterModel->load($studiensemester);
+		$studienjahrRes = $this->ci->StudiensemesterModel->load($studiensemester);
 
-		if (hasData($studienjahrres))
+		if (hasData($studienjahrRes))
 		{
 			$zuordnungen = $this->ci->MolvidzuordnungModel->loadWhere(array('studiensemester_kurzbz' => $studiensemester));
 
 			if (hasData($zuordnungen))
 			{
-				$mosemester = $this->mapSemesterToMo($studiensemester);
-				$mostudienjahr = $this->mapStudienjahrToMo($studienjahrres->retval[0]->studienjahr_kurzbz);
+				$moSemester = $this->mapSemesterToMo($studiensemester);
+				$moStudienjahr = $this->mapStudienjahrToMo($studienjahrRes->retval[0]->studienjahr_kurzbz);
 
-				if ($this->ci->MoSetMaModel->removeCoursesPerSemesterBySearchParameters($mosemester, $mostudienjahr))
+				if ($this->ci->MoSetMaModel->removeCoursesPerSemesterBySearchParameters($moSemester, $moStudienjahr))
 				{
 					foreach ($zuordnungen->retval as $zuordnung)
 					{
 						$this->ci->MolvidzuordnungModel->delete(array('lehrveranstaltung_id' => $zuordnung->lehrveranstaltung_id, 'studiensemester_kurzbz' => $studiensemester));
 					}
-					echo "<br />courses deleted successfully!";
+					echo "<br />Kurse erfolgreich gelöscht!";
 				}
 				else
 				{
-					echo "<br />error when deleting courses for semester $studiensemester";
+					echo "<br />Fehler beim Löschen der Kurse für Studiensemester $studiensemester";
 				}
 			}
 			else
 			{
-				echo "<br />No entries in mappingtable found for removing";
+				echo "<br />Keine Einträge zum Löschen in Verlinkungstabelle gefunden";
 			}
 		}
 	}
 
 	/**
 	 * Maps fhcomplete Lehrveranstaltung to course in MobilityOnline
-	 * @param $lv Lehrveranstaltung from fhcomplete
+	 * @param object $lv Lehrveranstaltung from fhcomplete
 	 * @return array course to be passed to MobilityOnline
 	 */
 	public function mapLvToMoLv($lv)
