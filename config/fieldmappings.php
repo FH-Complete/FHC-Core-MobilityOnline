@@ -20,6 +20,15 @@ $bisiomappings = array(
 
 $mailmapping = array('kontakt' => 'email');
 
+$adressemapping = array(
+	'strasse' => 'street',
+	'plz' => 'postCode',
+	'ort' => 'city',
+	'gemeinde' => 'additionalAddressInformation',
+	//if data is returned as array, type is name of field where value is stored
+	'nation' => array('name' => 'country', 'type' => 'description')
+);
+
 // person incoming
 $config['fieldmappings']['application']['person'] = $personbasemapping;
 $config['fieldmappings']['application']['person']['staatsbuergerschaft'] = 'lcd_id_nat';
@@ -52,15 +61,7 @@ $config['fieldmappings']['application']['akte'] = array(
 $config['fieldmappings']['application']['bisio'] = $bisiomappings;
 $config['fieldmappings']['application']['bisio']['universitaet'] = 'inst_id_heim_name';
 
-$adressemapping = array(
-	'strasse' => 'street',
-	'plz' => 'postCode',
-	'ort' => 'city',
-	'gemeinde' => 'additionalAddressInformation',
-	//if data is returned as array, type is name of field where value is stored
-	'nation' => array('name' => 'country', 'type' => 'description')
-);
-
+// address incoming
 $config['fieldmappings']['address']['adresse'] = $adressemapping;
 $config['fieldmappings']['curraddress']['studienadresse'] = $adressemapping;
 
@@ -134,6 +135,9 @@ $config['fieldmappings']['applicationout']['bisio_info'] = array(
 
 // mailkontakt outgoing
 $config['fieldmappings']['applicationout']['kontaktmail'] = $mailmapping;
+
+// Institution adresse outgoing
+$config['fieldmappings']['instaddress']['institution_adresse'] = $adressemapping;
 
 // Bankkonto outgoing
 $config['fieldmappings']['bankdetails']['bankverbindung'] = array(

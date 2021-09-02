@@ -139,59 +139,63 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function mapMoAppToIncoming($moApp, $moAddr = null, $currAddr = null, $photo = null)
 	{
-		$fieldmappings = $this->conffieldmappings[self::MOOBJECTTYPE];
-		$personmappings = $fieldmappings['person'];
-		$prestudentmappings = $fieldmappings['prestudent'];
-		$prestudentstatusmappings = $fieldmappings['prestudentstatus'];
-		$adressemappings = $this->conffieldmappings['address']['adresse'];
+		$fieldMappings = $this->conffieldmappings[self::MOOBJECTTYPE];
+		$personMappings = $fieldMappings['person'];
+		$prestudentMappings = $fieldMappings['prestudent'];
+		$prestudentstatusMappings = $fieldMappings['prestudentstatus'];
+		$adresseMappings = $this->conffieldmappings['address']['adresse'];
 
-		$aktemappings = $fieldmappings['akte'];
-		$bisiomappings = $fieldmappings['bisio'];
+		$akteMappings = $fieldMappings['akte'];
+		$bisioMappings = $fieldMappings['bisio'];
 
-		//applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
-		$comboboxValueFields = array($personmappings['staatsbuergerschaft'], $personmappings['sprache'], $prestudentstatusmappings['studiensemester_kurzbz'],
-									 $prestudentmappings['studiengang_kz'], $prestudentmappings['zgvnation'], $prestudentmappings['zgvmanation'],
-									 $bisiomappings['nation_code']);
+		$applicationDataElementsByValueType = array(
+			// applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
+			'comboboxFirstValue' => array(
+				$personMappings['staatsbuergerschaft'], $personMappings['sprache'], $prestudentstatusMappings['studiensemester_kurzbz'],
+				$prestudentMappings['studiengang_kz'], $prestudentMappings['zgvnation'], $prestudentMappings['zgvmanation'],
+				$bisioMappings['nation_code']
+			)
+		);
 
-		foreach ($fieldmappings as $fhcTable)
+		$moAppElementsExtracted = $moApp;
+
+		// retrieve correct value from MO for each fieldmapping
+		foreach ($fieldMappings as $fhcTable)
 		{
-			foreach ($fhcTable as $value)
+			foreach ($fhcTable as $elementName)
 			{
-				if (isset($moApp->applicationDataElements))
+				$valueType = 'elementValue';
+				foreach ($applicationDataElementsByValueType as $valueTypeKey => $elementNameValues)
 				{
-					// find mobility online application data fields
-					foreach ($moApp->applicationDataElements as $element)
+					if (in_array($elementName, $elementNameValues))
 					{
-						if ($element->elementName === $value)
-						{
-							if (in_array($element->elementName, $comboboxValueFields) && isset($element->comboboxFirstValue))
-							{
-								$moApp->$value = $element->comboboxFirstValue;
-							}
-							else
-							{
-								$moApp->$value = $element->elementValue;
-							}
-						}
+						$valueType = $valueTypeKey;
+						break;
 					}
 				}
+
+				$found = false;
+				$appDataValue = $this->_getApplicationDataElement($moApp, $valueType, $elementName, $found);
+
+				if ($found === true)
+					$moAppElementsExtracted->$elementName = $appDataValue;
 			}
 		}
 
 		// Nation
-		$moNation = $moApp->{$personmappings['staatsbuergerschaft']};
-		$moBisioNation = $moApp->{$bisiomappings['nation_code']};
-		$moAddrNation = isset($moAddr) ? $moAddr->{$adressemappings['nation']['name']}->description : null;
-		$currAddrNation = isset($currAddr) ? $currAddr->{$adressemappings['nation']['name']}->description : null;
+		$moNation = $moAppElementsExtracted->{$personMappings['staatsbuergerschaft']};
+		$moBisioNation = $moAppElementsExtracted->{$bisioMappings['nation_code']};
+		$moAddrNation = isset($moAddr) ? $moAddr->{$adresseMappings['nation']['name']}->description : null;
+		$currAddrNation = isset($currAddr) ? $currAddr->{$adresseMappings['nation']['name']}->description : null;
 
-		$moZgvNation = isset($prestudentmappings['zgvnation']) && isset($moApp->{$prestudentmappings['zgvnation']}) ? $moApp->{$prestudentmappings['zgvnation']} : null;
-		$mozgvMaNation = isset($prestudentmappings['zgvmanation']) && isset($moApp->{$prestudentmappings['zgvmanation']}) ? $moApp->{$prestudentmappings['zgvmanation']} : null;
+		$moZgvNation = isset($prestudentMappings['zgvnation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvnation']}) ? $moAppElementsExtracted->{$prestudentMappings['zgvnation']} : null;
+		$mozgvMaNation = isset($prestudentMappings['zgvmanation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvmanation']}) ? $moAppElementsExtracted->{$prestudentMappings['zgvmanation']} : null;
 
 		$moNations = array(
-			$personmappings['staatsbuergerschaft'] => $moNation,
-			$bisiomappings['nation_code'] => $moBisioNation,
-			$prestudentmappings['zgvnation'] => $moZgvNation,
-			$prestudentmappings['zgvmanation'] => $mozgvMaNation
+			$personMappings['staatsbuergerschaft'] => $moNation,
+			$bisioMappings['nation_code'] => $moBisioNation,
+			$prestudentMappings['zgvnation'] => $moZgvNation,
+			$prestudentMappings['zgvmanation'] => $mozgvMaNation
 		);
 
 		$fhcNations = $this->ci->NationModel->load();
@@ -205,19 +209,19 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				{
 					if ($fhcNation->kurztext === $mooNation || $fhcNation->langtext === $mooNation || $fhcNation->engltext === $mooNation)
 					{
-						if (isset($moApp->{$configBez}))
-							$moApp->{$configBez} = $fhcNation->nation_code;
+						if (isset($moAppElementsExtracted->{$configBez}))
+							$moAppElementsExtracted->{$configBez} = $fhcNation->nation_code;
 					}
 				}
 
 				if ($fhcNation->kurztext === $moAddrNation || $fhcNation->langtext === $moAddrNation || $fhcNation->engltext === $moAddrNation)
 				{
-					$moAddr->{$adressemappings['nation']['name']} = $fhcNation->nation_code;
+					$moAddr->{$adresseMappings['nation']['name']} = $fhcNation->nation_code;
 				}
 
 				if ($fhcNation->kurztext === $currAddrNation || $fhcNation->langtext === $currAddrNation || $fhcNation->engltext === $currAddrNation)
 				{
-					$currAddr->{$adressemappings['nation']['name']} = $fhcNation->nation_code;
+					$currAddr->{$adresseMappings['nation']['name']} = $fhcNation->nation_code;
 				}
 			}
 		}
@@ -225,10 +229,10 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// Lichtbild
 		if ($photo)
 		{
-			$moApp->{$aktemappings['inhalt']} = $photo[0]->{$aktemappings['inhalt']};
+			$moAppElementsExtracted->{$akteMappings['inhalt']} = $photo[0]->{$akteMappings['inhalt']};
 		}
 
-		$fhcObj = $this->convertToFhcFormat($moApp, self::MOOBJECTTYPE);
+		$fhcObj = $this->convertToFhcFormat($moAppElementsExtracted, self::MOOBJECTTYPE);
 
 		// add all Studiensemester for Prestudentstatus
 
@@ -237,7 +241,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$moStudjahr = $this->mapSemesterToMoStudienjahr($fhcObj['prestudentstatus']['studiensemester_kurzbz']);
 
 		// WS and SS if Studienjahr given in MO
-		if ($moApp->{$prestudentstatusmappings['studiensemester_kurzbz']} === $moStudjahr)
+		if ($moAppElementsExtracted->{$prestudentstatusMappings['studiensemester_kurzbz']} === $moStudjahr)
 		{
 			$allSemesters = array_unique(array_merge($allSemesters, $this->mapMoStudienjahrToSemester($moStudjahr)));
 		}
@@ -261,11 +265,11 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$fhcObj['pipelineStatus'] = 'not set';
 		$fhcObj['pipelineStatusDescription'] = 'no Status set';
 
-		$pipelinestatus = $fieldmappings['status_info'];
+		$pipelinestatus = $fieldMappings['status_info'];
 
 		foreach ($pipelinestatus as $status)
 		{
-			foreach ($moApp->nonUsedApplicationDataElements as $element)
+			foreach ($moAppElementsExtracted->nonUsedApplicationDataElements as $element)
 			{
 				if (isset($element->elementName) && $element->elementName === $status
 					&& isset($element->elementValueBoolean) && $element->elementValueBoolean === true)
@@ -276,6 +280,10 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 		}
 
+		// remove original applicationDataElements
+		unset($moAppElementsExtracted->applicationDataElements);
+		unset($moAppElementsExtracted->nonUsedApplicationDataElements);
+
 		$fhcAddr = $this->convertToFhcFormat($moAddr, 'address');
 		$fhcCurrAddr = $this->convertToFhcFormat($currAddr, 'curraddress');
 
@@ -283,7 +291,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		// courses
 		$fhcObj['mocourses'] = array();
-		$courses = $this->ci->MoGetAppModel->getCoursesOfApplication($moApp->applicationID);
+		$courses = $this->ci->MoGetAppModel->getCoursesOfApplication($moAppElementsExtracted->applicationID);
 
 		if (is_array($courses))
 		{

@@ -329,6 +329,31 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	/** ---------------------------------------------- Protected methods ------------------------------------------------*/
 
 	/**
+	 * Gets a specified applicationDataElement value from MobilityOnline Application
+	 * @param object $moApp the application
+	 * @param string $valueType name of the attribute containing the value
+	 * @param mixed $elementName
+	 * @param bool $found set to true if applicationDateElement with given name and type was found
+	 * @return mixed the value of the applicationDataElement
+	 */
+	protected function _getApplicationDataElement($moApp, $valueType, $elementName, &$found = false)
+	{
+		if (isset($moApp->applicationDataElements))
+		{
+			foreach ($moApp->applicationDataElements as $element)
+			{
+				if ($element->elementName === $elementName && property_exists($element, $valueType))
+				{
+					$found = true;
+					return $element->{$valueType};
+				}
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Converts MobilityOnline object to fhcomplete object
 	 * Uses only fields defined in fieldmappings config
 	 * Uses 1. valuemappings in configs, 2. valuemappings in _replacementsarrToFHC otherwise

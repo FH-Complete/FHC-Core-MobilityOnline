@@ -67,6 +67,7 @@ $config['valuemappings']['frommo']['studiengang_kz'] = array(
 	'Elektronik/Wirtschaft' => 255,
 	'Embedded Systems' => 297,
 	//'Erneuerbare Urbane Energiesysteme' => 578,
+	//'Erneuerbare Energien' => 476,
 	'Erneuerbare Urbane Energiesysteme Master' => 578,
 	'Game Engineering und Simulation' => 585,
 	'Gesundheits- und Rehabilitationstechnik' => 329,
