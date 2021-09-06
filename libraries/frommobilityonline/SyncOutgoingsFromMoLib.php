@@ -20,6 +20,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('crm/konto_model', 'KontoModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetmasterdata_model', 'MoGetMasterDataModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobisioidzuordnung_model', 'MobisioidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mozahlungidzuordnung_model', 'MozahlungidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobilityonlinefhc_model', 'MoFhcModel');
@@ -101,59 +102,78 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * @param object $moApp MobilityOnline application
 	 * @return array with fhcomplete table arrays
 	 */
-	public function mapMoAppToOutgoing($moApp, $bankdata = null, $nominationData = null)
+	public function mapMoAppToOutgoing($moApp, $institutionAddressesData = null, $bankData = null, $nominationData = null)
 	{
-		$fieldMappings = $this->conffieldmappings[self::MOOBJECTTYPE];
-		$bisioMappings = $fieldMappings['bisio'];
-		$prestudentMappings = $fieldMappings['prestudent'];
-		$bisioinfoMappings = $fieldMappings['bisio_info'];
-
-		// applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
-		$comboboxValueFields = array($bisioMappings['nation_code'], $prestudentMappings['studiensemester_kurzbz'],
-			$prestudentMappings['studiengang_kz']);
-
-		// applicationDataElements for which comboboxSecondValue is retrieved instead of elementValue
-		$comboboxSecondValueFields = array($bisioMappings['universitaet']);
-
-		// applicationDataElements for which comboboxSecondValue is retrieved instead of elementValue
-		$elementvalueBooleanFields = array($bisioinfoMappings['ist_praktikum'],
-			$bisioinfoMappings['ist_masterarbeit'], $bisioinfoMappings['ist_beihilfe']);
-
-		foreach ($fieldMappings as $fhcTable)
+		// get correct institutionAddress - first active Hauptadresse
+		$institutionAddressData = null;
+		if (isset($institutionAddressesData) && is_array($institutionAddressesData))
 		{
-			foreach ($fhcTable as $value)
+			foreach ($institutionAddressesData as $institutionAddress)
 			{
-				if (isset($moApp->applicationDataElements))
+				if ($institutionAddress->typeOfAddress == 'Hauptadresse' && $institutionAddress->active == true)
 				{
-					// find mobility online application data fields
-					foreach ($moApp->applicationDataElements as $element)
-					{
-						if ($element->elementName === $value)
-						{
-							if (in_array($element->elementName, $comboboxValueFields) && isset($element->comboboxFirstValue))
-							{
-								$moApp->$value = $element->comboboxFirstValue;
-							}
-							elseif (in_array($element->elementName, $comboboxSecondValueFields) && isset($element->comboboxSecondValue))
-							{
-								$moApp->$value = $element->comboboxSecondValue;
-							}
-							elseif (in_array($element->elementName, $elementvalueBooleanFields) && isset($element->elementValueBoolean))
-							{
-								$moApp->$value = $element->elementValueBoolean;
-							}
-							else
-							{
-								$moApp->$value = $element->elementValue;
-							}
-						}
-					}
+					$institutionAddressData = $institutionAddress;
+					break;
 				}
 			}
 		}
 
+		$fieldMappings = $this->conffieldmappings[self::MOOBJECTTYPE];
+		$bisioMappings = $fieldMappings['bisio'];
+		$prestudentMappings = $fieldMappings['prestudent'];
+		$bisioinfoMappings = $fieldMappings['bisio_info'];
+		$adressemappings = $this->conffieldmappings['instaddress']['institution_adresse'];
+
+		$applicationDataElementsByValueType = array(
+			// applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
+			'comboboxFirstValue' => array(
+				$bisioMappings['nation_code'],
+				$prestudentMappings['studiensemester_kurzbz'],
+				$prestudentMappings['studiengang_kz']
+			),
+			// applicationDataElements for which comboboxSecondValue is retrieved instead of elementValue
+			'comboboxSecondValue' => array(
+				$bisioMappings['universitaet']
+			),
+			// applicationDataElements for which elementValueBoolean is retrieved instead of elementValue
+			'elementValueBoolean' => array(
+				$bisioinfoMappings['ist_praktikum'],
+				$bisioinfoMappings['ist_masterarbeit'],
+				$bisioinfoMappings['ist_beihilfe']
+			)
+		);
+
+		$moAppElementsExtracted = $moApp;
+
+		// retrieve correct value from MO for each fieldmapping
+		foreach ($fieldMappings as $fhcTable)
+		{
+			foreach ($fhcTable as $elementName)
+			{
+				$valueType = 'elementValue';
+				foreach ($applicationDataElementsByValueType as $valueTypeKey => $elementNameValues)
+				{
+					if (in_array($elementName, $elementNameValues))
+					{
+						$valueType = $valueTypeKey;
+						break;
+					}
+				}
+
+				$found = false;
+				$appDataValue = $this->_getApplicationDataElement($moApp, $valueType, $elementName, $found);
+
+				if ($found === true)
+					$moAppElementsExtracted->$elementName = $appDataValue;
+			}
+		}
+
+		// remove original applicationDataElements
+		unset($moAppElementsExtracted->applicationDataElements);
+
 		// Nation
-		$moBisionation = $moApp->{$bisioMappings['nation_code']};
+		$moBisionation = $moAppElementsExtracted->{$bisioMappings['nation_code']};
+		$moInstitutionAddrNation = isset($institutionAddressData) ? $institutionAddressData->{$adressemappings['nation']['name']}->description : null;
 
 		$moNations = array(
 			$bisioMappings['nation_code'] => $moBisionation
@@ -170,15 +190,23 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				{
 					if ($fhcNation->kurztext === $mooNation || $fhcNation->langtext === $mooNation || $fhcNation->engltext === $mooNation)
 					{
-						if (isset($moApp->{$configBez}))
-							$moApp->{$configBez} = $fhcNation->nation_code;
+						if (isset($moAppElementsExtracted->{$configBez}))
+							$moAppElementsExtracted->{$configBez} = $fhcNation->nation_code;
 					}
+				}
+
+				if (isset($institutionAddressData) &&
+						($fhcNation->kurztext === $moInstitutionAddrNation || $fhcNation->langtext === $moInstitutionAddrNation
+							|| $fhcNation->engltext === $moInstitutionAddrNation))
+				{
+					$institutionAddressData->{$adressemappings['nation']['name']} = $fhcNation->nation_code;
 				}
 			}
 		}
 
-		$fhcObj = $this->convertToFhcFormat($moApp, self::MOOBJECTTYPE);
-		$fhcBankData = $this->convertToFhcFormat($bankdata, 'bankdetails');
+		$fhcObj = $this->convertToFhcFormat($moAppElementsExtracted, self::MOOBJECTTYPE);
+		$fhcAddr = $this->convertToFhcFormat($institutionAddressData, 'instaddress');
+		$fhcBankData = $this->convertToFhcFormat($bankData, 'bankdetails');
 
 		// payments
 		$payments = array();
@@ -203,7 +231,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 
 			// check if payments already synced and set flag
-			for($i = 0; $i < count($payments); $i++)
+			for ($i = 0; $i < count($payments); $i++)
 			{
 				$referenzNrRes = $this->_checkPaymentInFhc($payments[$i]['buchungsinfo']['mo_referenz_nr']);
 
@@ -219,7 +247,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 		}
 
-		$fhcObj = array_merge($fhcObj, $fhcBankData, array('zahlungen' => $payments));
+		$fhcObj = array_merge($fhcObj, $fhcAddr, $fhcBankData, array('zahlungen' => $payments));
 
 		return $fhcObj;
 	}
@@ -257,7 +285,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				$this->addErrorOutput($errorMessage);
 			}
 
-			$this->addErrorOutput("Abbruch des Outgoing Speicherung");
+			$this->addErrorOutput("Abbruch der Outgoing Speicherung");
 			return null;
 		}
 
@@ -265,6 +293,16 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$bisio = $outgoing['bisio'];
 		$bisio_zweck = $outgoing['bisio_zweck'];
 		$bisio_aufenthaltfoerderung = $outgoing['bisio_aufenthaltfoerderung'];
+		$bisio_adresse = $outgoing['institution_adresse'];
+
+		// get Bezeichnung of Nation by code
+		$nationRes = $this->ci->NationModel->load($bisio_adresse['nation']);
+
+		if (hasData($nationRes))
+		{
+			// set bisio ort from and Nation from institution address
+			$bisio['ort'] = $bisio_adresse['ort'].', '.getData($nationRes)[0]->langtext;
+		}
 
 		if (isset($outgoing['bisio_info']))
 			$bisio_info = $outgoing['bisio_info'];
@@ -465,7 +503,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				$sarr
 			);
 
-
 			$semApps = $this->ci->MoGetAppModel->getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions($searchObj);
 
 			if (!isEmptyArray($semApps))
@@ -502,7 +539,14 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$bankData = $this->ci->MoGetAppModel->getBankAccountDetails($appId);
 			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appId);
 
-			$fhcobj = $this->mapMoAppToOutgoing($application, $bankData, $nominationData);
+			$institutionAddressesData = array();
+			$institution_id = $this->_getApplicationDataElement($application, 'elementValue', 'inst_id_gast');
+			if (isset($institution_id))
+			{
+				$institutionAddressesData = $this->ci->MoGetMasterDataModel->getAddressesOfInstitution($institution_id);
+			}
+
+			$fhcobj = $this->mapMoAppToOutgoing($application, $institutionAddressesData, $bankData, $nominationData);
 
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appId;
