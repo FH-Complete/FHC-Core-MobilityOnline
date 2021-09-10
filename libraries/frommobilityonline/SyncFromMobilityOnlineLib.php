@@ -75,7 +75,10 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		),
 		'ects_angerechnet' => array(
 			0 => '_mapEctsToFhc'
-		)
+		),
+		'betrag' => array(
+			0 => '_mapBetragToFhc'
+		),
 		/*,
 		'lehrveranstaltung_id' => array(
 			//extracting lvid from MobilityOnline coursenumber, assuming format id_orgform_ausbildungssemester,
@@ -618,6 +621,16 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		}
 		else
 			return null;
+	}
+
+	/**
+	 * Converts MobilityOnline ects amount to fhcomplete format.
+	 * @param float $moBetrag
+	 * @return string fhcomplete betrag
+	 */
+	private function _mapBetragToFhc($moBetrag)
+	{
+		return number_format($moBetrag, 2, '.', '');
 	}
 
 	/**
