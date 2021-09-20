@@ -256,7 +256,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * Saves an outgoing
 	 * @param int $appId
 	 * @param array $outgoing
-	 * @param int $bisio_id
+	 * @param int $bisio_id_existing if bisio already existing, pdate
 	 * @return string prestudent_id of saved prestudent
 	 */
 	public function saveOutgoing($appId, $outgoing, $bisio_id_existing)
@@ -316,6 +316,15 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		if (hasData($personRes))
 		{
 			$person_id = getData($personRes)[0]->person_id;
+			$existing_bisio_ids_person = array();
+
+			$bisioResPerson = $this->_checkBisioInFhcForPerson($person_id);
+
+			// if at least one bisio linked in sync table, update, otherwise insert
+			if (hasData($bisioResPerson))
+			{
+				$existing_bisio_ids_person = getData($bisioResPerson);
+			}
 
 			// bisio
 			$bisio_id = $this->_saveBisio($appId, $bisio_id_existing, $bisio);
@@ -400,7 +409,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				{
 					$bankverbindung = $outgoing['bankverbindung'];
 					$bankverbindung['person_id'] = $person_id;
-					$bankverbindung_id = $this->_saveBankverbindung($bankverbindung, $bisio_id_existing);
+					$bankverbindung_id = $this->_saveBankverbindung($bankverbindung, $existing_bisio_ids_person);
 				}
 
 				// Zahlungen
@@ -409,7 +418,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 					$zahlung['konto']['person_id'] = $person_id;
 					$zahlung['konto']['studiengang_kz'] = $prestudent['studiengang_kz'];
 					$zahlung['konto']['studiensemester_kurzbz'] = $prestudent['studiensemester_kurzbz'];
-					$zahlung['konto']['buchungstext'] = 'Outgoingzuschuss '.$zahlung['buchungsinfo']['mo_referenz_nr'].' '.$zahlung['buchungsinfo']['mo_zahlungsgrund'];
+					$zahlung['konto']['buchungstext'] = $zahlung['buchungsinfo']['mo_referenz_nr'].' '.$zahlung['buchungsinfo']['mo_zahlungsgrund'];
 
 					$this->_saveZahlung($zahlung);
 				}
@@ -636,10 +645,10 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	/**
 	 * Inserts bankverbindung for a student or updates an existing one.
 	 * @param array $bankverbindung
-	 * @param int $bisio_id_existing for check if it is a new save
+	 * @param array $existing_bisio_ids_person if not empty and bankkonto already exists, bankkonto can be updated instead of inserted
 	 * @return int|null bankverbindung_id of inserted or updated bankverbindung if successful, null otherwise.
 	 */
-	private function _saveBankverbindung($bankverbindung, $bisio_id_existing)
+	private function _saveBankverbindung($bankverbindung, $existing_bisio_ids_person)
 	{
 		$bankverbindung_id = null;
 
@@ -652,9 +661,9 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		if (isSuccess($bankverbindungRes))
 		{
-			if (hasData($bankverbindungRes) && isset($bisio_id_existing))
+			if (hasData($bankverbindungRes) && !isEmptyArray($existing_bisio_ids_person))
 			{
-				// Bankverbindung already exists and it's not first insert - update
+				// Bankverbindung already exists and it's not first insert for the person - update
 				$bankverbindung_id = getData($bankverbindungRes)[0]->bankverbindung_id;
 				$this->stamp('update', $bisio);
 				$bankverbindungResp = $this->ci->BankverbindungModel->update($bankverbindung_id, $bankverbindung);
@@ -761,5 +770,19 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		return success($infhccheck_buchungsnr);
+	}
+
+	/**
+	 * Check if bisio for a person is already in fhcomplete by checking sync table.
+	 * @param int $person_id
+	 * @return object error or success with found ids if in fhcomplete, success with empty array if not in fhcomplete
+	 */
+	private function _checkBisioInFhcForPerson($person_id)
+	{
+		$this->ci->MobisioidzuordnungModel->addSelect("bisio_id");
+		$this->ci->MobisioidzuordnungModel->addJoin('bis.tbl_bisio', 'bisio_id');
+		$this->ci->MobisioidzuordnungModel->addJoin('public.tbl_student', 'student_uid');
+		$this->ci->MobisioidzuordnungModel->addJoin('public.tbl_prestudent', 'prestudent_id');
+		return $this->ci->MobisioidzuordnungModel->loadWhere(array('person_id' => $person_id));
 	}
 }
