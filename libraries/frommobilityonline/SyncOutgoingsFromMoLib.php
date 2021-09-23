@@ -418,7 +418,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 					$zahlung['konto']['person_id'] = $person_id;
 					$zahlung['konto']['studiengang_kz'] = $prestudent['studiengang_kz'];
 					$zahlung['konto']['studiensemester_kurzbz'] = $prestudent['studiensemester_kurzbz'];
-					$zahlung['konto']['buchungstext'] = $zahlung['buchungsinfo']['mo_referenz_nr'].' '.$zahlung['buchungsinfo']['mo_zahlungsgrund'];
+					$zahlung['konto']['buchungstext'] = $zahlung['buchungsinfo']['mo_zahlungsgrund'];
 
 					$this->_saveZahlung($zahlung);
 				}
