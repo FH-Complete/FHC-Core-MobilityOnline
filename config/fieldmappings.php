@@ -69,6 +69,7 @@ $config['fieldmappings']['address']['kontakttel'] = array(
 	'kontakt' => 'telNumber'
 );
 
+// contact incoming
 $config['fieldmappings']['application']['kontaktmail'] = $mailmapping;
 
 $config['fieldmappings']['application']['kontaktnotfall'] = array(
@@ -79,6 +80,7 @@ $config['fieldmappings']['application']['studiengang'] = array(
 	'typ' => 'stud_niveau_id'
 );
 
+// konto incoming for defalt Buchung
 $config['fieldmappings']['application']['konto'] = array(
 	'buchungstyp_kurzbz' => 'aust_prog_id',
 	'betrag' => 'aust_prog_id',
@@ -147,7 +149,11 @@ $config['fieldmappings']['bankdetails']['bankverbindung'] = array(
 );
 
 // Zahlungen (Konto) outgoing
-$config['fieldmappings']['payment']['konto']['betrag'] = 'paymentAmount';
+$config['fieldmappings']['payment']['konto'] = array(
+	'betrag' => 'paymentAmount',
+	'buchungsdatum' => 'voucherDate'
+);
+
 $config['fieldmappings']['payment']['buchungsinfo'] = array(
 	/*'mo_zahlung_id' => 'paymentId',*/
 	'mo_referenz_nr' => 'referenceNumber',

@@ -11,6 +11,7 @@ class Mobilityonlineapi_model extends CI_Model
 	private $_soapClient;
 
 	const WSDL = 'wsdl';
+	const DATETIME_NAMESPACE = 'http://xsd.types.databinding.axis2.apache.org/xsd';
 
 	/**
 	 * Constructor
@@ -35,7 +36,15 @@ class Mobilityonlineapi_model extends CI_Model
 					'encoding' => $this->_mobilityonline_config['encoding'],
 					'uri' => $this->_mobilityonline_config['wsdlurl'].'/'.
 						$this->_mobilityonline_config['services'][$this->name]['service'].'.'.
-						$this->_mobilityonline_config['services'][$this->name]['endpoint']/*,
+						$this->_mobilityonline_config['services'][$this->name]['endpoint'],
+					'typemap' => array( // set typemappings for correct serialization of dates
+						array(
+							// type namespaces have to match those declared in the WSDL
+							'type_ns' => self::DATETIME_NAMESPACE,
+							'type_name' => 'DateTime',
+							'from_xml' => array($this, 'datetime_from_xml') // callback for transformation of date to string
+						),
+    				)/*,
 					'default_socket_timeout' => $this->_mobilityonline_config['default_socket_timeout']*/
 				)
 			);
@@ -65,5 +74,19 @@ class Mobilityonlineapi_model extends CI_Model
 			//error_log($e->getMessage());
 			return null;
 		}
+	}
+
+	/**
+	 * XML callback function for converting DateTime into php object.
+	 * @param string $xml the xml date element string
+	 * @return string|null the date
+	 */
+	public function datetime_from_xml($xml) {
+		$dateTimeXmlObj = simplexml_load_string($xml);
+
+		// first element is date string, or false if null
+		$dateTime = reset($dateTimeXmlObj);
+
+		return $dateTime ? $dateTime : null;
 	}
 }

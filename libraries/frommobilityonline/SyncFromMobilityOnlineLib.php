@@ -79,6 +79,9 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		'betrag' => array(
 			0 => '_mapBetragToFhc'
 		),
+		'buchungsdatum' => array(
+			0 => '_mapBuchungsdatumToFhc'
+		)
 		/*,
 		'lehrveranstaltung_id' => array(
 			//extracting lvid from MobilityOnline coursenumber, assuming format id_orgform_ausbildungssemester,
@@ -631,6 +634,20 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	private function _mapBetragToFhc($moBetrag)
 	{
 		return number_format($moBetrag, 2, '.', '');
+	}
+
+	/**
+	 * Converts MobilityOnline Buchungsdatum to fhcomplete format.
+	 * @param float $moBetrag
+	 * @return string fhcomplete betrag
+	 */
+	private function _mapBuchungsdatumToFhc($buchungsdatum)
+	{
+		$fhcDate = substr($buchungsdatum, 0, 10);
+		if ($this->_validateDate($fhcDate))
+			return $fhcDate;
+		else
+			return null;
 	}
 
 	/**

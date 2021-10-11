@@ -185,7 +185,11 @@ $config['fhcfields']['payment'] = array(
 		'buchungstyp_kurzbz' =>
 			array('required' => true,
 				'name' => 'Buchungstyp',
-				'ref' => 'public.tbl_buchungstyp')
+				'ref' => 'public.tbl_buchungstyp'),
+		'buchungsdatum' =>
+			array('required' => true,
+				'name' => 'Buchungsdatum',
+				'type' => 'date')
 	)
 );
 
