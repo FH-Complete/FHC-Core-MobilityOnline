@@ -100,6 +100,11 @@ $config['fhcfields']['application'] = array(
 );
 
 $config['fhcfields']['applicationout'] = array(
+	'person' => array('vorname' => array('required' => true),
+		'nachname' => array('required' => true),
+		'mo_person_id' => array('required' => true,
+								'name' => 'MO Person ID')
+	),
 	'prestudent' => array(
 		'studiengang_kz' => array(
 			'required' => true,

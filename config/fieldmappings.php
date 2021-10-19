@@ -106,6 +106,7 @@ $config['fieldmappings']['incomingcourse']['mostudiengang'] = array(
 
 // person outgoing
 $config['fieldmappings']['applicationout']['person'] = $personbasemapping;
+$config['fieldmappings']['applicationout']['person']['mo_person_id'] = 'p_id';
 
 // prestudent outgoing
 $config['fieldmappings']['applicationout']['prestudent'] = array(
@@ -132,7 +133,8 @@ $config['fieldmappings']['applicationout']['bisio_aufenthaltfoerderung'] = array
 $config['fieldmappings']['applicationout']['bisio_info'] = array(
 	'ist_praktikum' => 'is_praktikum',
 	'ist_masterarbeit' => 'bit_freifeld26',
-	'ist_beihilfe' => 'is_beihilfe'
+	'ist_beihilfe' => 'is_beihilfe',
+	'ist_double_degree' => 'bit_freifeld24'
 );
 
 // mailkontakt outgoing

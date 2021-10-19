@@ -44,7 +44,8 @@ class Mobilityonlineapi_model extends CI_Model
 							'type_name' => 'DateTime',
 							'from_xml' => array($this, 'datetime_from_xml') // callback for transformation of date to string
 						),
-    				)/*,
+    				),
+					'features' => SOAP_SINGLE_ELEMENT_ARRAYS/*,
 					'default_socket_timeout' => $this->_mobilityonline_config['default_socket_timeout']*/
 				)
 			);

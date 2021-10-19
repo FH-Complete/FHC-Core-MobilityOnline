@@ -267,6 +267,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		$pipelinestatus = $fieldMappings['status_info'];
 
+		// status is sorted, latest one last
 		foreach ($pipelinestatus as $status)
 		{
 			foreach ($moAppElementsExtracted->nonUsedApplicationDataElements as $element)
@@ -511,6 +512,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		foreach ($searchArrays as $sarr)
 		{
+			// get search object for objecttype, with searchparams ($arr) and returning only specified fields (by default)
 			$searchObj = $this->getSearchObj(
 				self::MOOBJECTTYPE,
 				$sarr
