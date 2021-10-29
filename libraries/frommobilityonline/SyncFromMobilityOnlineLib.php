@@ -55,6 +55,9 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		'zgvmadatum' => array(
 			0 => '_mapDateToFhc'
 		),
+		'geburtsnation' => array(
+			0 => 'replaceEmpty'
+		),
 		'inhalt' => array(
 			0 => '_resizeBase64ImageBig'
 		),
