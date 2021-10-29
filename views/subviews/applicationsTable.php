@@ -1,4 +1,4 @@
-<div class="col-xs-8">
+<div class="col-md-8 col-xs-12">
 	<div class="well well-sm wellminheight">
 		<div class="text-center">
 			<h4><span id="lvhead">&nbsp;MobilityOnline <?php echo $applicationType ?></span></h4>

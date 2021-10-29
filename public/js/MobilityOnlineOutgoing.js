@@ -163,7 +163,7 @@ var MobilityOnlineOutgoing = {
 										}
 										else
 										{
-											MobilityOnlineOutgoing._showZahlungen(moId, zahlungen);
+											MobilityOnlineOutgoing._showZahlungen(moId);
 										}
 									}
 								}
@@ -194,7 +194,7 @@ var MobilityOnlineOutgoing = {
 									let outgoingObj = outgoings[outgoing];
 									let zahlungen = outgoingObj.data.zahlungen;
 
-									MobilityOnlineOutgoing._showZahlungen(outgoingObj.moid, zahlungen);
+									MobilityOnlineOutgoing._showZahlungen(outgoingObj.moid);
 								}
 							}
 						);
@@ -325,6 +325,11 @@ var MobilityOnlineOutgoing = {
 				if (outgoingsObj.moid === parseInt(moId))
 				{
 					outgoingsObj.infhc = true;
+
+					for (let zlg in outgoingsObj.data.zahlungen)
+					{
+						outgoingsObj.data.zahlungen[zlg].buchungsinfo.infhc = true;
+					}
 					break;
 				}
 			}
@@ -346,39 +351,49 @@ var MobilityOnlineOutgoing = {
 			zlgInFhcIconEl.addClass("fa fa-check");
 		}
 	},
-	_showZahlungen: function(moid, zahlungen)
+	_showZahlungen: function(moid)
 	{
 		if (!$(".zahlungrow_" + moid).length)
 		{
-			for (let zlg in zahlungen)
+			for (let outgoingIdx in MobilityOnlineOutgoing.outgoings)
 			{
-				let zahlung = zahlungen[zlg];
-				let buchungsinfo = zahlung.buchungsinfo;
+				let outgoing = MobilityOnlineOutgoing.outgoings[outgoingIdx];
 
-				let mo_referenz_nr = buchungsinfo.mo_referenz_nr;
-
-				if (buchungsinfo.infhc)
+				if (outgoing.moid == moid)
 				{
-					newicon = "<i id='zlgInFhcicon_"+moid+"' class='fa fa-check zlgInFhc_"+moid+"'></i><input type='hidden' id='infhc_"+moid+"' class='infhc' value='1'>";
-				}
-				else
-				{
-					newicon = "<i id='zlgInFhcicon_"+moid+"' class='fa fa-times zlgInFhc_"+moid+"'></i><input type='hidden' id='infhc_"+moid+"' class='infhc' value='0'>";
-				}
+					let zahlungen = outgoing.data.zahlungen;
+					for (let zlg in zahlungen)
+					{
+						let zahlung = zahlungen[zlg];
+						let buchungsinfo = zahlung.buchungsinfo;
 
-				$("#paymentNo_"+moid+" i").removeClass('fa-caret-right').addClass('fa-caret-down');
+						let mo_referenz_nr = buchungsinfo.mo_referenz_nr;
 
-				$("#applicationsrow_" + moid).after(
-					"<tr class='zlgRow zahlungrow_" + moid + "'>" +
-					"<td colspan='8'>" +
-					"&nbsp;&nbsp;<i class='fa fa-arrow-right'></i>&nbsp;&nbsp;" +
-					"<b>Referenznr:</b> " + mo_referenz_nr +
-					" | <b>Zahlungsgrund:</b> " + buchungsinfo.mo_zahlungsgrund +
-					" | <b>Betrag:</b> " + MobilityOnlineOutgoing._formatDecimalGerman(zahlung.konto.betrag) +
-					"</td>" +
-					"<td class='text-center'>" + newicon + "</td>" +
-					"</tr>"
-				);
+						if (buchungsinfo.infhc)
+						{
+							newicon = "<i id='zlgInFhcicon_" + moid + "' class='fa fa-check zlgInFhc_" + moid + "'></i><input type='hidden' id='infhc_" + moid + "' class='infhc' value='1'>";
+						}
+						else
+						{
+							newicon = "<i id='zlgInFhcicon_" + moid + "' class='fa fa-times zlgInFhc_" + moid + "'></i><input type='hidden' id='infhc_" + moid + "' class='infhc' value='0'>";
+						}
+
+						$("#paymentNo_" + moid + " i").removeClass('fa-caret-right').addClass('fa-caret-down');
+
+						$("#applicationsrow_" + moid).after(
+							"<tr class='zlgRow zahlungrow_" + moid + "'>" +
+							"<td>&nbsp;</td>" +
+							"<td colspan='7'>" +
+							"<i class='fa fa-arrow-right'></i>&nbsp;&nbsp;" +
+							"<b>Referenznr:</b> " + mo_referenz_nr +
+							" | <b>Zahlungsgrund:</b> " + buchungsinfo.mo_zahlungsgrund +
+							" | <b>Betrag:</b> " + MobilityOnlineOutgoing._formatDecimalGerman(zahlung.konto.betrag) +
+							"</td>" +
+							"<td class='text-center'>" + newicon + "</td>" +
+							"</tr>"
+						);
+					}
+				}
 			}
 		}
 	},
