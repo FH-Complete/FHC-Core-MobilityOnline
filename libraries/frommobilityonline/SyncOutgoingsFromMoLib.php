@@ -778,7 +778,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			else
 			{
 				// new Zahlung
-				$konto['buchungsdatum'] = date('Y-m-d');
 				$this->stamp('insert', $konto);
 				$kontoResp = $this->ci->KontoModel->insert($konto);
 				$this->log('insert', $kontoResp, 'kontobuchung');
