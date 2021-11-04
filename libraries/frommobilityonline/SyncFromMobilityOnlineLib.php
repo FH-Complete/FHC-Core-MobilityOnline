@@ -55,6 +55,9 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		'zgvmadatum' => array(
 			0 => '_mapDateToFhc'
 		),
+		'geburtsnation' => array(
+			0 => 'replaceEmpty'
+		),
 		'inhalt' => array(
 			0 => '_resizeBase64ImageBig'
 		),
@@ -128,7 +131,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$fields = $this->moconffields[$objType];
 
-		//prefill - also non-searched fields need to be passed with null
+		// prefill - also non-searched fields need to be passed with null
 		foreach ($fields as $field)
 		{
 			$searchObj[$field] = null;
@@ -344,14 +347,19 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 */
 	protected function _getApplicationDataElement($moApp, $valueType, $elementName, &$found = false)
 	{
-		if (isset($moApp->applicationDataElements))
+		$applicationDataElementsNames = array('applicationDataElements', 'nonUsedApplicationDataElements');
+
+		foreach ($applicationDataElementsNames as $applicationDataElementsName)
 		{
-			foreach ($moApp->applicationDataElements as $element)
+			if (isset($moApp->{$applicationDataElementsName}))
 			{
-				if ($element->elementName === $elementName && property_exists($element, $valueType))
+				foreach ($moApp->{$applicationDataElementsName} as $element)
 				{
-					$found = true;
-					return $element->{$valueType};
+					if ($element->elementName === $elementName && property_exists($element, $valueType))
+					{
+						$found = true;
+						return $element->{$valueType};
+					}
 				}
 			}
 		}
