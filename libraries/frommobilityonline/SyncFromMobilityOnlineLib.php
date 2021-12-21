@@ -25,72 +25,33 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 	// fhc value replacements for mo values
 	private $_replacementsarrToFHC = array(
-		'gebdatum' => array(
-			0 => '_mapDateToFhc'
-		),
-		'von' => array(
-			0 => '_mapDateToFhc'
-		),
-		'bis' => array(
-			0 => '_mapDateToFhc'
-		),
-		'studiengang_kz' => array(
-			'.+' => ''//empty string if no studiengang
-		),
-		'anmerkung' => array(
-			0 => 'replaceEmpty'
-		),
-		'zgvnation' => array(
-			0 => 'replaceEmpty'
-		),
-		'zgvdatum' => array(
-			0 => '_mapDateToFhc'
-		),
-		'zgvmas_code' => array(
-			0 => 'replaceEmpty'
-		),
-		'zgvmanation' => array(
-			0 => 'replaceEmpty'
-		),
-		'zgvmadatum' => array(
-			0 => '_mapDateToFhc'
-		),
-		'geburtsnation' => array(
-			0 => 'replaceEmpty'
-		),
-		'inhalt' => array(
-			0 => '_resizeBase64ImageBig'
-		),
-		'foto' => array(
-			0 => '_resizeBase64ImageSmall'
-		),
-		'student_uid' => array(
-			0 => 'replaceEmpty'
-		),
-		'aufenthaltfoerderung_code' => array(
-			0 => 'replaceEmpty'
-		),
-		'zweck_code' => array(
-			0 => 'replaceEmpty'
-		),
-		'ects_erworben' => array(
-			0 => '_mapEctsToFhc'
-		),
-		'ects_angerechnet' => array(
-			0 => '_mapEctsToFhc'
-		),
-		'betrag' => array(
-			0 => '_mapBetragToFhc'
-		),
-		'buchungsdatum' => array(
-			0 => '_mapBuchungsdatumToFhc'
-		)
-		/*,
-		'lehrveranstaltung_id' => array(
-			//extracting lvid from MobilityOnline coursenumber, assuming format id_orgform_ausbildungssemester,
-			//e.g. 35408_VZ_2sem
-			'(\d+)_(.*)' => '$1'
-		)*/
+		'gebdatum' => '_mapDateToFhc',
+		'von' => '_mapDateToFhc',
+		'bis' => '_mapDateToFhc',
+		'studiengang_kz' => 'replaceByEmptyString',// empty string if no studiengang found in value mappings
+		'anmerkung' => 'replaceEmptyByNull',
+		'zgvnation' => 'replaceEmptyByNull',
+		'zgvdatum' => '_mapDateToFhc',
+		'zgvmas_code' => 'replaceEmptyByNull',
+		'zgvmanation' => 'replaceEmptyByNull',
+		'zgvmadatum' => '_mapDateToFhc',
+		'geburtsnation' => 'replaceEmptyByNull',
+		'foto' => '_resizeBase64ImageSmall',
+		'titel' => '_getFileExtension',
+		'mimetype' => '_mapFileToMimetype', // is placed before inhalt to get mime type from unencoded document
+		/*'inhalt' => array( // field inhalt can be filled from different mo object, with different functions to execute
+			'photo' => '_resizeBase64ImageBig'
+		),*/
+		'inhalt' => '_resizeBase64ImageBig',
+		'file_content' => '_encodeToBase64',
+		'erstelltam' => '_mapIsoDateToFhc',
+		'student_uid' => 'replaceEmptyByNull',
+		'aufenthaltfoerderung_code' => 'replaceEmptyByNull',
+		'zweck_code' => 'replaceEmptyByNull',
+		'ects_erworben' => '_mapEctsToFhc',
+		'ects_angerechnet' => '_mapEctsToFhc',
+		'betrag' => '_mapBetragToFhc',
+		'buchungsdatum' => '_mapIsoDateToFhc'
 	);
 
 	/**
@@ -110,8 +71,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	/** ---------------------------------------------- Public methods ------------------------------------------------*/
 
 	/**
-	 * Gets sync output string
-	 * @return string
+	 * Gets sync output
+	 * @return array
 	 */
 	public function getOutput()
 	{
@@ -184,111 +145,40 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$hasErrorObj->errorMessages = array();
 		$allFields = $this->fhcconffields[$objType];
 
+		// iterate over fields config
 		foreach ($allFields as $table => $fields)
 		{
 			if (array_key_exists($table, $fhcObj))
 			{
+				// for each field with its setting parameters
 				foreach ($fields as $field => $params)
 				{
 					$hasError = false;
 					$errorText = '';
 					$required = isset($params['required']) && $params['required'];
 
-					if (isset($fhcObj[$table][$field]))
-					{
-						$value = $fhcObj[$table][$field];
+					// value could be an array, in this case all values in array are checked
+					$fhcFields = isset($fhcObj[$table][0][$table]) ? $fhcObj[$table] :  array(array($table => $fhcObj[$table]));
 
-						if ($required && !is_numeric($value) && !is_bool($value) && isEmptyString($value))
+					foreach ($fhcFields as $fhcField)
+					{
+						if (isset($fhcField[$table][$field]))
+						{
+							$value = $fhcField[$table][$field];
+
+							// perform error check
+							$errorResult = $this->_checkValueForErrors($table, $field, $value, $params);
+							$hasError = $errorResult->error;
+							$errorText = $errorResult->errorText;
+
+							if ($hasError)
+								break;
+						}
+						elseif ($required)
 						{
 							$hasError = true;
-							$errorText = 'fehlt';
+							$errorText = 'existiert nicht';
 						}
-						else
-						{
-							// right data type?
-							$wrongDataType = false;
-							if (isset($params['type']))
-							{
-								switch($params['type'])
-								{
-									case 'integer':
-										if (!is_int($value) && !ctype_digit($value))
-										{
-											$wrongDataType = true;
-										}
-										break;
-									case 'float':
-										if (!is_numeric($value))
-										{
-											$wrongDataType = true;
-										}
-										break;
-									case 'boolean':
-										if (!is_bool($value))
-										{
-											$wrongDataType = true;
-										}
-										break;
-									case 'date':
-										if (!$this->_validateDate($value))
-										{
-											$wrongDataType = true;
-										}
-										break;
-									case 'base64':
-										if (!base64_encode(base64_decode($value, true)) === $value)
-											$wrongDataType = true;
-										break;
-									case 'string':
-										if (!is_string($value))
-										{
-											$wrongDataType = true;
-										}
-										break;
-								}
-							}
-							elseif (!is_string($value))
-							{
-								$wrongDataType = true;
-							}
-							else
-							{
-								$params['type'] = 'string';
-							}
-
-							if ($wrongDataType)
-							{
-								$hasError = true;
-								$errorText = 'hat falschen Datentyp';
-							}
-							elseif (!$hasError)
-							{
-								// right string length?
-								if (($params['type'] === 'string' || $params['type'] === 'base64') &&
-									!$this->ci->MobilityonlinefhcModel->checkLength($table, $field, $value))
-								{
-									$hasError = true;
-									$errorText = "ist zu lang ($value)";
-								}
-								// value referenced with foreign key exists?
-								elseif (isset($params['ref']))
-								{
-									$fkField = isset($params['reffield']) ? $params['reffield'] : $field;
-									$foreignkeyExists = $this->ci->MobilityonlinefhcModel->valueExists($params['ref'], $fkField, $value);
-
-									if (!hasData($foreignkeyExists))
-									{
-										$hasError = true;
-										$errorText = 'hat kein Equivalent in FHC';
-									}
-								}
-							}
-						}
-					}
-					elseif ($required)
-					{
-						$hasError = true;
-						$errorText = 'existiert nicht';
 					}
 
 					if ($hasError)
@@ -302,9 +192,16 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			}
 			else
 			{
-				// if required table not present in object - show error
-				$hasErrorObj->errorMessages[] = "Daten fehlen: $table";
-				$hasErrorObj->error = true;
+				foreach ($fields as $field)
+				{
+					if (isset($field['required']) && $field['required'] === true)
+					{
+						// if required table not present in object - show error
+						$hasErrorObj->errorMessages[] = "Daten fehlen: $table";
+						$hasErrorObj->error = true;
+						break;
+					}
+				}
 			}
 		}
 
@@ -419,7 +316,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 						}
 
 						// convert extracted value to fhc value
-						$fhcValue = $this->getFHCValue($fhcIndex, $moValue);
+						$fhcValue = $this->getFHCValue($objType, $fhcIndex, $moValue);
 
 						$fhcObj[$fhcTable][$fhcIndex] = $fhcValue;
 					}
@@ -443,38 +340,42 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	/**
 	 * Gets fhcomplete value which maps to MobilityOnline value.
 	 * Looks in valuemappings and replacementarray.
-	 * @param string $fhcIndex name of fhcomplete field in db
+	 * @param string $moObjName name of mobilityonline object
+	 * @param string $fhcField name of fhcomplete field in db
 	 * @param mixed $moValue MobilityOnline value
 	 * @return string
 	 */
-	protected function getFHCValue($fhcIndex, $moValue)
+	protected function getFHCValue($moObjName, $fhcField, $moValue)
 	{
 		$valuemappings = $this->valuemappings['frommo'];
 		$fhcValue = $moValue;
 		//if exists in valuemappings - take value
-		if (!empty($valuemappings[$fhcIndex])
-			&& isset($valuemappings[$fhcIndex][$fhcValue])
+		if (!empty($valuemappings[$fhcField])
+			&& isset($valuemappings[$fhcField][$fhcValue])
 		)
 		{
-			$fhcValue = $valuemappings[$fhcIndex][$fhcValue];
+			$fhcValue = $valuemappings[$fhcField][$fhcValue];
 		}
 		else//otherwise look in replacements array
 		{
-			if (isset($this->_replacementsarrToFHC[$fhcIndex]))
+			if (isset($this->_replacementsarrToFHC[$fhcField]))
 			{
-				foreach ($this->_replacementsarrToFHC[$fhcIndex] as $pattern => $replacement)
+				$replacementFunc = $this->_replacementsarrToFHC[$fhcField];
+
+				if (is_array($replacementFunc)) // array if same-name-fields coming from different MO objects
 				{
-					//if numeric index, execute callback
-					if (is_integer($pattern))
-						$fhcValue = $this->$replacement($fhcValue);
-					//otherwise replace with regex
-					elseif (is_string($replacement))
+					foreach ($replacementFunc as $moIdx => $repFunc)
 					{
-						//add slashes for regex
-						$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
-						$fhcValue = preg_replace($pattern, $replacement, $fhcValue);
+						if ($moIdx == $moObjName)
+						{
+							$replacementFunc = $repFunc;
+						}
 					}
 				}
+
+				// call replacement function
+				if (is_string($replacementFunc))
+					$fhcValue = $this->{$replacementFunc}($fhcValue);
 			}
 		}
 		return $fhcValue;
@@ -547,6 +448,129 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/** ---------------------------------------------- Private methods -----------------------------------------------*/
+
+	/**
+	 * Checks a given value for errors (data type, length, foreign key...)
+	 * @param string $table fhcomplete table
+	 * @param string $field fhcomplete field
+	 * @param mixed $value the value
+	 * @param array $params information for error check
+	 * @return object containing hasError flag and error text
+	 */
+	private function _checkValueForErrors($table, $field, $value, $params)
+	{
+		$hasError = false;
+		$errorText = '';
+		$required = isset($params['required']) && $params['required'];
+
+		// value empty, but required?
+		if ($required && !is_numeric($value) && !is_bool($value) && isEmptyString($value))
+		{
+			$hasError = true;
+			$errorText = 'fehlt';
+		}
+		else
+		{
+			// right data type?
+			$wrongDataType = false;
+			if (isset($params['type']))
+			{
+				switch($params['type'])
+				{
+					case 'integer':
+						if (!is_int($value) && !ctype_digit($value))
+						{
+							$wrongDataType = true;
+						}
+						break;
+					case 'float':
+						if (!is_numeric($value))
+						{
+							$wrongDataType = true;
+						}
+						break;
+					case 'boolean':
+						if (!is_bool($value))
+						{
+							$wrongDataType = true;
+						}
+						break;
+					case 'date':
+						if (!$this->_validateDate($value))
+						{
+							$wrongDataType = true;
+						}
+						break;
+					case 'base64':
+						if (!base64_encode(base64_decode($value, true)) === $value)
+							$wrongDataType = true;
+						break;
+					case 'base64Document': // check base 64 document for validity, only certain doctypes are allowed.
+						$decodedValue = base64_decode($value, true);
+						$file_info = new finfo(FILEINFO_MIME_TYPE);
+						if (!base64_encode($decodedValue) === $value ||
+							!in_array($file_info->buffer($decodedValue), array('application/pdf', 'image/jpeg', 'image/png')))
+						{
+							$wrongDataType = true;
+						}
+						elseif (strlen($value) > 5 * pow(10, 8))
+						{
+							$hasError = true;
+							$errorText = "ist zu lang";
+						}
+						break;
+					case 'string':
+						if (!is_string($value))
+						{
+							$wrongDataType = true;
+						}
+						break;
+				}
+			}
+			elseif (!is_string($value)) // no type provided -> default string
+			{
+				$wrongDataType = true;
+			}
+			else
+			{
+				$params['type'] = 'string';
+			}
+
+			if ($wrongDataType)
+			{
+				$hasError = true;
+				$errorText = 'hat falschen Datentyp';
+			}
+			elseif (!$hasError)
+			{
+				// right string length?
+				if (($params['type'] === 'string' || $params['type'] === 'base64' || $params['type'] === 'base64Document') &&
+					!$this->ci->MobilityonlinefhcModel->checkLength($table, $field, $value))
+				{
+					$hasError = true;
+					$errorText = "ist zu lang";
+				}
+				// value referenced with foreign key exists?
+				elseif (isset($params['ref']))
+				{
+					$fkField = isset($params['reffield']) ? $params['reffield'] : $field;
+					$foreignkeyExists = $this->ci->MobilityonlinefhcModel->valueExists($params['ref'], $fkField, $value);
+
+					if (!hasData($foreignkeyExists))
+					{
+						$hasError = true;
+						$errorText = 'hat kein Equivalent in FHC';
+					}
+				}
+			}
+		}
+
+		$errorObject = new stdClass();
+		$errorObject->errorText = $errorText;
+		$errorObject->error = $hasError;
+
+		return $errorObject;
+	}
 
 	/**
 	 * Extracts numeric post size from post_max_size string.
@@ -649,13 +673,54 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 * @param float $moBetrag
 	 * @return string fhcomplete betrag
 	 */
-	private function _mapBuchungsdatumToFhc($buchungsdatum)
+	private function _mapIsoDateToFhc($buchungsdatum)
 	{
 		$fhcDate = substr($buchungsdatum, 0, 10);
 		if ($this->_validateDate($fhcDate))
 			return $fhcDate;
 		else
 			return null;
+	}
+
+	/**
+	 * Makes sure base 64 image is not bigger than thumbnail size.
+	 * @param string $moImage
+	 * @return string resized image
+	 */
+	private function _encodeToBase64($moDoc)
+	{
+		return base64_encode($moDoc);
+	}
+
+	/**
+	 * Extracts mimetype from file data.
+	 * @param $moDoc file data
+	 * @return string
+	 */
+	private function _mapFileToMimetype($moDoc)
+	{
+		$file_info = new finfo(FILEINFO_MIME_TYPE);
+		$mimetype = $file_info->buffer($moDoc);
+
+		if (is_string($mimetype))
+			return $mimetype;
+
+		return null;
+	}
+
+	/**
+	 * Extracts file extension from a filename.
+	 * @param string $moFilename
+	 * @return string the file extension with pointor empty string if extension not determined
+	 */
+	private function _getFileExtension($moFilename)
+	{
+		$fileExtension = pathinfo($moFilename, PATHINFO_EXTENSION);
+
+		if (isEmptyString($fileExtension))
+			return '';
+
+		return '.'.strtolower($fileExtension);
 	}
 
 	/**

@@ -123,7 +123,7 @@ class Mobilityonlinefhc_model extends DB_Model
 	 * Checks if a table column value has right length
 	 * @param string $table
 	 * @param string $field
-	 * @param $string value
+	 * @param string $value
 	 * @return bool
 	 */
 	public function checkLength($table, $field, $value)

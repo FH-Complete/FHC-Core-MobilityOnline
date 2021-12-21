@@ -6,7 +6,7 @@ $(document).ready(function()
 	{
 		MobilityOnlineIncoming.getIncoming($("#studiensemester").val(), $("#studiengang_kz").val());
 
-		// get Incomings when Dropdown selected
+		// get Incomings
 		let getIncomingFunc = function()
 		{
 			let studiensemester = $("#studiensemester").val();
@@ -15,7 +15,7 @@ $(document).ready(function()
 			MobilityOnlineIncoming.getIncoming(studiensemester, studiengang_kz);
 		}
 
-		// get Outgoings when Dropdown selected
+		// get Incomings when Dropdown selected
 		$("#studiensemester,#studiengang_kz").change(
 			getIncomingFunc
 		);

@@ -29,6 +29,12 @@ $adressemapping = array(
 	'nation' => array('name' => 'country', 'type' => 'description')
 );
 
+$filemapping = array(
+	'titel' => 'fileName',
+	'mimetype' => 'file',
+	'erstelltam' => 'createdOn'
+);
+
 // person incoming
 $config['fieldmappings']['application']['person'] = $personbasemapping;
 $config['fieldmappings']['application']['person']['staatsbuergerschaft'] = 'lcd_id_nat';
@@ -53,9 +59,9 @@ $config['fieldmappings']['application']['prestudentstatus'] = array(
 	'studiensemester_kurzbz' => 'sem_id'
 );
 
-$config['fieldmappings']['application']['akte'] = array(
-	'inhalt' => 'file'
-);
+// photo incoming
+$config['fieldmappings']['photo']['lichtbild'] = $filemapping;
+$config['fieldmappings']['photo']['lichtbild']['inhalt'] = 'file';
 
 // bisio incoming
 $config['fieldmappings']['application']['bisio'] = $bisiomappings;
@@ -79,6 +85,11 @@ $config['fieldmappings']['application']['kontaktnotfall'] = array(
 $config['fieldmappings']['application']['studiengang'] = array(
 	'typ' => 'stud_niveau_id'
 );
+
+// documents incoming
+$config['fieldmappings']['file']['akte'] = $filemapping;
+$config['fieldmappings']['file']['akte']['file_content'] = 'file';
+$config['fieldmappings']['file']['akte']['mo_file_id'] = 'fileID';
 
 // konto incoming for defalt Buchung
 $config['fieldmappings']['application']['konto'] = array(

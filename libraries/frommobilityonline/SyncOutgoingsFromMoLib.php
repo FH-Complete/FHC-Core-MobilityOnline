@@ -570,31 +570,47 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$fhcobj_extended->errorMessages = $errors->errorMessages;
 
 			$ist_double_degree = isset($fhcobj['bisio_info']['ist_double_degree']) && $fhcobj['bisio_info']['ist_double_degree'];
-			$paymentInFhc = false;
 
 			$found_bisio_id = $this->_checkBisioInFhc($appId);
+			$bisio_found = false;
 
 			if (isError($found_bisio_id))
 			{
 				$fhcobj_extended->error = true;
 				$fhcobj_extended->errorMessages[] = 'Fehler beim Prüfen von Bisio in FH Complete';
 			}
+			elseif (hasData($found_bisio_id))
+				$bisio_found = true;
+
+			$paymentInFhc = true;
 
 			foreach ($fhcobj['zahlungen'] as $zlg)
 			{
-				if (isset($zlg['buchungsinfo']['infhc']) && $zlg['buchungsinfo']['infhc'] == true)
+				if (!isset($zlg['buchungsinfo']['infhc']) || $zlg['buchungsinfo']['infhc'] == false)
 				{
-					$paymentInFhc = true;
+					$paymentInFhc = false;
 					break;
 				}
 			}
 
-			// mark as already in fhcomplete if bisio is in mapping table
-			if (hasData($found_bisio_id) || ($ist_double_degree && $paymentInFhc))
+			//check if bankverbindung already in fhc
+			$bankverbindungInFhc = !isset($fhcobj['bankverbindung']) || isEmptyArray($fhcobj['bankverbindung']);
+			$bankverbindungInFhcRes = $this->_checkBankverbindungInFhc($fhcobj['person']['mo_person_id']);
+
+			if (isSuccess($bankverbindungInFhcRes))
+			{
+				if (hasData($bankverbindungInFhcRes))
+				{
+					$bankverbindungInFhc = true;
+				}
+			}
+
+			// mark as already in fhcomplete if payments synced, bisio is in mapping table, or data is synced when double degree
+			if ($paymentInFhc && (hasData($found_bisio_id) || ($ist_double_degree && $bankverbindungInFhc)))
 			{
 				$fhcobj_extended->infhc = true;
 			}
-			elseif ($fhcobj_extended->error === false && !$ist_double_degree) // bisios not synced for double degrees
+			elseif ($fhcobj_extended->error === false && !$bisio_found && !$ist_double_degree) // bisios not synced for double degrees
 			{
 				// check if has not mapped bisios in fhcomplete
 				$existingBisiosRes = $this->ci->MoFhcModel->getBisio($fhcobj['bisio']['student_uid']);
@@ -826,17 +842,39 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	{
 		$infhccheck_buchungsnr = null;
 		$this->ci->MozahlungidzuordnungModel->addSelect('buchungsnr');
-		$moReferenzNrRes = $this->ci->MozahlungidzuordnungModel->loadWhere(array('mo_referenz_nr' => $mo_referenz_nr));
+		$checkInFhcRes = $this->ci->MozahlungidzuordnungModel->loadWhere(array('mo_referenz_nr' => $mo_referenz_nr));
 
-		if (isError($moReferenzNrRes))
-			return $moReferenzNrRes;
+		if (isError($checkInFhcRes))
+			return $checkInFhcRes;
 
-		if (hasData($moReferenzNrRes))
+		if (hasData($checkInFhcRes))
 		{
-			$infhccheck_buchungsnr = getData($moReferenzNrRes)[0]->buchungsnr;
+			$infhccheck_buchungsnr = getData($checkInFhcRes)[0]->buchungsnr;
 		}
 
 		return success($infhccheck_buchungsnr);
+	}
+
+	/**
+	 * Check if payment is already in fhcomplete by checking sync table.
+	 * @param int $mo_person_id person id in mobility online
+	 * @return object error or success with found buchungsnr if in fhcomplete, success with null if not in fhcomplete
+	 */
+	private function _checkBankverbindungInFhc($mo_person_id)
+	{
+		$infhccheck_bankverbindung_id = null;
+		$this->ci->MobankverbindungidzuordnungModel->addSelect('bankverbindung_id');
+		$checkInFhcRes = $this->ci->MobankverbindungidzuordnungModel->loadWhere(array('mo_person_id' => $mo_person_id));
+
+		if (isError($checkInFhcRes))
+			return $checkInFhcRes;
+
+		if (hasData($checkInFhcRes))
+		{
+			$infhccheck_bankverbindung_id = getData($checkInFhcRes)[0]->bankverbindung_id;
+		}
+
+		return success($infhccheck_bankverbindung_id);
 	}
 
 	/**

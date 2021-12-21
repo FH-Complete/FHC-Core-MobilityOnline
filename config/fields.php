@@ -74,7 +74,7 @@ $config['fhcfields']['application'] = array(
 	),
 	'kontakttel' => array('kontakt' => array('name' => 'Phone number')
 	),
-	'akte' => array('inhalt' => array('name' => 'Photodokument',
+	'lichtbild' => array('inhalt' => array('name' => 'Photodokument',
 									  'type' => 'base64')
 	),
 	'bisio' => array('von' => array('required' => true,
@@ -96,6 +96,9 @@ $config['fhcfields']['application'] = array(
 												 'name' => 'Aufenthaltszweck',
 												 'type' => 'integer',
 												 'ref' => 'bis.tbl_zweck')
+	),
+	'akte' => array('file_content' => array('name' => 'Dokument',
+									  'type' => 'base64Document')
 	)
 );
 

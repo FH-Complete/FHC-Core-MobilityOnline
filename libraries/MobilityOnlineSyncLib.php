@@ -176,14 +176,24 @@ class MobilityOnlineSyncLib
 	}
 
 	/**
-	 * Replaces empty string with null
+	 * Replaces empty string with null.
 	 * @param $string
-	 * @return null
+	 * @return null|string
 	 */
-	protected function replaceEmpty($string)
+	protected function replaceEmptyByNull($string)
 	{
 		if (isEmptyString($string))
 			return null;
 		return $string;
+	}
+
+	/**
+	 * Replaces string with empty string.
+	 * @param $string
+	 * @return string
+	 */
+	protected function replaceByEmptyString($string)
+	{
+		return preg_replace('/.+/', '', $string);
 	}
 }
