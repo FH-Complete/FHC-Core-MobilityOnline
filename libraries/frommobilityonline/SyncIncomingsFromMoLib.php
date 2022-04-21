@@ -42,7 +42,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moakteidzuordnung_model', 'MoakteidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobilityonlinefhc_model', 'MoFhcModel');
 
-		$this->ci->load->library('AkteLib');
+		$this->ci->load->library('AkteLib', array('who' => self::IMPORTUSER));
 	}
 
 	/**
@@ -804,7 +804,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * Inserts or updates a document of a person as an akte.
 	 * @param int $person_id
 	 * @param array $akte
-	 * @param string $bezeichnung of the document
 	 * @return int|null akte_id of inserted or updatedakte, null if nothing upserted
 	 */
 	private function _saveAkte($person_id, $akte)

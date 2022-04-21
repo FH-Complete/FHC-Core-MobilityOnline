@@ -670,7 +670,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 	/**
 	 * Converts MobilityOnline Buchungsdatum to fhcomplete format.
-	 * @param float $moBetrag
+	 * @param string $buchungsdatum
 	 * @return string fhcomplete betrag
 	 */
 	private function _mapIsoDateToFhc($buchungsdatum)

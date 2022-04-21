@@ -4,7 +4,7 @@ if (! defined('BASEPATH')) exit('No direct script access allowed');
 
 /**
  * Provides generic functionality needed for Mobility Online sync
- * particular objects are synced in subclasses
+ * specific objects are synced in subclasses
  */
 class MobilityOnlineSyncLib
 {
