@@ -152,35 +152,30 @@ $config['fhcfields']['applicationout'] = array(
 	),
 	'bisio_zweck' => array(
 		'zweck_code' => array(
-			'required' => false,
+			'required' => true,
 			'name' => 'Aufenthaltszweck',
 			'type' => 'integer',
 			'ref' => 'bis.tbl_zweck')
 	),
 	'bisio_aufenthaltfoerderung' => array(
 		'aufenthaltfoerderung_code' => array(
-			'required' => false,
+			'required' => true,
 			'name' => 'Aufenthaltsförderung',
 			'type' => 'integer',
 			'ref' => 'bis.tbl_bisio_aufenthaltfoerderung')
 	),
-/*	'bisio_info' => array(
-/*
-		'ist_praktikum' => array(
-			'required' => true,
-			'name' => 'Praktikum',
-			'type' => 'boolean'
-		),
-		'ist_masterarbeit' => array(
-			'required' => true,
-			'name' => 'Masterarbeit',
-			'type' => 'boolean'
-		)
-	),*/
 	'kontaktmail' => array(
 		'kontakt' => array(
 			'required' => true,
 			'name' => 'E-Mail-Adresse')
+	),
+	'institution_adresse' => array(
+		'ort' => array(
+			'required' => false,
+			'name' => 'Nation'),
+		'nation' => array(
+			'required' => false,
+			'name' => 'Ort')
 	)
 );
 

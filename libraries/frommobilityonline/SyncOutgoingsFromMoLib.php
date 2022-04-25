@@ -298,15 +298,19 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$bisio = $outgoing['bisio'];
 		$bisio_zweck = $outgoing['bisio_zweck'];
 		$bisio_aufenthaltfoerderung = $outgoing['bisio_aufenthaltfoerderung'];
-		$bisio_adresse = $outgoing['institution_adresse'];
 
-		// get Bezeichnung of Nation by code
-		$nationRes = $this->ci->NationModel->load($bisio_adresse['nation']);
-
-		if (hasData($nationRes))
+		if (isset($outgoing['institution_adresse'])) // instituion adress is optional
 		{
-			// set bisio ort from and Nation from institution address
-			$bisio['ort'] = $bisio_adresse['ort'].', '.getData($nationRes)[0]->langtext;
+			$bisio_adresse = $outgoing['institution_adresse'];
+
+			// get Bezeichnung of Nation by code
+			$nationRes = $this->ci->NationModel->loadWhere(array('nation_code' => $bisio_adresse['nation']));
+
+			if (hasData($nationRes))
+			{
+				// set bisio ort from and Nation from institution address
+				$bisio['ort'] = $bisio_adresse['ort'] . ', ' . getData($nationRes)[0]->langtext;
+			}
 		}
 
 		if (isset($outgoing['bisio_info']))

@@ -94,6 +94,11 @@ $config['fhcdefaults']['applicationout']['bisio_aufenthaltfoerderung_beihilfe'] 
 	'aufenthaltfoerderung_code' => 2  // Beihilfe von Bund, Land, Gemeinde
 );
 
+$config['fhcdefaults']['applicationout']['institution_adresse'] = array(
+	'ort' => null,
+	'nation' => null
+);
+
 $config['fhcdefaults']['bankdetails']['bankverbindung'] = array(
 	'typ' => 'p',
 	'verrechnung' => true
