@@ -34,16 +34,15 @@ $config['fhcdefaults']['application']['studentlehrverband'] = array(
 	'gruppe' => ''
 );
 
-$config['fhcdefaults']['application']['akte'] = array(
+$config['fhcdefaults']['application']['konto'] = array(
+	'mahnspanne' => 30
+);
+
+$config['fhcdefaults']['photo']['lichtbild'] = array(
 	'dokument_kurzbz' => 'Lichtbil',
-	'mimetype' => 'image/jpeg',
 	'gedruckt' => false,
 	'bezeichnung' => 'Lichtbild',
 	'nachgereicht' => false
-);
-
-$config['fhcdefaults']['application']['konto'] = array(
-	'mahnspanne' => 30
 );
 
 $config['fhcdefaults']['address']['adresse'] = array(
@@ -76,6 +75,13 @@ $config['fhcdefaults']['application']['bisio_zweck'] = array(
 	'zweck_code' => '1'
 );
 
+$config['fhcdefaults']['file']['akte'] = array(
+	'dokument_kurzbz' => 'identity',
+	'bezeichnung' => 'Identitätsnachweis',
+	'gedruckt' => false,
+	'nachgereicht' => false
+);
+
 $config['fhcdefaults']['applicationout']['bisio_zweck_studium_praktikum'] = array(
 	'zweck_code' => '3' // Studium und Praktikum
 );
@@ -86,6 +92,11 @@ $config['fhcdefaults']['applicationout']['bisio_zweck_masterarbeit'] = array(
 
 $config['fhcdefaults']['applicationout']['bisio_aufenthaltfoerderung_beihilfe'] = array(
 	'aufenthaltfoerderung_code' => 2  // Beihilfe von Bund, Land, Gemeinde
+);
+
+$config['fhcdefaults']['applicationout']['institution_adresse'] = array(
+	'ort' => null,
+	'nation' => null
 );
 
 $config['fhcdefaults']['bankdetails']['bankverbindung'] = array(

@@ -74,7 +74,7 @@ $config['fhcfields']['application'] = array(
 	),
 	'kontakttel' => array('kontakt' => array('name' => 'Phone number')
 	),
-	'akte' => array('inhalt' => array('name' => 'Photodokument',
+	'lichtbild' => array('inhalt' => array('name' => 'Photodokument',
 									  'type' => 'base64')
 	),
 	'bisio' => array('von' => array('required' => true,
@@ -96,6 +96,9 @@ $config['fhcfields']['application'] = array(
 												 'name' => 'Aufenthaltszweck',
 												 'type' => 'integer',
 												 'ref' => 'bis.tbl_zweck')
+	),
+	'akte' => array('file_content' => array('name' => 'Dokument',
+									  'type' => 'base64Document')
 	)
 );
 
@@ -149,35 +152,30 @@ $config['fhcfields']['applicationout'] = array(
 	),
 	'bisio_zweck' => array(
 		'zweck_code' => array(
-			'required' => false,
+			'required' => true,
 			'name' => 'Aufenthaltszweck',
 			'type' => 'integer',
 			'ref' => 'bis.tbl_zweck')
 	),
 	'bisio_aufenthaltfoerderung' => array(
 		'aufenthaltfoerderung_code' => array(
-			'required' => false,
+			'required' => true,
 			'name' => 'Aufenthaltsförderung',
 			'type' => 'integer',
 			'ref' => 'bis.tbl_bisio_aufenthaltfoerderung')
 	),
-/*	'bisio_info' => array(
-/*
-		'ist_praktikum' => array(
-			'required' => true,
-			'name' => 'Praktikum',
-			'type' => 'boolean'
-		),
-		'ist_masterarbeit' => array(
-			'required' => true,
-			'name' => 'Masterarbeit',
-			'type' => 'boolean'
-		)
-	),*/
 	'kontaktmail' => array(
 		'kontakt' => array(
 			'required' => true,
 			'name' => 'E-Mail-Adresse')
+	),
+	'institution_adresse' => array(
+		'ort' => array(
+			'required' => false,
+			'name' => 'Nation'),
+		'nation' => array(
+			'required' => false,
+			'name' => 'Ort')
 	)
 );
 
