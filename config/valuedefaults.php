@@ -75,9 +75,23 @@ $config['fhcdefaults']['application']['bisio_zweck'] = array(
 	'zweck_code' => '1'
 );
 
-$config['fhcdefaults']['file']['akte'] = array(
+$config['fhcdefaults']['file']['PASS_COPY'] = array(
 	'dokument_kurzbz' => 'identity',
 	'bezeichnung' => 'Identitätsnachweis',
+	'gedruckt' => false,
+	'nachgereicht' => false
+);
+
+$config['fhcdefaults']['file']['GRANT_AGREE'] = array(
+	'dokument_kurzbz' => 'LearnAgr',
+	'bezeichnung' => 'Grant Agreement',
+	'gedruckt' => false,
+	'nachgereicht' => false
+);
+
+$config['fhcdefaults']['file']['GRANT_AGREE_SIGNED_FH'] = array(
+	'dokument_kurzbz' => 'LearnAgr',
+	'bezeichnung' => 'Grant Agreement',
 	'gedruckt' => false,
 	'nachgereicht' => false
 );

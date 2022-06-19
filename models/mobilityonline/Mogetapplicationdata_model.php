@@ -221,7 +221,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	}
 
 	/**
-	 * Gets files associated with an application, for a certain upload setting
+	 * Gets files associated with an application, for a certain upload setting (i.e. file type)
 	 * @param int $appId
 	 * @param $uploadSettingNumber
 	 * @return array files on success, null otherwise
@@ -267,6 +267,11 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 			return null;
 	}
 
+	/**
+	 * Get project details of an application.
+	 * @param int $appId
+	 * @return array project data on success, null otherwise
+	 */
 	public function getProjectDetailsByApplicationID($appId)
 	{
 		$success = $this->performCall('getProjectDetailsByApplicationID', array('applicationID' => $appId));

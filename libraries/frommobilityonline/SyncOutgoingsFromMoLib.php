@@ -19,7 +19,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('person/bankverbindung_model', 'BankverbindungModel');
 		$this->ci->load->model('crm/konto_model', 'KontoModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
-		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
+		//$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetmasterdata_model', 'MoGetMasterDataModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobisioidzuordnung_model', 'MobisioidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mozahlungidzuordnung_model', 'MozahlungidzuordnungModel');
@@ -48,6 +48,14 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			{
 				$outgoingData = $outgoing['data'];
 				$appId = $outgoing['moid'];
+
+				// get files only on sync start to avoid ot of memory error
+				$files = $this->getFiles($appId, array('GRANT_AGREE', 'GRANT_AGREE_SIGNED_FH'));
+
+				if (!isEmptyArray($files))
+				{
+					$outgoingData['akte'] = $files;
+				}
 
 				$ist_double_degree = $outgoingData['bisio_info']['ist_double_degree'];
 
@@ -165,7 +173,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				}
 
 				$found = false;
-				$appDataValue = $this->_getApplicationDataElement($moApp, $valueType, $elementName, $found);
+				$appDataValue = $this->getApplicationDataElement($moApp, $valueType, $elementName, $found);
 
 				if ($found === true)
 					$moAppElementsExtracted->$elementName = $appDataValue;
@@ -265,6 +273,9 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function saveOutgoing($appId, $outgoing, $bisio_id_existing)
 	{
+		// var_dump($outgoing);
+		// die();
+
 		//error check for missing data etc.
 		$errors = $this->fhcObjHasError($outgoing, self::MOOBJECTTYPE);
 
@@ -298,6 +309,9 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$bisio = $outgoing['bisio'];
 		$bisio_zweck = $outgoing['bisio_zweck'];
 		$bisio_aufenthaltfoerderung = $outgoing['bisio_aufenthaltfoerderung'];
+
+		// optional fields
+		$akten = isset($outgoing['akte']) ? $outgoing['akte'] : array();
 
 		if (isset($outgoing['institution_adresse'])) // instituion adress is optional
 		{
@@ -409,6 +423,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				}
 			}
 
+			// if bisio is set or is double degree student
 			if (isset($bisio_id) || $ist_double_degree)
 			{
 				// Bankverbindung
@@ -416,7 +431,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				{
 					$bankverbindung = $outgoing['bankverbindung'];
 					$bankverbindung['person_id'] = $person_id;
-					$bankverbindung_id = $this->_saveBankverbindung($bankverbindung, $person['mo_person_id']);
+					$this->_saveBankverbindung($bankverbindung, $person['mo_person_id']);
 				}
 
 				// Zahlungen
@@ -428,6 +443,13 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 					$zahlung['konto']['buchungstext'] = $zahlung['buchungsinfo']['mo_zahlungsgrund'];
 
 					$this->_saveZahlung($zahlung);
+				}
+
+				// Documents
+				// save documents
+				foreach ($akten as $akte)
+				{
+					$this->saveAkte($person_id, $akte);
 				}
 			}
 		}
@@ -558,7 +580,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 			$institutionAddressesData = array();
 			// get gast intitution for adress
-			$institution_id = $this->_getApplicationDataElement($application, 'elementValue', 'inst_id_gast');
+			$institution_id = $this->getApplicationDataElement($application, 'elementValue', 'inst_id_gast');
 			if (isset($institution_id))
 			{
 				$institutionAddressesData = $this->ci->MoGetMasterDataModel->getAddressesOfInstitution($institution_id);
@@ -707,7 +729,9 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				$bankverbindung_insertvon = $bankverbindungData->insertvon;
 
 				// check synced Bankverbindungen
-				$bankverbindungZuordnungRes = $this->ci->MobankverbindungidzuordnungModel->loadWhere(array('bankverbindung_id' => $bankverbindung_id));
+				$bankverbindungZuordnungRes = $this->ci->MobankverbindungidzuordnungModel->loadWhere(
+					array('bankverbindung_id' => $bankverbindung_id)
+				);
 
 				if (isSuccess($bankverbindungZuordnungRes))
 				{
@@ -807,7 +831,9 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 					$buchungsnr = getData($kontoResp);
 
 					// insert new mapping into zahlungssynctable
-					$this->ci->MozahlungidzuordnungModel->insert(array('buchungsnr' => $buchungsnr, 'mo_referenz_nr' => $buchungsinfo['mo_referenz_nr']));
+					$this->ci->MozahlungidzuordnungModel->insert(
+						array('buchungsnr' => $buchungsnr, 'mo_referenz_nr' => $buchungsinfo['mo_referenz_nr'])
+					);
 				}
 			}
 		}

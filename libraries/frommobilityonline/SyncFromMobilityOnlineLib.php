@@ -64,7 +64,13 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$this->_conffhcdefaults = $this->ci->config->item('fhcdefaults');
 		$this->fhcconffields = $this->ci->config->item('fhcfields');
 
+		$this->ci->load->model('content/TempFS_model', 'TempFSModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MobilityonlinefhcModel');
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moakteidzuordnung_model', 'MoakteidzuordnungModel');
+
+		$this->ci->load->library('AkteLib', array('who' => self::IMPORTUSER));
 	}
 
 
@@ -92,12 +98,14 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$fields = $this->moconffields[$objType];
 
-		// prefill - also non-searched fields need to be passed with null
+		// prefill search object with mobility online fields from fieldmappings config
+		// also non-searched fields need to be passed with null value
 		foreach ($fields as $field)
 		{
 			$searchObj[$field] = null;
 		}
 
+		// fill search object with passed search params
 		if (is_array($searchParams))
 		{
 			foreach ($searchParams as $paramName => $param)
@@ -114,11 +122,11 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 			$moobjFieldmappings = $this->conffieldmappings[$objType];
 
-			foreach ($moobjFieldmappings as $fhcTable => $mapping)
+			foreach ($moobjFieldmappings as $mapping)
 			{
-				foreach ($mapping as $name => $value)
+				foreach ($mapping as $value)
 				{
-					if (!(in_array($value, $uniqueFieldmappingMoNames)))
+					if (!in_array($value, $uniqueFieldmappingMoNames))
 					{
 						$elementToReturn = new StdClass();
 						$elementToReturn->elementName = $value;
@@ -242,7 +250,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 * @param bool $found set to true if applicationDateElement with given name and type was found
 	 * @return mixed the value of the applicationDataElement
 	 */
-	protected function _getApplicationDataElement($moApp, $valueType, $elementName, &$found = false)
+	protected function getApplicationDataElement($moApp, $valueType, $elementName, &$found = false)
 	{
 		$applicationDataElementsNames = array('applicationDataElements', 'nonUsedApplicationDataElements');
 
@@ -447,6 +455,137 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$this->_setOutput(self::SUCCESS_TYPE, $text);
 	}
 
+	/**
+	 * Gets File from MO and converts to FHC format.
+	 * @param int $appId
+	 * @return array
+	 */
+	protected function getFiles($appId, $uploadSettingNumbers)
+	{
+		$allDocs = $this->ci->MoGetAppModel->getAllFilesOfApplication($appId);
+
+		$documents = array();
+
+		$fileDefaults = isset($this->_conffhcdefaults['file']) ? $this->_conffhcdefaults['file'] : array();
+
+		if (!isEmptyArray($uploadSettingNumbers))
+		{
+			foreach ($uploadSettingNumbers as $uploadSettingNumber)
+			{
+				$idDocuments = $this->ci->MoGetAppModel->getFilesOfApplication($appId, $uploadSettingNumber);
+
+				if (!isEmptyArray($idDocuments))
+				{
+					foreach ($idDocuments as $document)
+					{
+						$fhcFile = $this->convertToFhcFormat($document, 'file');
+
+						// set fhc file defaults depending on file type i.e. the uploadSettingNumber
+						foreach ($fileDefaults as $uploadSetting => $fileDefault)
+						{
+							if ($uploadSettingNumber == $uploadSetting)
+							{
+								$fhcFile = array_merge($fhcFile['akte'], $fileDefaults[$uploadSetting]);
+							}
+						}
+						$documents[] = $fhcFile;
+					}
+				}
+			}
+		}
+
+		return $documents;
+	}
+
+	/**
+	 * Inserts or updates a document of a person as an akte.
+	 * @param int $person_id
+	 * @param array $akte
+	 * @return int|null akte_id of inserted or updatedakte, null if nothing upserted
+	 */
+	protected function saveAkte($person_id, $akte)
+	{
+		$akte_id = null;
+
+		if (isset($akte['mo_file_id']) && isset($akte['bezeichnung']))
+		{
+			$mo_file_id = $akte['mo_file_id'];
+			unset($akte['mo_file_id']); // remove non-saved MO file id
+
+			//$akte['titel'] = $bezeichnung.'_'.$person_id;
+
+			$aktecheckResp = $this->ci->MoakteidzuordnungModel->loadWhere(array('mo_file_id' => $mo_file_id));
+
+			if (isSuccess($aktecheckResp))
+			{
+				// prepend file name to title ending
+				$akte['titel'] = $akte['bezeichnung'] . '_' . $person_id . $akte['titel'];
+
+				// write temporary file
+				$tempFileName = uniqid();
+				$fileHandleResult = $this->writeTempFile($tempFileName, base64_decode($akte['file_content']));
+
+				if (hasData($fileHandleResult))
+				{
+					$fileHandle = getData($fileHandleResult);
+
+					if (hasData($aktecheckResp))
+					{
+						$akte_id = getData($aktecheckResp)[0]->akte_id;
+
+						if ($this->debugmode)
+						{
+							$this->addInfoOutput($akte['bezeichnung'] . ' existiert bereits, akte_id ' . $akte_id);
+						}
+						$akteResp = $this->ci->aktelib->update($akte_id, $akte['titel'], $akte['mimetype'], $fileHandle, $akte['bezeichnung']);
+						$this->log('update', $akteResp, 'akte');
+					}
+					else
+					{
+						// save new in dms
+						$akteResp = $this->ci->aktelib->add($person_id, $akte['dokument_kurzbz'], $akte['titel'], $akte['mimetype'], $fileHandle, $akte['bezeichnung']);
+						$this->log('insert', $akteResp, 'akte');
+
+						if (hasData($akteResp))
+						{
+							$akte_id = getData($akteResp);
+
+							// link Akte in sync table
+							$this->ci->MoakteidzuordnungModel->insert(
+								array(
+									'akte_id' => $akte_id,
+									'mo_file_id' => $mo_file_id
+								)
+							);
+						}
+					}
+
+					// close and delete the temporary file
+					$this->ci->TempFSModel->close($fileHandle);
+					$this->ci->TempFSModel->remove($tempFileName);
+				}
+			}
+		}
+
+		return $akte_id;
+	}
+
+	protected function writeTempFile($filename, $file_content)
+	{
+		$readWriteResult = $this->ci->TempFSModel->openReadWrite($filename);
+
+		if (isError($readWriteResult))
+			return $readWriteResult;
+
+		$readWriteFileHandle = getData($readWriteResult);
+		$writtenTemp = $this->ci->TempFSModel->write($readWriteFileHandle, $file_content);
+
+		if (isError($writtenTemp))
+			return $writtenTemp;
+
+		return $this->ci->TempFSModel->openRead($filename);
+	}
+
 	/** ---------------------------------------------- Private methods -----------------------------------------------*/
 
 	/**
@@ -589,7 +728,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		{
 			$sizeRegex = '/\d+([KMG])/';
 
-			if (preg_match($sizeRegex ,$post_max_size))
+			if (preg_match($sizeRegex, $post_max_size))
 			{
 				preg_match_all('/\d+/', $post_max_size, $size);
 				preg_match_all('/\D+/', $post_max_size, $unit);
@@ -652,7 +791,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$pattern = '/^(\d+),(\d{2})$/';
 		if (preg_match($pattern, $moEcts))
 		{
-			return (float) str_replace(',', '.', $moEcts);
+			return (float)str_replace(',', '.', $moEcts);
 		}
 		else
 			return null;
@@ -766,7 +905,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 			$ratio_orig = $width_orig/$height_orig;
 
-			if ($width_orig > $width || $height_orig > $height )
+			if ($width_orig > $width || $height_orig > $height)
 			{
 				//keep proportions
 				if ($width/$height > $ratio_orig)

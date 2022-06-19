@@ -30,7 +30,9 @@ class Mobilityonlinefhc_model extends DB_Model
 		$emailbez = $valuedefaults['application']['kontaktmail']['kontakttyp'];
 		$telefonbez = $valuedefaults['address']['kontakttel']['kontakttyp'];
 
-		$this->PrestudentModel->addSelect('prestudent_id, person_id, vorname, nachname, uid, tbl_studiengang.bezeichnung, tbl_studiengang.english, tbl_bisio.von, tbl_bisio.bis');
+		$this->PrestudentModel->addSelect(
+			'prestudent_id, person_id, vorname, nachname, uid, tbl_studiengang.bezeichnung, tbl_studiengang.english, tbl_bisio.von, tbl_bisio.bis'
+		);
 		$this->PrestudentModel->addJoin('public.tbl_person', 'person_id');
 		$this->PrestudentModel->addJoin('public.tbl_benutzer', 'person_id');
 		$this->PrestudentModel->addJoin('public.tbl_studiengang', 'studiengang_kz');
