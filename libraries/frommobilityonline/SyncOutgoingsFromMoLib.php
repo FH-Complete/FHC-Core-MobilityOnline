@@ -19,7 +19,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('person/bankverbindung_model', 'BankverbindungModel');
 		$this->ci->load->model('crm/konto_model', 'KontoModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
-		//$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetmasterdata_model', 'MoGetMasterDataModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobisioidzuordnung_model', 'MobisioidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mozahlungidzuordnung_model', 'MozahlungidzuordnungModel');
@@ -50,7 +49,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				$appId = $outgoing['moid'];
 
 				// get files only on sync start to avoid ot of memory error
-				$files = $this->getFiles($appId, array('GRANT_AGREE', 'GRANT_AGREE_SIGNED_FH'));
+				$files = $this->getFiles($appId, array('GRANT_AGREE', 'GRANT_AGREE_SIGNED_FH', 'GRANT_AGREE_STUD_SIGN'));
 
 				if (!isEmptyArray($files))
 				{
@@ -273,9 +272,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function saveOutgoing($appId, $outgoing, $bisio_id_existing)
 	{
-		// var_dump($outgoing);
-		// die();
-
 		//error check for missing data etc.
 		$errors = $this->fhcObjHasError($outgoing, self::MOOBJECTTYPE);
 

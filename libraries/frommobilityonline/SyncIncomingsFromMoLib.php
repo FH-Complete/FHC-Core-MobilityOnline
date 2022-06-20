@@ -35,11 +35,8 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('education/studentlehrverband_model', 'StudentlehrverbandModel');
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 		$this->ci->load->model('codex/bisio_model', 'BisioModel');
-		//$this->ci->load->model('content/TempFS_model', 'TempFSModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
-		//$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moappidzuordnung_model', 'MoappidzuordnungModel');
-		//$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moakteidzuordnung_model', 'MoakteidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobilityonlinefhc_model', 'MoFhcModel');
 
 		//$this->ci->load->library('AkteLib', array('who' => self::IMPORTUSER));
@@ -627,35 +624,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		return $incomings;
 	}
 
-	/**
-	 * Gets File from MO and converts to FHC format.
-	 * @param int $appId
-	 * @return array
-	 */
-	// private function _getFiles($appId, $uploadSettingNumbers)
-	// {
-	// 	$documents = array();
-	//
-	// 	if (!isEmptyArray($uploadSettingNumbers))
-	// 	{
-	// 		foreach ($uploadSettingNumbers as $uploadSettingNumber)
-	// 		{
-	// 			// 'PASS_COPY'
-	// 			$idDocuments = $this->ci->MoGetAppModel->getFilesOfApplication($appId, $uploadSettingNumber);
-	//
-	// 			if (!isEmptyArray($idDocuments))
-	// 			{
-	// 				foreach ($idDocuments as $document)
-	// 				{
-	// 					$documents[] = $this->convertToFhcFormat($document, 'file');
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	//
-	// 	return $documents;
-	// }
-
 	// -----------------------------------------------------------------------------------------------------------------
 	// Private methods for saving an incoming
 
@@ -807,79 +775,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		return $akte_id;
 	}
-
-	/**
-	 * Inserts or updates a document of a person as an akte.
-	 * @param int $person_id
-	 * @param array $akte
-	 * @return int|null akte_id of inserted or updatedakte, null if nothing upserted
-	 */
-	// private function saveAkte($person_id, $akte)
-	// {
-	// 	$akte_id = null;
-	//
-	// 	if (isset($akte['mo_file_id']) && isset($akte['bezeichnung']))
-	// 	{
-	// 		$mo_file_id = $akte['mo_file_id'];
-	// 		unset($akte['mo_file_id']); // remove non-saved MO file id
-	//
-	// 		//$akte['titel'] = $bezeichnung.'_'.$person_id;
-	//
-	// 		$aktecheckResp = $this->ci->MoakteidzuordnungModel->loadWhere(array('mo_file_id' => $mo_file_id));
-	//
-	// 		if (isSuccess($aktecheckResp))
-	// 		{
-	// 			// prepend file name to title ending
-	// 			$akte['titel'] = $akte['bezeichnung'] . '_' . $person_id . $akte['titel'];
-	//
-	// 			// write temporary file
-	// 			$tempFileName = uniqid();
-	// 			$fileHandleResult = $this->writeTempFile($tempFileName, base64_decode($akte['file_content']));
-	//
-	// 			if (hasData($fileHandleResult))
-	// 			{
-	// 				$fileHandle = getData($fileHandleResult);
-	//
-	// 				if (hasData($aktecheckResp))
-	// 				{
-	// 					$akte_id = getData($aktecheckResp)[0]->akte_id;
-	//
-	// 					if ($this->debugmode)
-	// 					{
-	// 						$this->addInfoOutput($akte['bezeichnung'] . ' existiert bereits, akte_id ' . $akte_id);
-	// 					}
-	// 					$akteResp = $this->ci->aktelib->update($akte_id, $akte['titel'], $akte['mimetype'], $fileHandle, $akte['bezeichnung']);
-	// 					$this->log('update', $akteResp, 'akte');
-	// 				}
-	// 				else
-	// 				{
-	// 					// save new in dms
-	// 					$akteResp = $this->ci->aktelib->add($person_id, $akte['dokument_kurzbz'], $akte['titel'], $akte['mimetype'], $fileHandle, $akte['bezeichnung']);
-	// 					$this->log('insert', $akteResp, 'akte');
-	//
-	// 					if (hasData($akteResp))
-	// 					{
-	// 						$akte_id = getData($akteResp);
-	//
-	// 						// link Akte in sync table
-	// 						$this->ci->MoakteidzuordnungModel->insert(
-	// 							array(
-	// 								'akte_id' => $akte_id,
-	// 								'mo_file_id' => $mo_file_id
-	// 							)
-	// 						);
-	// 					}
-	// 				}
-	//
-	// 				// close and delete the temporary file
-	// 				$this->ci->TempFSModel->close($fileHandle);
-	// 				$this->ci->TempFSModel->remove($tempFileName);
-	// 			}
-	// 		}
-	// 	}
-	//
-	// 	return $akte_id;
-	// }
 
 	/**
 	 * Inserts prestudent or updates an existing one.

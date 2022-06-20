@@ -462,8 +462,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 */
 	protected function getFiles($appId, $uploadSettingNumbers)
 	{
-		$allDocs = $this->ci->MoGetAppModel->getAllFilesOfApplication($appId);
-
 		$documents = array();
 
 		$fileDefaults = isset($this->_conffhcdefaults['file']) ? $this->_conffhcdefaults['file'] : array();
@@ -570,6 +568,13 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		return $akte_id;
 	}
 
+	/**
+	 * Writes temporary file to file system.
+	 * Used as template for saving documents to dms.
+	 * @param string $filename
+	 * @param string $file_content
+	 * @return object containing pointer to written file
+	 */
 	protected function writeTempFile($filename, $file_content)
 	{
 		$readWriteResult = $this->ci->TempFSModel->openReadWrite($filename);

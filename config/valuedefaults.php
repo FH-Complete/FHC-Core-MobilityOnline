@@ -83,14 +83,21 @@ $config['fhcdefaults']['file']['PASS_COPY'] = array(
 );
 
 $config['fhcdefaults']['file']['GRANT_AGREE'] = array(
-	'dokument_kurzbz' => 'LearnAgr',
+	'dokument_kurzbz' => 'GrantAgr',
+	'bezeichnung' => 'Grant Agreement',
+	'gedruckt' => false,
+	'nachgereicht' => false
+);
+
+$config['fhcdefaults']['file']['GRANT_AGREE_STUD_SIGN'] = array(
+	'dokument_kurzbz' => 'GrantAgr',
 	'bezeichnung' => 'Grant Agreement',
 	'gedruckt' => false,
 	'nachgereicht' => false
 );
 
 $config['fhcdefaults']['file']['GRANT_AGREE_SIGNED_FH'] = array(
-	'dokument_kurzbz' => 'LearnAgr',
+	'dokument_kurzbz' => 'GrantAgr',
 	'bezeichnung' => 'Grant Agreement',
 	'gedruckt' => false,
 	'nachgereicht' => false
