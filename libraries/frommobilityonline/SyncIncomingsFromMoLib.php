@@ -38,8 +38,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moappidzuordnung_model', 'MoappidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobilityonlinefhc_model', 'MoFhcModel');
-
-		//$this->ci->load->library('AkteLib', array('who' => self::IMPORTUSER));
 	}
 
 	/**
@@ -65,7 +63,8 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				$appId = $incoming['moid'];
 
 				// get files only on sync start to avoid ot of memory error
-				$files = $this->getFiles($appId, array('PASS_COPY'));
+				$documentTypes = array_keys($this->confmiscvalues['documentstosync']['incoming']);
+				$files = $this->getFiles($appId, $documentTypes);
 
 				if (!isEmptyArray($files))
 				{
@@ -408,12 +407,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			// lichtbild - akte
 			$this->_saveLichtbild($person_id, $lichtbild);
 
-			// save documents
-			foreach ($akten as $akte)
-			{
-				$this->saveAkte($person_id, $akte);
-			}
-
 			// prestudent
 			$prestudent['person_id'] = $person_id;
 			$prestudent_id_res = $this->_savePrestudent($prestudent_id, $prestudent);
@@ -462,6 +455,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 							$this->_saveBuchungen($konto);
 						}
 					}
+				}
+
+				// save documents
+				foreach ($akten as $akte)
+				{
+					$this->saveAkte($person_id, $akte['akte'], $prestudent_id_res);
 				}
 			}
 		}
@@ -1087,27 +1086,4 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		return $inserted_buchungen;
 	}
-
-	/**
-	 * Writes temporary file to file system.
-	 * Used as template for saving documents to dms.
-	 * @param string $filename
-	 * @param string $file_content
-	 * @return object containing pointer to written file
-	 */
-	// private function writeTempFile($filename, $file_content)
-	// {
-	// 	$readWriteResult = $this->ci->TempFSModel->openReadWrite($filename);
-	//
-	// 	if (isError($readWriteResult))
-	// 		return $readWriteResult;
-	//
-	// 	$readWriteFileHandle = getData($readWriteResult);
-	// 	$writtenTemp = $this->ci->TempFSModel->write($readWriteFileHandle, $file_content);
-	//
-	// 	if (isError($writtenTemp))
-	// 		return $writtenTemp;
-	//
-	// 	return $this->ci->TempFSModel->openRead($filename);
-	// }
 }

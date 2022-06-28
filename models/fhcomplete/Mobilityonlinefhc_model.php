@@ -95,7 +95,7 @@ class Mobilityonlinefhc_model extends DB_Model
 	 */
 	public function getStudiengaenge()
 	{
-		$valuesconfig = $this->config->item('values');
+		$valuesconfig = $this->config->item('miscvalues');
 
 		$qry = "SELECT studiengang_kz, tbl_studiengang.bezeichnung, tbl_studiengang.typ, tbl_studiengangstyp.bezeichnung AS typbezeichnung,
        			UPPER(tbl_studiengang.typ::varchar(1) || tbl_studiengang.kurzbz) as kuerzel

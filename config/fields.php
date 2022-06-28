@@ -196,6 +196,21 @@ $config['fhcfields']['payment'] = array(
 	)
 );
 
+$config['fhcfields']['file'] = array(
+	'akte' => array(
+		'dokument_kurzbz' =>
+			array('required' => true,
+				'name' => 'Dokumentkurzbezeichnung'),
+		'dokument_bezeichnung' =>
+			array('required' => true,
+				'name' => 'Dokumentbezeichnung'),
+		'file_content' =>
+			array('required' => true,
+				'name' => 'Dokumentinhalt',
+				'type' => 'base64Document')
+	)
+);
+
 /**
  * MobilityOnline fields for searching
  */

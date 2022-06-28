@@ -16,6 +16,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 		$this->ci->load->model('codex/bisio_model', 'BisioModel');
 		$this->ci->load->model('person/person_model', 'PersonModel');
+		$this->ci->load->model('crm/student_model', 'StudentModel');
 		$this->ci->load->model('person/bankverbindung_model', 'BankverbindungModel');
 		$this->ci->load->model('crm/konto_model', 'KontoModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
@@ -49,11 +50,12 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				$appId = $outgoing['moid'];
 
 				// get files only on sync start to avoid ot of memory error
-				$files = $this->getFiles($appId, array('GRANT_AGREE', 'GRANT_AGREE_SIGNED_FH', 'GRANT_AGREE_STUD_SIGN'));
+				$documentTypes = array_keys($this->confmiscvalues['documentstosync']['outgoing']);
+				$files = $this->getFiles($appId, $documentTypes);
 
 				if (!isEmptyArray($files))
 				{
-					$outgoingData['akte'] = $files;
+					$outgoingData['akten'] = $files;
 				}
 
 				$ist_double_degree = $outgoingData['bisio_info']['ist_double_degree'];
@@ -272,11 +274,15 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function saveOutgoing($appId, $outgoing, $bisio_id_existing)
 	{
+		//$outgoing["akten"][0]["akte"]["file_content"] = "";
+		// var_dump($outgoing);
+		// die();
 		//error check for missing data etc.
 		$errors = $this->fhcObjHasError($outgoing, self::MOOBJECTTYPE);
 
-		// check Zahlungen for errors separately
-		$zahlungen = $outgoing['zahlungen'];
+		// check Zahlungen and Akten for errors separately
+		$zahlungen = isset($outgoing['zahlungen']) ? $outgoing['zahlungen'] : array();
+		$akten = isset($outgoing['akten']) ? $outgoing['akten'] : array();
 
 		foreach ($zahlungen as $zahlung)
 		{
@@ -286,6 +292,17 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			{
 				$errors->error = true;
 				$errors->errorMessages = array_merge($errors->errorMessages, $paymentErrors->errorMessages);
+			}
+		}
+
+		foreach ($akten as $akte)
+		{
+			$akteErrors = $this->fhcObjHasError($akte, 'file');
+
+			if ($akteErrors->error)
+			{
+				$errors->error = true;
+				$errors->errorMessages = array_merge($errors->errorMessages, $akteErrors->errorMessages);
 			}
 		}
 
@@ -307,7 +324,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$bisio_aufenthaltfoerderung = $outgoing['bisio_aufenthaltfoerderung'];
 
 		// optional fields
-		$akten = isset($outgoing['akte']) ? $outgoing['akte'] : array();
 
 		if (isset($outgoing['institution_adresse'])) // instituion adress is optional
 		{
@@ -331,10 +347,14 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		// get person_id
 		$personRes = $this->ci->PersonModel->getByUid($bisio['student_uid']);
+		// get prestudent_id
+		$this->ci->StudentModel->addSelect('prestudent_id');
+		$prestudentRes = $this->ci->StudentModel->loadWhere(array('student_uid' => $bisio['student_uid']));
 
-		if (hasData($personRes))
+		if (hasData($personRes) && hasData($prestudentRes))
 		{
 			$person_id = getData($personRes)[0]->person_id;
+			$prestudent_id = getData($prestudentRes)[0]->prestudent_id;
 			$ist_double_degree = (isset($bisio_info['ist_double_degree']) && $bisio_info['ist_double_degree'] === true);
 
 			if (!$ist_double_degree) // for double degree students, only payments are transferred, no bisio
@@ -445,7 +465,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				// save documents
 				foreach ($akten as $akte)
 				{
-					$this->saveAkte($person_id, $akte);
+					$this->saveAkte($person_id, $akte['akte'], $prestudent_id);
 				}
 			}
 		}

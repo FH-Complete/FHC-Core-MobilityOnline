@@ -188,3 +188,13 @@ $config['valuemappings']['frommo']['buchungstext'] = array(
 						  'Studiengebuehr' => 'Studienbeitrag STG Semester - Freemover',
 						  'Unkostenbeitrag' => 'Unkostenbeitrag STG Semester')**/
 );
+
+$config['valuemappings']['frommo']['dokument_kurzbz'] = array(
+	'PASS_COPY' => 'identity',
+	'GRANT_AGREE_SIGNED_FH' => 'GrantAgr'
+);
+
+$config['valuemappings']['frommo']['dokument_bezeichnung'] = array(
+	'PASS_COPY' => 'Identitätsnachweis',
+	'GRANT_AGREE_SIGNED_FH' => 'Grant Agreement'
+);

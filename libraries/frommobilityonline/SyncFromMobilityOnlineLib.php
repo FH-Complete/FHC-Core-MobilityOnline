@@ -11,6 +11,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	private $_conffhcdefaults = array();
 	// fielddefinitions for error check before sync to FHC
 	protected $fhcconffields = array();
+	// miscellaneous values needed for sync
+	protected $confmiscvalues = array();
 
 	// types for syncouput
 	const ERROR_TYPE = 'error';
@@ -63,8 +65,10 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$this->_conffhcdefaults = $this->ci->config->item('fhcdefaults');
 		$this->fhcconffields = $this->ci->config->item('fhcfields');
+		$this->confmiscvalues = $this->ci->config->item('miscvalues');
 
 		$this->ci->load->model('content/TempFS_model', 'TempFSModel');
+		$this->ci->load->model('crm/Dokumentprestudent_model', 'DokumentprestudentModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MobilityonlinefhcModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
@@ -312,6 +316,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 				if (!empty($fhcIndeces))
 				{
+
 					foreach ($fhcIndeces as $fhcIndex)
 					{
 						// if value is in object returned from MO, extract value
@@ -458,13 +463,14 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	/**
 	 * Gets File from MO and converts to FHC format.
 	 * @param int $appId
+	 * @param array MobilityOnline document types as string
 	 * @return array
 	 */
 	protected function getFiles($appId, $uploadSettingNumbers)
 	{
 		$documents = array();
 
-		$fileDefaults = isset($this->_conffhcdefaults['file']) ? $this->_conffhcdefaults['file'] : array();
+		//$fileDefaults = isset($this->_conffhcdefaults['file']) ? $this->_conffhcdefaults['file'] : array();
 
 		if (!isEmptyArray($uploadSettingNumbers))
 		{
@@ -477,15 +483,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					foreach ($idDocuments as $document)
 					{
 						$fhcFile = $this->convertToFhcFormat($document, 'file');
-
-						// set fhc file defaults depending on file type i.e. the uploadSettingNumber
-						foreach ($fileDefaults as $uploadSetting => $fileDefault)
-						{
-							if ($uploadSettingNumber == $uploadSetting)
-							{
-								$fhcFile = array_merge($fhcFile['akte'], $fileDefaults[$uploadSetting]);
-							}
-						}
 						$documents[] = $fhcFile;
 					}
 				}
@@ -501,11 +498,12 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 * @param array $akte
 	 * @return int|null akte_id of inserted or updatedakte, null if nothing upserted
 	 */
-	protected function saveAkte($person_id, $akte)
+	protected function saveAkte($person_id, $akte, $prestudent_id)
 	{
+		$dokument_kurzbz = $akte['dokument_kurzbz'];
 		$akte_id = null;
 
-		if (isset($akte['mo_file_id']) && isset($akte['bezeichnung']))
+		if (isset($akte['mo_file_id']) && isset($akte['dokument_bezeichnung']))
 		{
 			$mo_file_id = $akte['mo_file_id'];
 			unset($akte['mo_file_id']); // remove non-saved MO file id
@@ -517,7 +515,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			if (isSuccess($aktecheckResp))
 			{
 				// prepend file name to title ending
-				$akte['titel'] = $akte['bezeichnung'] . '_' . $person_id . $akte['titel'];
+				$akte['titel'] = $akte['dokument_bezeichnung'] . '_' . $person_id . $akte['titel'];
 
 				// write temporary file
 				$tempFileName = uniqid();
@@ -533,15 +531,16 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 						if ($this->debugmode)
 						{
-							$this->addInfoOutput($akte['bezeichnung'] . ' existiert bereits, akte_id ' . $akte_id);
+							$this->addInfoOutput($akte['dokument_bezeichnung'] . ' existiert bereits, akte_id ' . $akte_id);
 						}
-						$akteResp = $this->ci->aktelib->update($akte_id, $akte['titel'], $akte['mimetype'], $fileHandle, $akte['bezeichnung']);
+						// update existing akte
+						$akteResp = $this->ci->aktelib->update($akte_id, $akte['titel'], $akte['mimetype'], $fileHandle, $akte['dokument_bezeichnung']);
 						$this->log('update', $akteResp, 'akte');
 					}
 					else
 					{
-						// save new in dms
-						$akteResp = $this->ci->aktelib->add($person_id, $akte['dokument_kurzbz'], $akte['titel'], $akte['mimetype'], $fileHandle, $akte['bezeichnung']);
+						// save new akte
+						$akteResp = $this->ci->aktelib->add($person_id, $dokument_kurzbz, $akte['titel'], $akte['mimetype'], $fileHandle, $akte['dokument_bezeichnung']);
 						$this->log('insert', $akteResp, 'akte');
 
 						if (hasData($akteResp))
@@ -561,6 +560,22 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					// close and delete the temporary file
 					$this->ci->TempFSModel->close($fileHandle);
 					$this->ci->TempFSModel->remove($tempFileName);
+
+					// if autoaccept is true, set document to accepted right after insert by adding dokumentprestudent
+					if (hasData($akteResp))
+					{
+						foreach ($this->confmiscvalues['documentstosync'] as $scope => $documentTypeArr)
+						{
+							foreach ($documentTypeArr as $moDocumentType => $options)
+							{
+								$fhcDocumentType = $this->valuemappings['frommo']['dokument_kurzbz'][$moDocumentType];
+								if ($dokument_kurzbz === $fhcDocumentType && $options['autoaccept'] === true)
+								{
+									$this->_saveDokumentPrestudent($dokument_kurzbz, $prestudent_id);
+								}
+							}
+						}
+					}
 				}
 			}
 		}
@@ -964,5 +979,39 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	{
 		$d = DateTime::createFromFormat($format, $date);
 		return $d && $d->format($format) === $date;
+	}
+
+	/**
+	 * Creates a documentprestudent entry if there is none.
+	 * @param string $dokument_kurzbz
+	 * @param int $prestudent_id
+	 */
+	private function _saveDokumentPrestudent($dokument_kurzbz, $prestudent_id)
+	{
+		$dokumentprestudent = null;
+
+		$dokumentPrestudentCheckResp = $this->ci->DokumentprestudentModel->loadWhere
+		(
+			array(
+				'dokument_kurzbz' => $dokument_kurzbz,
+				'prestudent_id' => $prestudent_id
+			)
+		);
+
+		// if not dokumentprestudent entry exists, insert a new one
+		if (!hasData($dokumentPrestudentCheckResp))
+		{
+			$dokumentprestudent = array(
+				'dokument_kurzbz' => $dokument_kurzbz,
+				'prestudent_id' => $prestudent_id,
+				'datum' => date('Y-m-d'),
+			);
+
+			$this->stamp('insert', $dokumentprestudent);
+			$dokumentprestudentResponse = $this->ci->DokumentprestudentModel->insert($dokumentprestudent);
+			$this->log('insert', $dokumentprestudentResponse, 'dokumentprestudent');
+		}
+
+		return $dokumentprestudent;
 	}
 }
