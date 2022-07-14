@@ -43,6 +43,8 @@ $config['valuemappings']['frommo']['nation'] = $nations;
 
 $config['valuemappings']['frommo']['staatsbuergerschaft'] = $nations;
 
+$config['valuemappings']['frommo']['herkunftsland_code'] = $nations;
+
 $config['valuemappings']['frommo']['sprache'] = array(
 	'Englisch' => 'English',
 	'Deutsch' => 'German'

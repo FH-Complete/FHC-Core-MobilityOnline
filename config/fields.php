@@ -90,7 +90,13 @@ $config['fhcfields']['application'] = array(
 						 array('required' => true,
 							   'name' => 'Austauschprogramm',
 							   'type' => 'integer',
-							   'ref' => 'bis.tbl_mobilitaetsprogramm')
+							   'ref' => 'bis.tbl_mobilitaetsprogramm'),
+					 'herkunftsland_code' =>
+						 array(
+						'required' => true,
+						'name' => 'Herkunftsland',
+						'ref' => 'bis.tbl_nation',
+						'reffield' => 'nation_code'),
 	),
 	'bisio_zweck' => array('zweck_code' => array('required' => true,
 												 'name' => 'Aufenthaltszweck',
@@ -136,6 +142,11 @@ $config['fhcfields']['applicationout'] = array(
 			'required' => true,
 			'name' => 'Nation',
 			'ref' => 'bis.tbl_nation'),
+		'herkunftsland_code' => array(
+			'required' => true,
+			'name' => 'Herkunftsland',
+			'ref' => 'bis.tbl_nation',
+			'reffield' => 'nation_code'),
 		'mobilitaetsprogramm_code' => array(
 			'required' => true,
 			'name' => 'Austauschprogramm',

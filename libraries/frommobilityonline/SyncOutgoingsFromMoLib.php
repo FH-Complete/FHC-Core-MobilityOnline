@@ -140,6 +140,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			// applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
 			'comboboxFirstValue' => array(
 				$bisioMappings['nation_code'],
+				$bisioMappings['herkunftsland_code'],
 				$prestudentMappings['studiensemester_kurzbz'],
 				$prestudentMappings['studiengang_kz']
 			),
@@ -186,10 +187,12 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		// Nation
 		$moBisionation = $moAppElementsExtracted->{$bisioMappings['nation_code']};
+		$moBisioHerkunftnation = $moAppElementsExtracted->{$bisioMappings['herkunftsland_code']};
 		$moInstitutionAddrNation = isset($institutionAddressData) ? $institutionAddressData->{$adressemappings['nation']['name']}->description : null;
 
 		$moNations = array(
-			$bisioMappings['nation_code'] => $moBisionation
+			$bisioMappings['nation_code'] => $moBisionation,
+			$bisioMappings['herkunftsland_code'] => $moBisioHerkunftnation
 		);
 
 		$fhcNations = $this->ci->NationModel->load();

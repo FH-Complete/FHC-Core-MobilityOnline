@@ -15,6 +15,7 @@ $bisiomappings = array(
 	'von' => 'bew_dat_von',
 	'bis' => 'bew_dat_bis',
 	'nation_code' => 'lcd_id_gast',
+	'herkunftsland_code' => 'lcd_id_heim',
 	'mobilitaetsprogramm_code' => 'aust_prog_id'
 );
 

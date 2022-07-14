@@ -161,7 +161,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			'comboboxFirstValue' => array(
 				$personMappings['staatsbuergerschaft'], $personMappings['sprache'], $prestudentstatusMappings['studiensemester_kurzbz'],
 				$prestudentMappings['studiengang_kz'], $prestudentMappings['zgvnation'], $prestudentMappings['zgvmanation'],
-				$bisioMappings['nation_code']
+				$bisioMappings['nation_code'], $bisioMappings['herkunftsland_code']
 			)
 		);
 
@@ -193,6 +193,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// Nation
 		$moNation = $moAppElementsExtracted->{$personMappings['staatsbuergerschaft']};
 		$moBisioNation = $moAppElementsExtracted->{$bisioMappings['nation_code']};
+		$moBisioHerkunftsNation = $moAppElementsExtracted->{$bisioMappings['herkunftsland_code']};
 		$moAddrNation = isset($moAddr) ? $moAddr->{$adresseMappings['nation']['name']}->description : null;
 		$currAddrNation = isset($currAddr) ? $currAddr->{$adresseMappings['nation']['name']}->description : null;
 
@@ -202,6 +203,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$moNations = array(
 			$personMappings['staatsbuergerschaft'] => $moNation,
 			$bisioMappings['nation_code'] => $moBisioNation,
+			$bisioMappings['herkunftsland_code'] => $moBisioHerkunftsNation,
 			$prestudentMappings['zgvnation'] => $moZgvNation,
 			$prestudentMappings['zgvmanation'] => $mozgvMaNation
 		);
