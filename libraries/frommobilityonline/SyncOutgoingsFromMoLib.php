@@ -602,11 +602,13 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				$institutionAddressesData = $this->ci->MoGetMasterDataModel->getAddressesOfInstitution($institution_id);
 			}
 
+			// transform MobilityOnline application to FHC outgoing
 			$fhcobj = $this->mapMoAppToOutgoing($application, $institutionAddressesData, $bankData, $nominationData);
 
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appId;
 
+			// check for errors
 			$errors = $this->fhcObjHasError($fhcobj, self::MOOBJECTTYPE);
 			$fhcobj_extended->error = $errors->error;
 			$fhcobj_extended->errorMessages = $errors->errorMessages;
@@ -663,7 +665,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 					$fhcobj_extended->errorMessages[] = 'Fehler beim Prüfen der existierenden Mobilitäten in fhcomplete';
 				}
 
-				if (hasData($existingBisiosRes)) // no bisio is synced for double degrees
+				if (hasData($existingBisiosRes)) // manually select correct bisio if a bisio already exists
 				{
 					$existingBisios = getData($existingBisiosRes);
 
