@@ -68,7 +68,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 				if (!isEmptyArray($files))
 				{
-					$incomingData['akte'] = $files;
+					$incomingData['akten'] = $files;
 				}
 
 				$infhccheck_prestudent_id = $this->checkMoIdInFhc($appId);
@@ -364,7 +364,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		// optional fields
 		$lichtbild = isset($incoming['lichtbild']) ? $incoming['lichtbild'] : array();
-		$akten = isset($incoming['akte']) ? $incoming['akte'] : array();
+		$akten = isset($incoming['akten']) ? $incoming['akten'] : array();
 		$kontaktnotfall = isset($incoming['kontaktnotfall']) ? $incoming['kontaktnotfall'] : array();
 		$kontakttel = isset($incoming['kontakttel']) ? $incoming['kontakttel'] : array();
 		$studienadresse = isset($incoming['studienadresse']) ? $incoming['studienadresse'] : array();
