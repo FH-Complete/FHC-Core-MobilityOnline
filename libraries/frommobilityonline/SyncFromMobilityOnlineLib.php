@@ -508,8 +508,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			$mo_file_id = $akte['mo_file_id'];
 			unset($akte['mo_file_id']); // remove non-saved MO file id
 
-			//$akte['titel'] = $bezeichnung.'_'.$person_id;
-
 			$aktecheckResp = $this->ci->MoakteidzuordnungModel->loadWhere(array('mo_file_id' => $mo_file_id));
 
 			if (isSuccess($aktecheckResp))
@@ -842,9 +840,9 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
-	 * Makes sure base 64 image is not bigger than thumbnail size.
-	 * @param string $moImage
-	 * @return string resized image
+	 * Encodes document into base64 string.
+	 * @param string $moDoc
+	 * @return string encoded string
 	 */
 	private function _encodeToBase64($moDoc)
 	{
