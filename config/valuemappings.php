@@ -45,6 +45,8 @@ $config['valuemappings']['frommo']['nation'] = $nations;
 
 $config['valuemappings']['frommo']['staatsbuergerschaft'] = $nations;
 
+$config['valuemappings']['frommo']['herkunftsland_code'] = $nations;
+
 $config['valuemappings']['frommo']['sprache'] = array(
 	'Englisch' => 'English',
 	'Deutsch' => 'German'
@@ -190,4 +192,14 @@ $config['valuemappings']['frommo']['buchungstext'] = array(
 	/**'682' => array('OEH' => 'ÖH-Beitrag STG Semester',
 						  'Studiengebuehr' => 'Studienbeitrag STG Semester - Freemover',
 						  'Unkostenbeitrag' => 'Unkostenbeitrag STG Semester')**/
+);
+
+$config['valuemappings']['frommo']['dokument_kurzbz'] = array(
+	'PASS_COPY' => 'identity',
+	'GRANT_AGREE_SIGNED_FH' => 'GrantAgr'
+);
+
+$config['valuemappings']['frommo']['dokument_bezeichnung'] = array(
+	'PASS_COPY' => 'Identitätsnachweis',
+	'GRANT_AGREE_SIGNED_FH' => 'Grant Agreement'
 );

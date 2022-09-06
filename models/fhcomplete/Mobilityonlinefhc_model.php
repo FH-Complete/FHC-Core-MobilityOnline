@@ -30,7 +30,9 @@ class Mobilityonlinefhc_model extends DB_Model
 		$emailbez = $valuedefaults['application']['kontaktmail']['kontakttyp'];
 		$telefonbez = $valuedefaults['address']['kontakttel']['kontakttyp'];
 
-		$this->PrestudentModel->addSelect('prestudent_id, person_id, vorname, nachname, uid, tbl_studiengang.bezeichnung, tbl_studiengang.english, tbl_bisio.von, tbl_bisio.bis');
+		$this->PrestudentModel->addSelect(
+			'prestudent_id, person_id, vorname, nachname, uid, tbl_studiengang.bezeichnung, tbl_studiengang.english, tbl_bisio.von, tbl_bisio.bis'
+		);
 		$this->PrestudentModel->addJoin('public.tbl_person', 'person_id');
 		$this->PrestudentModel->addJoin('public.tbl_benutzer', 'person_id');
 		$this->PrestudentModel->addJoin('public.tbl_studiengang', 'studiengang_kz');
@@ -93,7 +95,7 @@ class Mobilityonlinefhc_model extends DB_Model
 	 */
 	public function getStudiengaenge()
 	{
-		$valuesconfig = $this->config->item('values');
+		$valuesconfig = $this->config->item('miscvalues');
 
 		$qry = "SELECT studiengang_kz, tbl_studiengang.bezeichnung, tbl_studiengang.typ, tbl_studiengangstyp.bezeichnung AS typbezeichnung,
        			UPPER(tbl_studiengang.typ::varchar(1) || tbl_studiengang.kurzbz) as kuerzel

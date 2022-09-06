@@ -76,8 +76,6 @@ $config['fhcdefaults']['application']['bisio_zweck'] = array(
 );
 
 $config['fhcdefaults']['file']['akte'] = array(
-	'dokument_kurzbz' => 'identity',
-	'bezeichnung' => 'Identitätsnachweis',
 	'gedruckt' => false,
 	'nachgereicht' => false
 );

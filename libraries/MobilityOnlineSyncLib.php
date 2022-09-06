@@ -18,7 +18,7 @@ class MobilityOnlineSyncLib
 	protected $conffieldmappings = array();
 	// mappings of property values which are different in Mobility Online and fhc.
 	protected $valuemappings = array();
-
+	// field structure e.g. for checking if all fields are synced correctly
 	protected $moconffields = array();
 
 	/**
@@ -34,10 +34,11 @@ class MobilityOnlineSyncLib
 		$this->debugmode = isset($this->mobilityonline_config['debugmode']) &&
 			$this->mobilityonline_config['debugmode'] === true;
 
+		// load configs and assign as properties
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/fieldmappings');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/valuemappings');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/valuedefaults');
-		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/values');
+		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/miscvalues');
 		$this->ci->config->load('extensions/FHC-Core-MobilityOnline/fields');
 
 		$this->conffieldmappings = $this->ci->config->item('fieldmappings');

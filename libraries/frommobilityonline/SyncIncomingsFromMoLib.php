@@ -35,14 +35,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('education/studentlehrverband_model', 'StudentlehrverbandModel');
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 		$this->ci->load->model('codex/bisio_model', 'BisioModel');
-		$this->ci->load->model('content/TempFS_model', 'TempFSModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
-		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moappidzuordnung_model', 'MoappidzuordnungModel');
-		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moakteidzuordnung_model', 'MoakteidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobilityonlinefhc_model', 'MoFhcModel');
-
-		$this->ci->load->library('AkteLib', array('who' => self::IMPORTUSER));
 	}
 
 	/**
@@ -68,11 +63,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				$appId = $incoming['moid'];
 
 				// get files only on sync start to avoid ot of memory error
-				$files = $this->_getFiles($appId);
+				$documentTypes = array_keys($this->confmiscvalues['documentstosync']['incoming']);
+				$files = $this->getFiles($appId, $documentTypes);
 
 				if (!isEmptyArray($files))
 				{
-					$incomingData['akte'] = $files;//array_merge($incomingData, $files);
+					$incomingData['akten'] = $files;
 				}
 
 				$infhccheck_prestudent_id = $this->checkMoIdInFhc($appId);
@@ -165,7 +161,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			'comboboxFirstValue' => array(
 				$personMappings['staatsbuergerschaft'], $personMappings['sprache'], $prestudentstatusMappings['studiensemester_kurzbz'],
 				$prestudentMappings['studiengang_kz'], $prestudentMappings['zgvnation'], $prestudentMappings['zgvmanation'],
-				$bisioMappings['nation_code']
+				$bisioMappings['nation_code'], $bisioMappings['herkunftsland_code']
 			)
 		);
 
@@ -187,7 +183,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				}
 
 				$found = false;
-				$appDataValue = $this->_getApplicationDataElement($moApp, $valueType, $elementName, $found);
+				$appDataValue = $this->getApplicationDataElement($moApp, $valueType, $elementName, $found);
 
 				if ($found === true)
 					$moAppElementsExtracted->$elementName = $appDataValue;
@@ -197,6 +193,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// Nation
 		$moNation = $moAppElementsExtracted->{$personMappings['staatsbuergerschaft']};
 		$moBisioNation = $moAppElementsExtracted->{$bisioMappings['nation_code']};
+		$moBisioHerkunftsNation = $moAppElementsExtracted->{$bisioMappings['herkunftsland_code']};
 		$moAddrNation = isset($moAddr) ? $moAddr->{$adresseMappings['nation']['name']}->description : null;
 		$currAddrNation = isset($currAddr) ? $currAddr->{$adresseMappings['nation']['name']}->description : null;
 
@@ -206,6 +203,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$moNations = array(
 			$personMappings['staatsbuergerschaft'] => $moNation,
 			$bisioMappings['nation_code'] => $moBisioNation,
+			$bisioMappings['herkunftsland_code'] => $moBisioHerkunftsNation,
 			$prestudentMappings['zgvnation'] => $moZgvNation,
 			$prestudentMappings['zgvmanation'] => $mozgvMaNation
 		);
@@ -366,7 +364,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		// optional fields
 		$lichtbild = isset($incoming['lichtbild']) ? $incoming['lichtbild'] : array();
-		$akten = isset($incoming['akte']) ? $incoming['akte'] : array();
+		$akten = isset($incoming['akten']) ? $incoming['akten'] : array();
 		$kontaktnotfall = isset($incoming['kontaktnotfall']) ? $incoming['kontaktnotfall'] : array();
 		$kontakttel = isset($incoming['kontakttel']) ? $incoming['kontakttel'] : array();
 		$studienadresse = isset($incoming['studienadresse']) ? $incoming['studienadresse'] : array();
@@ -410,12 +408,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 			// lichtbild - akte
 			$this->_saveLichtbild($person_id, $lichtbild);
-
-			// save documents
-			foreach ($akten as $akte)
-			{
-				$this->_saveAkte($person_id, $akte['akte']);
-			}
 
 			// prestudent
 			$prestudent['person_id'] = $person_id;
@@ -465,6 +457,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 							$this->_saveBuchungen($konto);
 						}
 					}
+				}
+
+				// save documents
+				foreach ($akten as $akte)
+				{
+					$this->saveAkte($person_id, $akte['akte'], $prestudent_id_res);
 				}
 			}
 		}
@@ -627,27 +625,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		return $incomings;
 	}
 
-	/**
-	 * Gets File from MO and converts to FHC format.
-	 * @param int $appId
-	 * @return array
-	 */
-	private function _getFiles($appId)
-	{
-		$documents = array();
-		$idDocuments = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASS_COPY');
-
-		if (!isEmptyArray($idDocuments))
-		{
-			foreach ($idDocuments as $document)
-			{
-				$documents[] = $this->convertToFhcFormat($document, 'file');
-			}
-		}
-
-		return $documents;
-	}
-
 	// -----------------------------------------------------------------------------------------------------------------
 	// Private methods for saving an incoming
 
@@ -793,79 +770,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 					$akteResp = $this->ci->AkteModel->insert($akte);
 					$akte_id = $akteResp->retval;
 					$this->log('insert', $akteResp, $akte['bezeichnung']);
-				}
-			}
-		}
-
-		return $akte_id;
-	}
-
-	/**
-	 * Inserts or updates a document of a person as an akte.
-	 * @param int $person_id
-	 * @param array $akte
-	 * @return int|null akte_id of inserted or updatedakte, null if nothing upserted
-	 */
-	private function _saveAkte($person_id, $akte)
-	{
-		$akte_id = null;
-
-		if (isset($akte['mo_file_id']) && isset($akte['bezeichnung']))
-		{
-			$mo_file_id = $akte['mo_file_id'];
-			unset($akte['mo_file_id']); // remove non-saved MO file id
-
-			//$akte['titel'] = $bezeichnung.'_'.$person_id;
-
-			$aktecheckResp = $this->ci->MoakteidzuordnungModel->loadWhere(array('mo_file_id' => $mo_file_id));
-
-			if (isSuccess($aktecheckResp))
-			{
-				// prepend file name to title ending
-				$akte['titel'] = $akte['bezeichnung'] . '_' . $person_id . $akte['titel'];
-
-				// write temporary file
-				$tempFileName = uniqid();
-				$fileHandleResult = $this->_writeTempFile($tempFileName, base64_decode($akte['file_content']));
-
-				if (hasData($fileHandleResult))
-				{
-					$fileHandle = getData($fileHandleResult);
-
-					if (hasData($aktecheckResp))
-					{
-						$akte_id = getData($aktecheckResp)[0]->akte_id;
-
-						if ($this->debugmode)
-						{
-							$this->addInfoOutput($akte['bezeichnung'] . ' existiert bereits, akte_id ' . $akte_id);
-						}
-						$akteResp = $this->ci->aktelib->update($akte_id, $akte['titel'], $akte['mimetype'], $fileHandle, $akte['bezeichnung']);
-						$this->log('update', $akteResp, 'akte');
-					}
-					else
-					{
-						// save new in dms
-						$akteResp = $this->ci->aktelib->add($person_id, $akte['dokument_kurzbz'], $akte['titel'], $akte['mimetype'], $fileHandle, $akte['bezeichnung']);
-						$this->log('insert', $akteResp, 'akte');
-
-						if (hasData($akteResp))
-						{
-							$akte_id = getData($akteResp);
-
-							// link Akte in sync table
-							$moAkteidzuordnungInsertRes = $this->ci->MoakteidzuordnungModel->insert(
-								array(
-									'akte_id' => $akte_id,
-									'mo_file_id' => $mo_file_id
-								)
-							);
-						}
-					}
-
-					// close and delete the temporary file
-					$this->ci->TempFSModel->close($fileHandle);
-					$this->ci->TempFSModel->remove($tempFileName);
 				}
 			}
 		}
@@ -1183,28 +1087,5 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		return $inserted_buchungen;
-	}
-
-	/**
-	 * Writes temporary file to file system.
-	 * Used as template for saving documents to dms.
-	 * @param string $filename
-	 * @param string $file_content
-	 * @return object containing pointer to written file
-	 */
-	private function _writeTempFile($filename, $file_content)
-	{
-		$readWriteResult = $this->ci->TempFSModel->openReadWrite($filename);
-
-		if (isError($readWriteResult))
-			return $readWriteResult;
-
-		$readWriteFileHandle = getData($readWriteResult);
-		$writtenTemp = $this->ci->TempFSModel->write($readWriteFileHandle, $file_content);
-
-		if (isError($writtenTemp))
-			return $writtenTemp;
-
-		return $this->ci->TempFSModel->openRead($filename);
 	}
 }
