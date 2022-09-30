@@ -15,6 +15,7 @@ $bisiomappings = array(
 	'von' => 'bew_dat_von',
 	'bis' => 'bew_dat_bis',
 	'nation_code' => 'lcd_id_gast',
+	'herkunftsland_code' => 'lcd_id_heim',
 	'mobilitaetsprogramm_code' => 'aust_prog_id'
 );
 
@@ -86,12 +87,14 @@ $config['fieldmappings']['application']['studiengang'] = array(
 	'typ' => 'stud_niveau_id'
 );
 
-// documents incoming
+// documents incoming/outgoing
 $config['fieldmappings']['file']['akte'] = $filemapping;
 $config['fieldmappings']['file']['akte']['file_content'] = 'file';
 $config['fieldmappings']['file']['akte']['mo_file_id'] = 'fileID';
+$config['fieldmappings']['file']['akte']['dokument_kurzbz'] = array('name' => 'uploadSetting', 'type' => 'number');
+$config['fieldmappings']['file']['akte']['dokument_bezeichnung'] = array('name' => 'uploadSetting', 'type' => 'number');
 
-// konto incoming for defalt Buchung
+// konto incoming for default Buchung
 $config['fieldmappings']['application']['konto'] = array(
 	'buchungstyp_kurzbz' => 'aust_prog_id',
 	'betrag' => 'aust_prog_id',
@@ -99,6 +102,8 @@ $config['fieldmappings']['application']['konto'] = array(
 	'studiengang_kz' => 'studr_id'
 );
 
+// stati in application cycle, for displaying last status
+// in chronological order!!
 $config['fieldmappings']['application']['status_info'] = array(
 	'beworben' => 'is_mail_best_bew',
 	'registriert' => 'is_registriert',

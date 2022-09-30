@@ -17,7 +17,6 @@ class MobilityOnlineOutgoing extends Auth_Controller
 				'index' => 'inout/outgoing:rw',
 				'syncOutgoings' => 'inout/outgoing:rw',
 				'getOutgoingJson' => 'inout/outgoing:r',
-				//'checkMoidsInFhc' => 'inout/outgoing:r',
 				'getPostMaxSize' => 'inout/outgoing:r',
 				'linkBisio' => 'inout/outgoing:r'
 			)

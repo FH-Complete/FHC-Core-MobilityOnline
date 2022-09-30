@@ -45,6 +45,8 @@ $config['valuemappings']['frommo']['nation'] = $nations;
 
 $config['valuemappings']['frommo']['staatsbuergerschaft'] = $nations;
 
+$config['valuemappings']['frommo']['herkunftsland_code'] = $nations;
+
 $config['valuemappings']['frommo']['sprache'] = array(
 	'Englisch' => 'English',
 	'Deutsch' => 'German'
@@ -130,7 +132,8 @@ $config['valuemappings']['frommo']['mobilitaetsprogramm_code'] = array(
 	'830' => 201, // Exchange Semester (with Bilateral Agreement) - FH-Mob
 	'946' => 18, // Marshall Plan Scholarship - Marshall
 	'1037' => 14, // Auslandspraktikum (ohne Zuschuss)
-	'1151' => 7 // Erasmus (Kurzzeitmobilität, BIP)
+	'1151' => 7, // Erasmus (Kurzzeitmobilität, BIP)
+	'1158' => 201 // Kurzzeitmobilität (Sommer-/ Winterschule, Studienreise, Exkursion etc.)
 	/*	'Erasmus SMS' => 7,
 	'Erasmus SMP' => 7,*/
 	//'Erasmus (Studies)' => 7,
@@ -189,4 +192,14 @@ $config['valuemappings']['frommo']['buchungstext'] = array(
 	/**'682' => array('OEH' => 'ÖH-Beitrag STG Semester',
 						  'Studiengebuehr' => 'Studienbeitrag STG Semester - Freemover',
 						  'Unkostenbeitrag' => 'Unkostenbeitrag STG Semester')**/
+);
+
+$config['valuemappings']['frommo']['dokument_kurzbz'] = array(
+	'PASS_COPY' => 'identity',
+	'GRANT_AGREE_SIGNED_FH' => 'GrantAgr'
+);
+
+$config['valuemappings']['frommo']['dokument_bezeichnung'] = array(
+	'PASS_COPY' => 'Identitätsnachweis',
+	'GRANT_AGREE_SIGNED_FH' => 'Grant Agreement'
 );

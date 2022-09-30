@@ -11,6 +11,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	private $_conffhcdefaults = array();
 	// fielddefinitions for error check before sync to FHC
 	protected $fhcconffields = array();
+	// miscellaneous values needed for sync
+	protected $confmiscvalues = array();
 
 	// types for syncouput
 	const ERROR_TYPE = 'error';
@@ -63,8 +65,16 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$this->_conffhcdefaults = $this->ci->config->item('fhcdefaults');
 		$this->fhcconffields = $this->ci->config->item('fhcfields');
+		$this->confmiscvalues = $this->ci->config->item('miscvalues');
 
+		$this->ci->load->model('content/TempFS_model', 'TempFSModel');
+		$this->ci->load->model('crm/Dokumentprestudent_model', 'DokumentprestudentModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MobilityonlinefhcModel');
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moakteidzuordnung_model', 'MoakteidzuordnungModel');
+
+		$this->ci->load->library('AkteLib', array('who' => self::IMPORTUSER));
 	}
 
 
@@ -92,12 +102,14 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$fields = $this->moconffields[$objType];
 
-		// prefill - also non-searched fields need to be passed with null
+		// prefill search object with mobility online fields from fieldmappings config
+		// also non-searched fields need to be passed with null value
 		foreach ($fields as $field)
 		{
 			$searchObj[$field] = null;
 		}
 
+		// fill search object with passed search params
 		if (is_array($searchParams))
 		{
 			foreach ($searchParams as $paramName => $param)
@@ -114,11 +126,11 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 			$moobjFieldmappings = $this->conffieldmappings[$objType];
 
-			foreach ($moobjFieldmappings as $fhcTable => $mapping)
+			foreach ($moobjFieldmappings as $mapping)
 			{
-				foreach ($mapping as $name => $value)
+				foreach ($mapping as $value)
 				{
-					if (!(in_array($value, $uniqueFieldmappingMoNames)))
+					if (!in_array($value, $uniqueFieldmappingMoNames))
 					{
 						$elementToReturn = new StdClass();
 						$elementToReturn->elementName = $value;
@@ -242,7 +254,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 * @param bool $found set to true if applicationDateElement with given name and type was found
 	 * @return mixed the value of the applicationDataElement
 	 */
-	protected function _getApplicationDataElement($moApp, $valueType, $elementName, &$found = false)
+	protected function getApplicationDataElement($moApp, $valueType, $elementName, &$found = false)
 	{
 		$applicationDataElementsNames = array('applicationDataElements', 'nonUsedApplicationDataElements');
 
@@ -304,6 +316,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 				if (!empty($fhcIndeces))
 				{
+
 					foreach ($fhcIndeces as $fhcIndex)
 					{
 						// if value is in object returned from MO, extract value
@@ -445,6 +458,150 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	protected function addSuccessOutput($text)
 	{
 		$this->_setOutput(self::SUCCESS_TYPE, $text);
+	}
+
+	/**
+	 * Gets File from MO and converts to FHC format.
+	 * @param int $appId
+	 * @param array MobilityOnline document types as string
+	 * @return array
+	 */
+	protected function getFiles($appId, $uploadSettingNumbers)
+	{
+		$documents = array();
+
+		//$fileDefaults = isset($this->_conffhcdefaults['file']) ? $this->_conffhcdefaults['file'] : array();
+
+		if (!isEmptyArray($uploadSettingNumbers))
+		{
+			foreach ($uploadSettingNumbers as $uploadSettingNumber)
+			{
+				$idDocuments = $this->ci->MoGetAppModel->getFilesOfApplication($appId, $uploadSettingNumber);
+
+				if (!isEmptyArray($idDocuments))
+				{
+					foreach ($idDocuments as $document)
+					{
+						$fhcFile = $this->convertToFhcFormat($document, 'file');
+						$documents[] = $fhcFile;
+					}
+				}
+			}
+		}
+
+		return $documents;
+	}
+
+	/**
+	 * Inserts or updates a document of a person as an akte.
+	 * @param int $person_id
+	 * @param array $akte
+	 * @return int|null akte_id of inserted or updatedakte, null if nothing upserted
+	 */
+	protected function saveAkte($person_id, $akte, $prestudent_id)
+	{
+		$dokument_kurzbz = $akte['dokument_kurzbz'];
+		$akte_id = null;
+
+		if (isset($akte['mo_file_id']) && isset($akte['dokument_bezeichnung']))
+		{
+			$mo_file_id = $akte['mo_file_id'];
+			unset($akte['mo_file_id']); // remove non-saved MO file id
+
+			$aktecheckResp = $this->ci->MoakteidzuordnungModel->loadWhere(array('mo_file_id' => $mo_file_id));
+
+			if (isSuccess($aktecheckResp))
+			{
+				// prepend file name to title ending
+				$akte['titel'] = $akte['dokument_bezeichnung'] . '_' . $person_id . $akte['titel'];
+
+				// write temporary file
+				$tempFileName = uniqid();
+				$fileHandleResult = $this->writeTempFile($tempFileName, base64_decode($akte['file_content']));
+
+				if (hasData($fileHandleResult))
+				{
+					$fileHandle = getData($fileHandleResult);
+
+					if (hasData($aktecheckResp))
+					{
+						$akte_id = getData($aktecheckResp)[0]->akte_id;
+
+						if ($this->debugmode)
+						{
+							$this->addInfoOutput($akte['dokument_bezeichnung'] . ' existiert bereits, akte_id ' . $akte_id);
+						}
+						// update existing akte
+						$akteResp = $this->ci->aktelib->update($akte_id, $akte['titel'], $akte['mimetype'], $fileHandle, $akte['dokument_bezeichnung']);
+						$this->log('update', $akteResp, 'akte');
+					}
+					else
+					{
+						// save new akte
+						$akteResp = $this->ci->aktelib->add($person_id, $dokument_kurzbz, $akte['titel'], $akte['mimetype'], $fileHandle, $akte['dokument_bezeichnung']);
+						$this->log('insert', $akteResp, 'akte');
+
+						if (hasData($akteResp))
+						{
+							$akte_id = getData($akteResp);
+
+							// link Akte in sync table
+							$this->ci->MoakteidzuordnungModel->insert(
+								array(
+									'akte_id' => $akte_id,
+									'mo_file_id' => $mo_file_id
+								)
+							);
+						}
+					}
+
+					// close and delete the temporary file
+					$this->ci->TempFSModel->close($fileHandle);
+					$this->ci->TempFSModel->remove($tempFileName);
+
+					// if autoaccept is true, set document to accepted right after insert by adding dokumentprestudent
+					if (hasData($akteResp))
+					{
+						foreach ($this->confmiscvalues['documentstosync'] as $scope => $documentTypeArr)
+						{
+							foreach ($documentTypeArr as $moDocumentType => $options)
+							{
+								$fhcDocumentType = $this->valuemappings['frommo']['dokument_kurzbz'][$moDocumentType];
+								if ($dokument_kurzbz === $fhcDocumentType && $options['autoaccept'] === true)
+								{
+									$this->_saveDokumentPrestudent($dokument_kurzbz, $prestudent_id);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return $akte_id;
+	}
+
+	/**
+	 * Writes temporary file to file system.
+	 * Used as template for saving documents to dms.
+	 * @param string $filename
+	 * @param string $file_content
+	 * @return object containing pointer to written file
+	 */
+	protected function writeTempFile($filename, $file_content)
+	{
+		$readWriteResult = $this->ci->TempFSModel->openReadWrite($filename);
+
+		if (isError($readWriteResult))
+			return $readWriteResult;
+
+		$readWriteFileHandle = getData($readWriteResult);
+		$writtenTemp = $this->ci->TempFSModel->write($readWriteFileHandle, $file_content);
+
+		if (isError($writtenTemp))
+			return $writtenTemp;
+
+		return $this->ci->TempFSModel->openRead($filename);
 	}
 
 	/** ---------------------------------------------- Private methods -----------------------------------------------*/
@@ -589,7 +746,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		{
 			$sizeRegex = '/\d+([KMG])/';
 
-			if (preg_match($sizeRegex ,$post_max_size))
+			if (preg_match($sizeRegex, $post_max_size))
 			{
 				preg_match_all('/\d+/', $post_max_size, $size);
 				preg_match_all('/\D+/', $post_max_size, $unit);
@@ -652,7 +809,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$pattern = '/^(\d+),(\d{2})$/';
 		if (preg_match($pattern, $moEcts))
 		{
-			return (float) str_replace(',', '.', $moEcts);
+			return (float)str_replace(',', '.', $moEcts);
 		}
 		else
 			return null;
@@ -683,9 +840,9 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
-	 * Makes sure base 64 image is not bigger than thumbnail size.
-	 * @param string $moImage
-	 * @return string resized image
+	 * Encodes document into base64 string.
+	 * @param string $moDoc
+	 * @return string encoded string
 	 */
 	private function _encodeToBase64($moDoc)
 	{
@@ -766,7 +923,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 			$ratio_orig = $width_orig/$height_orig;
 
-			if ($width_orig > $width || $height_orig > $height )
+			if ($width_orig > $width || $height_orig > $height)
 			{
 				//keep proportions
 				if ($width/$height > $ratio_orig)
@@ -820,5 +977,39 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	{
 		$d = DateTime::createFromFormat($format, $date);
 		return $d && $d->format($format) === $date;
+	}
+
+	/**
+	 * Creates a documentprestudent entry if there is none.
+	 * @param string $dokument_kurzbz
+	 * @param int $prestudent_id
+	 */
+	private function _saveDokumentPrestudent($dokument_kurzbz, $prestudent_id)
+	{
+		$dokumentprestudent = null;
+
+		$dokumentPrestudentCheckResp = $this->ci->DokumentprestudentModel->loadWhere
+		(
+			array(
+				'dokument_kurzbz' => $dokument_kurzbz,
+				'prestudent_id' => $prestudent_id
+			)
+		);
+
+		// if not dokumentprestudent entry exists, insert a new one
+		if (!hasData($dokumentPrestudentCheckResp))
+		{
+			$dokumentprestudent = array(
+				'dokument_kurzbz' => $dokument_kurzbz,
+				'prestudent_id' => $prestudent_id,
+				'datum' => date('Y-m-d'),
+			);
+
+			$this->stamp('insert', $dokumentprestudent);
+			$dokumentprestudentResponse = $this->ci->DokumentprestudentModel->insert($dokumentprestudent);
+			$this->log('insert', $dokumentprestudentResponse, 'dokumentprestudent');
+		}
+
+		return $dokumentprestudent;
 	}
 }
