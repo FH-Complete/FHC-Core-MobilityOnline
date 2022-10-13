@@ -30,11 +30,10 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Executes sync of incomings for a Studiensemester from MO to FHC. Adds or updates incomings.
-	 * @param string $studiensemester
 	 * @param array $outgoings
 	 * @return array syncoutput containing info about failures/success
 	 */
-	public function startOutgoingSync($studiensemester, $outgoings)
+	public function startOutgoingSync($outgoings)
 	{
 		$results = array('added' => array(), 'updated' => array(), 'errors' => 0, 'syncoutput' => array());
 		$studCount = count($outgoings);
@@ -142,8 +141,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			'comboboxFirstValue' => array(
 				$bisioMappings['nation_code'],
 				$bisioMappings['herkunftsland_code'],
-				$prestudentMappings['studiensemester_kurzbz'],
-				$prestudentMappings['studiengang_kz']
+				$prestudentMappings['studiensemester_kurzbz']
 			),
 			// applicationDataElements for which comboboxSecondValue is retrieved instead of elementValue
 			'comboboxSecondValue' => array(
@@ -267,7 +265,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 						$payments[$i]['buchungsinfo']['infhc'] = hasData($referenzNrRes);
 					}
 				}
-
 			}
 		}
 
@@ -286,33 +283,11 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	public function saveOutgoing($appId, $outgoing, $bisio_id_existing)
 	{
 		//error check for missing data etc.
-		$errors = $this->fhcObjHasError($outgoing, self::MOOBJECTTYPE);
+		$errors = $this->_outgoingObjHasError($outgoing);
 
 		// check Zahlungen and Akten for errors separately
 		$zahlungen = isset($outgoing['zahlungen']) ? $outgoing['zahlungen'] : array();
 		$akten = isset($outgoing['akten']) ? $outgoing['akten'] : array();
-
-		foreach ($zahlungen as $zahlung)
-		{
-			$paymentErrors = $this->fhcObjHasError($zahlung, 'payment');
-
-			if ($paymentErrors->error)
-			{
-				$errors->error = true;
-				$errors->errorMessages = array_merge($errors->errorMessages, $paymentErrors->errorMessages);
-			}
-		}
-
-		foreach ($akten as $akte)
-		{
-			$akteErrors = $this->fhcObjHasError($akte, 'file');
-
-			if ($akteErrors->error)
-			{
-				$errors->error = true;
-				$errors->errorMessages = array_merge($errors->errorMessages, $akteErrors->errorMessages);
-			}
-		}
 
 		if ($errors->error)
 		{
@@ -465,7 +440,8 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 					$zahlung['konto']['studiensemester_kurzbz'] = $prestudent['studiensemester_kurzbz'];
 					$zahlung['konto']['buchungstext'] = $zahlung['buchungsinfo']['mo_zahlungsgrund'];
 
-					$this->_saveZahlung($zahlung, $person_id);
+					// TODO studiensemester auch - aber was ist wenn in MO tatsächlich Studiensemester geändert wird? Trotzdem neue Zahlung anlegen?
+					$this->_saveZahlung($zahlung, $person_id/*, $prestudent['studiensemester_kurzbz']*/);
 				}
 
 				// Documents
@@ -616,7 +592,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$fhcobj_extended->moid = $appId;
 
 			// check for errors
-			$errors = $this->fhcObjHasError($fhcobj, self::MOOBJECTTYPE);
+			$errors = $this->_outgoingObjHasError($fhcobj);
 			$fhcobj_extended->error = $errors->error;
 			$fhcobj_extended->errorMessages = $errors->errorMessages;
 
@@ -941,16 +917,36 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Check if bisio for a person is already in fhcomplete by checking sync table.
-	 * @param int $person_id
-	 * @return object error or success with found ids if in fhcomplete, success with empty array if not in fhcomplete
+	 * Check if an outgoing object has errors. Checks "sub objects" as well.
+	 * @param array $outgoing
+	 * @return object error object with messages
 	 */
-	private function _checkBisioInFhcForPerson($person_id)
+	private function _outgoingObjHasError($outgoing)
 	{
-		$this->ci->MobisioidzuordnungModel->addSelect("bisio_id");
-		$this->ci->MobisioidzuordnungModel->addJoin('bis.tbl_bisio', 'bisio_id');
-		$this->ci->MobisioidzuordnungModel->addJoin('public.tbl_student', 'student_uid');
-		$this->ci->MobisioidzuordnungModel->addJoin('public.tbl_prestudent', 'prestudent_id');
-		return $this->ci->MobisioidzuordnungModel->loadWhere(array('person_id' => $person_id));
+		$errorResults = new StdClass();
+		$errorResults->error = false;
+		$errorResults->errorMessages = array();
+
+		$objToCheck = array(
+			self::MOOBJECTTYPE => array($outgoing),
+			'payment' => isset($outgoing['zahlungen']) ? $outgoing['zahlungen'] : array(),
+			'file' => isset($outgoing['akten']) ? $outgoing['akten'] : array(),
+		);
+
+		foreach ($objToCheck as $objName => $objects)
+		{
+			foreach ($objects as $object)
+			{
+				$hasErrorObj = $this->fhcObjHasError($object, $objName);
+
+				if ($hasErrorObj->error)
+				{
+					$errorResults->error = true;
+					$errorResults->errorMessages[] = array_merge($errorResults->errorMessages, $hasErrorObj->errorMessages);
+				}
+			}
+		}
+
+		return $errorResults;
 	}
 }

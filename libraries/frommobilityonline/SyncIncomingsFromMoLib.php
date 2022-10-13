@@ -108,7 +108,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 					if (isset($prestudent_id) && is_numeric($prestudent_id))
 					{
 						$result = $this->ci->MoappidzuordnungModel->insert(
-							array('mo_applicationid' => $appId, 'prestudent_id' => $prestudent_id, 'studiensemester_kurzbz' => $studiensemester, 'insertamum' => 'NOW()')
+							array(
+								'mo_applicationid' => $appId,
+								'prestudent_id' => $prestudent_id,
+								'studiensemester_kurzbz' => $studiensemester,
+								'insertamum' => 'NOW()'
+							)
 						);
 
 						if (hasData($result))
@@ -160,7 +165,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			// applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
 			'comboboxFirstValue' => array(
 				$personMappings['staatsbuergerschaft'], $personMappings['sprache'], $prestudentstatusMappings['studiensemester_kurzbz'],
-				$prestudentMappings['studiengang_kz'], $prestudentMappings['zgvnation'], $prestudentMappings['zgvmanation'],
+				$prestudentMappings['zgvnation'], $prestudentMappings['zgvmanation'],
 				$bisioMappings['nation_code'], $bisioMappings['herkunftsland_code']
 			)
 		);
@@ -197,8 +202,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$moAddrNation = isset($moAddr) ? $moAddr->{$adresseMappings['nation']['name']}->description : null;
 		$currAddrNation = isset($currAddr) ? $currAddr->{$adresseMappings['nation']['name']}->description : null;
 
-		$moZgvNation = isset($prestudentMappings['zgvnation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvnation']}) ? $moAppElementsExtracted->{$prestudentMappings['zgvnation']} : null;
-		$mozgvMaNation = isset($prestudentMappings['zgvmanation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvmanation']}) ? $moAppElementsExtracted->{$prestudentMappings['zgvmanation']} : null;
+		$moZgvNation = isset($prestudentMappings['zgvnation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvnation']})
+							? $moAppElementsExtracted->{$prestudentMappings['zgvnation']}
+							: null;
+		$mozgvMaNation = isset($prestudentMappings['zgvmanation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvmanation']})
+							? $moAppElementsExtracted->{$prestudentMappings['zgvmanation']}
+							: null;
 
 		$moNations = array(
 			$personMappings['staatsbuergerschaft'] => $moNation,
@@ -955,13 +964,24 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			foreach ($studiensemarr as $semester)
 			{
 				$studentlehrverband['studiensemester_kurzbz'] = $semester;
-				$studenlehrverbandCheckResp = $this->ci->StudentlehrverbandModel->load(array('student_uid' => $studentlehrverband['student_uid'], 'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']));
+				$studenlehrverbandCheckResp = $this->ci->StudentlehrverbandModel->load(
+					array(
+						'student_uid' => $studentlehrverband['student_uid'],
+						'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']
+					)
+				);
 				if (isSuccess($studenlehrverbandCheckResp))
 				{
 					if (hasData($studenlehrverbandCheckResp))
 					{
 						$this->stamp('update', $studentlehrverband);
-						$studentlehrverbandResponse = $this->ci->StudentlehrverbandModel->update(array('student_uid' => $studentlehrverband['student_uid'], 'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']), $studentlehrverband);
+						$studentlehrverbandResponse = $this->ci->StudentlehrverbandModel->update(
+							array(
+								'student_uid' => $studentlehrverband['student_uid'],
+								'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']
+							),
+							$studentlehrverband
+						);
 						$this->log('update', $studentlehrverbandResponse, 'studentlehrverband');
 					}
 					else

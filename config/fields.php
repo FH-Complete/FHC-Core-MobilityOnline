@@ -187,6 +187,12 @@ $config['fhcfields']['applicationout'] = array(
 		'nation' => array(
 			'required' => false,
 			'name' => 'Ort')
+	),
+	'bankverbindung' => array(
+		'bic' =>
+			array('name' => 'BIC'),
+		'iban' =>
+			array('name' => 'IBAN')
 	)
 );
 
