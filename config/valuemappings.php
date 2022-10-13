@@ -109,7 +109,7 @@ $config['valuemappings']['frommo']['anrede'] = array(
 
 $config['valuemappings']['frommo']['studiengang_kz'] = array(
 	'13996' => 227, // AI Engineering
-	//'Biomedical Engineering' => 227, // Biomedical Engineering
+	'7068' => 227, // Biomedical Engineering
 	'12268' => 854, // Data Science
 	'6712' => 10006, // Campus International
 	'7030' => 254, // Elektronik
@@ -130,7 +130,7 @@ $config['valuemappings']['frommo']['studiengang_kz'] = array(
 	'7046' => 334, // Integrative Stadtentwicklung-Smart City
 	'7370' => 335, // Internationales Wirtschaftsingenieurwesen
 	'7047' => 336, // Internationales Wirtschaftsingenieurwesen Master
-	'7272' => 779, // Maschinenbau
+	'7372' => 779, // Maschinenbau
 	'7053' => 804, // Maschinenbau Master
 	'7043' => 330, // Mechatronik/Robotik
 	'7373' => 331, // Mechatronik/Robotik Master
