@@ -11,11 +11,11 @@ require_once('include/tw/generateZahlungsreferenz.inc.php');
  */
 class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 {
-	const MOOBJECTTYPE = 'application';
-
 	public function __construct()
 	{
 		parent::__construct();
+
+		$this->moObjectType = 'application';
 
 		$this->ci->load->model('person/person_model', 'PersonModel');
 		$this->ci->load->model('person/benutzer_model', 'BenutzerModel');
@@ -152,7 +152,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function mapMoAppToIncoming($moApp, $moAddr = null, $currAddr = null, $photo = null)
 	{
-		$fieldMappings = $this->conffieldmappings[self::MOOBJECTTYPE];
+		$fieldMappings = $this->conffieldmappings[$this->moObjectType];
 		$personMappings = $fieldMappings['person'];
 		$prestudentMappings = $fieldMappings['prestudent'];
 		$prestudentstatusMappings = $fieldMappings['prestudentstatus'];
@@ -251,7 +251,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$moAppElementsExtracted->{$lichtbildMappings['inhalt']} = $photo[0]->{$lichtbildMappings['inhalt']};
 		}
 
-		$fhcObj = $this->convertToFhcFormat($moAppElementsExtracted, self::MOOBJECTTYPE);
+		$fhcObj = $this->convertToFhcFormat($moAppElementsExtracted, $this->moObjectType);
 
 		// add all Studiensemester for Prestudentstatus
 
@@ -345,7 +345,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	public function saveIncoming($incoming, $prestudent_id = null)
 	{
 		//error check for missing data etc.
-		$errors = $this->fhcObjHasError($incoming, self::MOOBJECTTYPE);
+		$errors = $this->fhcObjHasError($incoming, $this->moObjectType);
 
 		if ($errors->error)
 		{
@@ -501,61 +501,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function getIncoming($studiensemester, $studiengang_kz = null)
 	{
-		$studiensemesterMo = $this->mapSemesterToMo($studiensemester);
-		$semestersForSearch = array($studiensemesterMo);
-		$searchArrays = array();
-		$apps = array();
-
-		$stgValuemappings = $this->valuemappings['frommo']['studiengang_kz'];
-		$moStgName = $this->conffieldmappings['incomingcourse']['mostudiengang']['bezeichnung'];
-
-		// searchobject to search incomings
-		$searchArray = array(
-			'applicationType' => 'IN',
-			'personType' => 'S',
-			'furtherSearchRestrictions' => array('is_storniert' => false)
-		);
-
-		// Also search for Incomings who have entered Studienjahr as their Semester
-		$studienjahrSemesterMo = $this->mapSemesterToMoStudienjahr($studiensemester);
-		if (isset($studienjahrSemesterMo))
-			$semestersForSearch[] = $studienjahrSemesterMo;
-
-		foreach ($semestersForSearch as $semesterForSearch)
-		{
-			$searchArray['semesterDescription'] = $semesterForSearch;
-
-			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
-			{
-				foreach ($stgValuemappings as $mobez => $stg_kz)
-				{
-					if ($stg_kz === (int)$studiengang_kz)
-					{
-						$searchArray[$moStgName] = $mobez;
-						$searchArrays[] = $searchArray;
-					}
-				}
-			}
-			else
-			{
-				$searchArrays[] = $searchArray;
-			}
-		}
-
-		foreach ($searchArrays as $sarr)
-		{
-			// get search object for objecttype, with searchparams ($arr) and returning only specified fields (by default)
-			$searchObj = $this->getSearchObj(
-				self::MOOBJECTTYPE,
-				$sarr
-			);
-
-			$semApps = $this->ci->MoGetAppModel->getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions($searchObj);
-
-			if (!isEmptyArray($semApps))
-				$apps = array_merge($apps, $semApps);
-		}
-
+		$apps = $this->getApplicationBySearchParams($studiensemester, 'IN', $studiengang_kz);
 		return $this->_getIncomingExtended($apps);
 	}
 
@@ -614,7 +560,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$fhcobj_extended->moid = $appId;
 			$fhcobj_extended->infhc = false;
 
-			$errors = $this->fhcObjHasError($fhcobj, self::MOOBJECTTYPE);
+			$errors = $this->fhcObjHasError($fhcobj, $this->moObjectType);
 			$fhcobj_extended->error = $errors->error;
 			$fhcobj_extended->errorMessages = $errors->errorMessages;
 

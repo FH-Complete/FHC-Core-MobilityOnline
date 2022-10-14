@@ -5,11 +5,12 @@
  */
 class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 {
-	const MOOBJECTTYPE = 'course';
-
 	public function __construct()
 	{
 		parent::__construct();
+
+		$this->moObjectType = 'course';
+
 		$this->ci->load->model('education/lehrveranstaltung_model', 'LehrveranstaltungModel');
 		$this->ci->load->model('organisation/Studiensemester_model', 'StudiensemesterModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
@@ -26,7 +27,7 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 	public function startCoursesSync($studiensemester)
 	{
 		$fieldmappings = $this->ci->config->item('fieldmappings');
-		$courseName = $fieldmappings[self::MOOBJECTTYPE]['lv_bezeichnung'];
+		$courseName = $fieldmappings[$this->moObjectType]['lv_bezeichnung'];
 
 		$results = array('added' => 0, 'updated' => 0, 'deleted' => 0, 'errors' => 0, 'syncoutput' => '');
 		$lvs = $this->ci->LehrveranstaltungModel->getLvsWithIncomingPlaces($studiensemester);
@@ -212,7 +213,7 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 	 */
 	public function mapLvToMoLv($lv)
 	{
-		$moLv = $this->convertToMoFormat($lv, self::MOOBJECTTYPE);
+		$moLv = $this->convertToMoFormat($lv, $this->moObjectType);
 
 		/* lv structure in mobility online
 		 * array(

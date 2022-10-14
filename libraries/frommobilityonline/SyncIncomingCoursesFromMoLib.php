@@ -7,13 +7,12 @@ if (! defined('BASEPATH')) exit('No direct script access allowed');
  */
 class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 {
-	const MOOBJECTTYPE = 'incomingcourse';
-
 	public function __construct()
 	{
 		parent::__construct();
 
-		//$this->load->model('crm/Prestudent_model', 'PrestudentModel');
+		$this->moObjectType = 'incomingcourse';
+
 		$this->ci->load->model('crm/prestudentstatus_model', 'PrestudentstatusModel');
 		$this->ci->load->model('education/lehrveranstaltung_model', 'LehrveranstaltungModel');
 		$this->ci->load->model('education/lehreinheit_model', 'LehreinheitModel');
@@ -37,10 +36,7 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	{
 		$studiensemestermo = $this->mapSemesterToMo($studiensemester);
 
-		$searchparams = array('semesterDescription' => $studiensemestermo,
-							  'applicationType' => 'IN',
-							  'courseNumber' => $course->hostCourseNumber
-		);
+		$searchparams = array('semesterDescription' => $studiensemestermo, 'applicationType' => 'IN', 'courseNumber' => $course->hostCourseNumber);
 
 		$searchobj = $this->getSearchObj(
 			'course',
@@ -51,7 +47,7 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 		// search for course to get courseID
 		$mocourses = $this->ci->MoGetMaModel->getCoursesOfSemesterBySearchParameters($searchobj);
 
-		$fhccourse = $this->convertToFhcFormat($course, self::MOOBJECTTYPE);
+		$fhccourse = $this->convertToFhcFormat($course, $this->moObjectType);
 
 		if (is_array($mocourses))
 		{

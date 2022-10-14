@@ -7,11 +7,11 @@ if (! defined('BASEPATH')) exit('No direct script access allowed');
  */
 class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 {
-	const MOOBJECTTYPE = 'applicationout';
-
 	public function __construct()
 	{
 		parent::__construct();
+
+		$this->moObjectType = 'applicationout';
 
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 		$this->ci->load->model('codex/bisio_model', 'BisioModel');
@@ -130,7 +130,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 		}
 
-		$fieldMappings = $this->conffieldmappings[self::MOOBJECTTYPE];
+		$fieldMappings = $this->conffieldmappings[$this->moObjectType];
 		$bisioMappings = $fieldMappings['bisio'];
 		$prestudentMappings = $fieldMappings['prestudent'];
 		$bisioinfoMappings = $fieldMappings['bisio_info'];
@@ -219,7 +219,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 		}
 
-		$fhcObj = $this->convertToFhcFormat($moAppElementsExtracted, self::MOOBJECTTYPE);
+		$fhcObj = $this->convertToFhcFormat($moAppElementsExtracted, $this->moObjectType);
 		$fhcAddr = $this->convertToFhcFormat($institutionAddressData, 'instaddress');
 		$fhcBankData = $this->convertToFhcFormat($bankData, 'bankdetails');
 
@@ -484,7 +484,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$apps = array();
 
 		$stgValuemappings = $this->valuemappings['frommo']['studiengang_kz'];
-		$moStgName = $this->conffieldmappings['incomingcourse']['mostudiengang']['bezeichnung'];
+		$moStgName = $this->conffieldmappings['applicationout']['prestudent']['studiengang_kz'];
 
 		// searchobject to search outgoings
 		$searchArray = array(
@@ -512,17 +512,25 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		if (isset($studienjahrSemesterMo))
 			$semestersForSearch[] = $studienjahrSemesterMo;
 
+		// for each semester searched
 		foreach ($semestersForSearch as $semesterForSearch)
 		{
+			// add semester for filtering
 			$searchArray['semesterDescription'] = $semesterForSearch;
 
+			// add Studiengang for filtering
 			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
 			{
-				foreach ($stgValuemappings as $mobez => $stg_kz)
+				foreach ($stgValuemappings as $moid => $stg_kz)
 				{
 					if ($stg_kz === (int)$studiengang_kz)
 					{
-						$searchArray[$moStgName] = $mobez;
+						$studyFieldObj = new stdClass();
+						$studyFieldObj->elementName = $moStgName;
+						$studyFieldObj->elementValue = $moid;
+						$studyFieldObj->elementType = 'integer';
+						$searchArray['furtherSearchRestrictions'][] = $studyFieldObj;
+
 						$searchArrays[] = $searchArray;
 					}
 				}
@@ -533,11 +541,13 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 		}
 
+		//var_dump($searchArrays);
+
 		foreach ($searchArrays as $sarr)
 		{
 			// get search object for objecttype, with searchparams ($arr) and returning only specified fields (by default)
 			$searchObj = $this->getSearchObj(
-				self::MOOBJECTTYPE,
+				$this->moObjectType,
 				$sarr
 			);
 
@@ -928,7 +938,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$errorResults->errorMessages = array();
 
 		$objToCheck = array(
-			self::MOOBJECTTYPE => array($outgoing),
+			$this->moObjectType => array($outgoing),
 			'payment' => isset($outgoing['zahlungen']) ? $outgoing['zahlungen'] : array(),
 			'file' => isset($outgoing['akten']) ? $outgoing['akten'] : array(),
 		);
