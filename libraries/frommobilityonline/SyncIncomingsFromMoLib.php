@@ -501,8 +501,48 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function getIncoming($studiensemester, $studiengang_kz = null)
 	{
+		$incomings = array();
+
+		// get application data of Incomings for semester (and Studiengang)
 		$apps = $this->getApplicationBySearchParams($studiensemester, 'IN', $studiengang_kz);
-		return $this->_getIncomingExtended($apps);
+
+		foreach ($apps as $application)
+		{
+			$appId = $application->applicationID;
+
+			// get additional data from Mobility Online for each application
+			$address = $this->ci->MoGetAppModel->getPermanentAddress($appId);
+			$currAddress = $this->ci->MoGetAppModel->getCurrentAddress($appId);
+
+			$lichtbild = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASSFOTO');
+
+
+			// transform MobilityOnline application to FHC incoming
+			$fhcobj = $this->mapMoAppToIncoming($application, $address, $currAddress, $lichtbild);
+
+			$fhcobj_extended = new StdClass();
+			$fhcobj_extended->moid = $appId;
+			$fhcobj_extended->infhc = false;
+
+			// check if the fhc object has errors
+			$errors = $this->fhcObjHasError($fhcobj, $this->moObjectType);
+			$fhcobj_extended->error = $errors->error;
+			$fhcobj_extended->errorMessages = $errors->errorMessages;
+
+			$found_prestudent_id = $this->checkMoIdInFhc($appId);
+
+			// mark as already in fhcomplete if prestudent is in mapping table
+			if (isset($found_prestudent_id) && is_numeric($found_prestudent_id))
+			{
+				$fhcobj_extended->infhc = true;
+				$fhcobj_extended->prestudent_id = $found_prestudent_id;
+			}
+
+			$fhcobj_extended->data = $fhcobj;
+			$incomings[] = $fhcobj_extended;
+		}
+
+		return $incomings;
 	}
 
 	/**
@@ -532,52 +572,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			return null;
 		}
-	}
-
-	/**
-	 * Gets incomings (applications) by application ids
-	 * also checks if incomings already are in fhcomplete
-	 * (prestudent_id in tbl_mo_appidzuordnung table and tbl_prestudent)
-	 * @param array $apps
-	 * @return array with applications
-	 */
-	private function _getIncomingExtended($apps)
-	{
-		$incomings = array();
-
-		foreach ($apps as $application)
-		{
-			$appId = $application->applicationID;
-
-			$address = $this->ci->MoGetAppModel->getPermanentAddress($appId);
-			$currAddress = $this->ci->MoGetAppModel->getCurrentAddress($appId);
-
-			$lichtbild = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASSFOTO');
-
-			$fhcobj = $this->mapMoAppToIncoming($application, $address, $currAddress, $lichtbild);
-
-			$fhcobj_extended = new StdClass();
-			$fhcobj_extended->moid = $appId;
-			$fhcobj_extended->infhc = false;
-
-			$errors = $this->fhcObjHasError($fhcobj, $this->moObjectType);
-			$fhcobj_extended->error = $errors->error;
-			$fhcobj_extended->errorMessages = $errors->errorMessages;
-
-			$found_prestudent_id = $this->checkMoIdInFhc($appId);
-
-			// mark as already in fhcomplete if prestudent is in mapping table
-			if (isset($found_prestudent_id) && is_numeric($found_prestudent_id))
-			{
-				$fhcobj_extended->infhc = true;
-				$fhcobj_extended->prestudent_id = $found_prestudent_id;
-			}
-
-			$fhcobj_extended->data = $fhcobj;
-			$incomings[] = $fhcobj_extended;
-		}
-
-		return $incomings;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

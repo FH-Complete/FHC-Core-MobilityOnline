@@ -460,11 +460,13 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
-	 *
-	 * @param
+	 * Gets application data by search parameters
+	 * @param $studiensemester string
+	 * @param $applicationType string type of application, e.g. IN for Incoming
+	 * @param $studiengang_kz int type fhc studiengang Kennzahl. If omitted, applications are returned unrestricted by Studiengang.
 	 * @return object success or error
 	 */
-	protected function getApplicationBySearchParams($studiensemester, $applicationType, $studiengang_kz)
+	protected function getApplicationBySearchParams($studiensemester, $applicationType, $studiengang_kz = null)
 	{
 		$studiensemesterMo = $this->mapSemesterToMo($studiensemester);
 		$semestersForSearch = array($studiensemesterMo);
@@ -481,6 +483,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			'furtherSearchRestrictions' => array()
 		);
 
+		// keep at least one search paremeter here - or remove the whole data search array, otherwise not all apps are loaded
 		$applicationDataSearchFlags = array(
 			//'bit_freifeld24' => false, // double degree shouldn't be synced
 			'is_storniert' => false // stornierte shouldn't be synced
@@ -501,8 +504,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		if (isset($studienjahrSemesterMo))
 			$semestersForSearch[] = $studienjahrSemesterMo;
 
-		//var_dump($semestersForSearch);
-
 		// for each semester searched
 		foreach ($semestersForSearch as $semesterForSearch)
 		{
@@ -514,26 +515,25 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
 			{
-				$stgFurtherSearchRestrictions = $furtherSearchRestrictionsBase;
-				//var_dump($stgValuemappings);
 				foreach ($stgValuemappings as $moid => $stg_kz)
 				{
 					if ($stg_kz === (int)$studiengang_kz)
 					{
+						// add Studiengang search parameters to existing "base" search parameters
+						$stgFurtherSearchRestrictions = $furtherSearchRestrictionsBase;
 						$studyFieldObj = new stdClass();
 						$studyFieldObj->elementName = $moStgName;
 						$studyFieldObj->elementValue = $moid;
 						$studyFieldObj->elementType = 'integer';
 						$stgFurtherSearchRestrictions[] = $studyFieldObj;
+						$searchArray['furtherSearchRestrictions'] = $stgFurtherSearchRestrictions;
+						break;
 					}
 				}
-				$searchArray['furtherSearchRestrictions'] = $stgFurtherSearchRestrictions;
 			}
 
 			$searchArrays[] = $searchArray;
 		}
-
-		//var_dump($searchArrays);
 
 		foreach ($searchArrays as $sarr)
 		{

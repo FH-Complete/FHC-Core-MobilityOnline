@@ -72,9 +72,7 @@ class Mobilityonlineapi_model extends CI_Model
 		}
 		catch (SoapFault $e)
 		{
-			//~ var_dump($data);
-			//~ var_dump($e->getMessage());
-			//~ die();
+			//error_log($e->getMessage());
 			return null;
 		}
 	}

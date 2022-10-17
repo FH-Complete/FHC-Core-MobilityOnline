@@ -478,112 +478,16 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function getOutgoing($studiensemester, $studiengang_kz = null)
 	{
-		$studiensemesterMo = $this->mapSemesterToMo($studiensemester);
-		$semestersForSearch = array($studiensemesterMo);
-		$searchArrays = array();
-		$apps = array();
-
-		$stgValuemappings = $this->valuemappings['frommo']['studiengang_kz'];
-		$moStgName = $this->conffieldmappings['applicationout']['prestudent']['studiengang_kz'];
-
-		// searchobject to search outgoings
-		$searchArray = array(
-			'applicationType' => 'OUT',
-			'personType' => 'S',
-			'furtherSearchRestrictions' => array()
-		);
-
-		$applicationDataSearchFlags = array(
-			//'bit_freifeld24' => false, // double degree shouldn't be synced
-			'is_storniert' => false // stornierte shouldn't be synced
-		);
-
-		foreach ($applicationDataSearchFlags as $flagName => $flagValue)
-		{
-			$flagObj = new stdClass();
-			$flagObj->elementName = $flagName;
-			$flagObj->elementValueBoolean = $flagValue;
-			$flagObj->elementType = 'boolean';
-			$searchArray['furtherSearchRestrictions'][] = $flagObj;
-		}
-
-		// Also search for Outgoings who have entered Studienjahr as their Semester
-		$studienjahrSemesterMo = $this->mapSemesterToMoStudienjahr($studiensemester);
-		if (isset($studienjahrSemesterMo))
-			$semestersForSearch[] = $studienjahrSemesterMo;
-
-		// for each semester searched
-		foreach ($semestersForSearch as $semesterForSearch)
-		{
-			// add semester for filtering
-			$searchArray['semesterDescription'] = $semesterForSearch;
-
-			// add Studiengang for filtering
-			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
-			{
-				foreach ($stgValuemappings as $moid => $stg_kz)
-				{
-					if ($stg_kz === (int)$studiengang_kz)
-					{
-						$studyFieldObj = new stdClass();
-						$studyFieldObj->elementName = $moStgName;
-						$studyFieldObj->elementValue = $moid;
-						$studyFieldObj->elementType = 'integer';
-						$searchArray['furtherSearchRestrictions'][] = $studyFieldObj;
-
-						$searchArrays[] = $searchArray;
-					}
-				}
-			}
-			else
-			{
-				$searchArrays[] = $searchArray;
-			}
-		}
-
-		//var_dump($searchArrays);
-
-		foreach ($searchArrays as $sarr)
-		{
-			// get search object for objecttype, with searchparams ($arr) and returning only specified fields (by default)
-			$searchObj = $this->getSearchObj(
-				$this->moObjectType,
-				$sarr
-			);
-
-			$semApps = $this->ci->MoGetAppModel->getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions($searchObj);
-
-			if (!isEmptyArray($semApps))
-				$apps = array_merge($apps, $semApps);
-		}
-
-		return $this->_getOutgoingExtended($apps);
-	}
-
-	/**
-	 * Links a MO application with a bisio in fhcomplete.
-	 * @param int $moId
-	 * @param int $bisio_id
-	 * @return object
-	 */
-	public function linkBisio($moId, $bisio_id)
-	{
-		return $this->ci->MobisioidzuordnungModel->insert(array('bisio_id' => $bisio_id, 'mo_applicationid' => $moId));
-	}
-
-	/**
-	 * Gets outgoings (applications) with additional data
-	 * @param array $apps
-	 * @param string $studiensemester for check if in mapping table
-	 * @return array with applications
-	 */
-	private function _getOutgoingExtended($apps)
-	{
 		$outgoings = array();
+
+		// get application data of Incomings for semester (and Studiengang)
+		$apps = $this->getApplicationBySearchParams($studiensemester, 'OUT', $studiengang_kz);
 
 		foreach ($apps as $application)
 		{
 			$appId = $application->applicationID;
+
+			// get additional data from Mobility Online for each application
 			$bankData = $this->ci->MoGetAppModel->getBankAccountDetails($appId);
 			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appId);
 
@@ -601,13 +505,14 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appId;
 
-			// check for errors
+			// check if the fhc object has errors
 			$errors = $this->_outgoingObjHasError($fhcobj);
 			$fhcobj_extended->error = $errors->error;
 			$fhcobj_extended->errorMessages = $errors->errorMessages;
 
 			$ist_double_degree = isset($fhcobj['bisio_info']['ist_double_degree']) && $fhcobj['bisio_info']['ist_double_degree'];
 
+			// check if bisio already in fhc
 			$found_bisio_id = $this->_checkBisioInFhc($appId);
 			$bisio_found = false;
 
@@ -619,6 +524,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			elseif (hasData($found_bisio_id))
 				$bisio_found = true;
 
+			// check if payment already in fhc
 			$paymentInFhc = true;
 
 			foreach ($fhcobj['zahlungen'] as $zlg)
@@ -673,6 +579,17 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		return $outgoings;
+	}
+
+	/**
+	 * Links a MO application with a bisio in fhcomplete.
+	 * @param int $moId
+	 * @param int $bisio_id
+	 * @return object
+	 */
+	public function linkBisio($moId, $bisio_id)
+	{
+		return $this->ci->MobisioidzuordnungModel->insert(array('bisio_id' => $bisio_id, 'mo_applicationid' => $moId));
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
