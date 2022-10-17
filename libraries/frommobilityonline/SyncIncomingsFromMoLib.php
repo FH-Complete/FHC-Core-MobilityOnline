@@ -144,6 +144,58 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
+	 * Gets MobilityOnline incomings for a fhcomplete studiensemester, optionally from a Studiengang.
+	 * @param string $studiensemester
+	 * @param int $studiengang_kz as in fhc db
+	 * @return array with applications
+	 */
+	public function getIncoming($studiensemester, $studiengang_kz = null)
+	{
+		$incomings = array();
+
+		// get application data of Incomings for semester (and Studiengang)
+		$apps = $this->getApplicationBySearchParams($studiensemester, 'IN', $studiengang_kz);
+
+		foreach ($apps as $application)
+		{
+			$appId = $application->applicationID;
+
+			// get additional data from Mobility Online for each application
+			$address = $this->ci->MoGetAppModel->getPermanentAddress($appId);
+			$currAddress = $this->ci->MoGetAppModel->getCurrentAddress($appId);
+
+			$lichtbild = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASSFOTO');
+
+
+			// transform MobilityOnline application to FHC incoming
+			$fhcobj = $this->mapMoAppToIncoming($application, $address, $currAddress, $lichtbild);
+
+			$fhcobj_extended = new StdClass();
+			$fhcobj_extended->moid = $appId;
+			$fhcobj_extended->infhc = false;
+
+			// check if the fhc object has errors
+			$errors = $this->fhcObjHasError($fhcobj, $this->moObjectType);
+			$fhcobj_extended->error = $errors->error;
+			$fhcobj_extended->errorMessages = $errors->errorMessages;
+
+			$found_prestudent_id = $this->checkMoIdInFhc($appId);
+
+			// mark as already in fhcomplete if prestudent is in mapping table
+			if (isset($found_prestudent_id) && is_numeric($found_prestudent_id))
+			{
+				$fhcobj_extended->infhc = true;
+				$fhcobj_extended->prestudent_id = $found_prestudent_id;
+			}
+
+			$fhcobj_extended->data = $fhcobj;
+			$incomings[] = $fhcobj_extended;
+		}
+
+		return $incomings;
+	}
+
+	/**
 	 * Converts MobilityOnline application to fhcomplete array (with person, prestudent...)
 	 * @param object $moApp MobilityOnline application
 	 * @param object $moAddr MobilityOnline adress of application
@@ -491,58 +543,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$this->ci->db->trans_commit();
 			return $prestudent_id_res;
 		}
-	}
-
-	/**
-	 * Gets MobilityOnline incomings for a fhcomplete studiensemester, optionally from a Studiengang.
-	 * @param string $studiensemester
-	 * @param int $studiengang_kz as in fhc db
-	 * @return array with applications
-	 */
-	public function getIncoming($studiensemester, $studiengang_kz = null)
-	{
-		$incomings = array();
-
-		// get application data of Incomings for semester (and Studiengang)
-		$apps = $this->getApplicationBySearchParams($studiensemester, 'IN', $studiengang_kz);
-
-		foreach ($apps as $application)
-		{
-			$appId = $application->applicationID;
-
-			// get additional data from Mobility Online for each application
-			$address = $this->ci->MoGetAppModel->getPermanentAddress($appId);
-			$currAddress = $this->ci->MoGetAppModel->getCurrentAddress($appId);
-
-			$lichtbild = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASSFOTO');
-
-
-			// transform MobilityOnline application to FHC incoming
-			$fhcobj = $this->mapMoAppToIncoming($application, $address, $currAddress, $lichtbild);
-
-			$fhcobj_extended = new StdClass();
-			$fhcobj_extended->moid = $appId;
-			$fhcobj_extended->infhc = false;
-
-			// check if the fhc object has errors
-			$errors = $this->fhcObjHasError($fhcobj, $this->moObjectType);
-			$fhcobj_extended->error = $errors->error;
-			$fhcobj_extended->errorMessages = $errors->errorMessages;
-
-			$found_prestudent_id = $this->checkMoIdInFhc($appId);
-
-			// mark as already in fhcomplete if prestudent is in mapping table
-			if (isset($found_prestudent_id) && is_numeric($found_prestudent_id))
-			{
-				$fhcobj_extended->infhc = true;
-				$fhcobj_extended->prestudent_id = $found_prestudent_id;
-			}
-
-			$fhcobj_extended->data = $fhcobj;
-			$incomings[] = $fhcobj_extended;
-		}
-
-		return $incomings;
 	}
 
 	/**

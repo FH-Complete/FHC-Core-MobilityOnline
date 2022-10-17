@@ -110,6 +110,117 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
+	 * Gets MobilityOnline outgoings for a fhcomplete studiensemester
+	 * @param string $studiensemester
+	 * @param int $studiengang_kz as in fhc db
+	 * @return array with applications
+	 */
+	public function getOutgoing($studiensemester, $studiengang_kz = null)
+	{
+		$outgoings = array();
+
+		// get application data of Incomings for semester (and Studiengang)
+		$apps = $this->getApplicationBySearchParams($studiensemester, 'OUT', $studiengang_kz);
+
+		foreach ($apps as $application)
+		{
+			$appId = $application->applicationID;
+
+			// get additional data from Mobility Online for each application
+			$bankData = $this->ci->MoGetAppModel->getBankAccountDetails($appId);
+			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appId);
+
+			$institutionAddressesData = array();
+			// get gast intitution for adress
+			$institution_id = $this->getApplicationDataElement($application, 'elementValue', 'inst_id_gast');
+			if (isset($institution_id))
+			{
+				$institutionAddressesData = $this->ci->MoGetMasterDataModel->getAddressesOfInstitution($institution_id);
+			}
+
+			// transform MobilityOnline application to FHC outgoing
+			$fhcobj = $this->mapMoAppToOutgoing($application, $institutionAddressesData, $bankData, $nominationData);
+
+			$fhcobj_extended = new StdClass();
+			$fhcobj_extended->moid = $appId;
+
+			// check if the fhc object has errors
+			$errors = $this->_outgoingObjHasError($fhcobj);
+			$fhcobj_extended->error = $errors->error;
+			$fhcobj_extended->errorMessages = $errors->errorMessages;
+
+			$ist_double_degree = isset($fhcobj['bisio_info']['ist_double_degree']) && $fhcobj['bisio_info']['ist_double_degree'];
+
+			// check if bisio already in fhc
+			$found_bisio_id = $this->_checkBisioInFhc($appId);
+			$bisio_found = false;
+
+			if (isError($found_bisio_id))
+			{
+				$fhcobj_extended->error = true;
+				$fhcobj_extended->errorMessages[] = 'Fehler beim Prüfen von Bisio in FH Complete';
+			}
+			elseif (hasData($found_bisio_id))
+				$bisio_found = true;
+
+			// check if payment already in fhc
+			$paymentInFhc = true;
+
+			foreach ($fhcobj['zahlungen'] as $zlg)
+			{
+				if (!isset($zlg['buchungsinfo']['infhc']) || $zlg['buchungsinfo']['infhc'] == false)
+				{
+					$paymentInFhc = false;
+					break;
+				}
+			}
+
+			//check if bankverbindung already in fhc
+			$bankverbindungInFhc = !isset($fhcobj['bankverbindung']) || isEmptyArray($fhcobj['bankverbindung']);
+			$bankverbindungInFhcRes = $this->_checkBankverbindungInFhc($fhcobj['person']['mo_person_id']);
+
+			if (isSuccess($bankverbindungInFhcRes))
+			{
+				if (hasData($bankverbindungInFhcRes))
+				{
+					$bankverbindungInFhc = true;
+				}
+			}
+
+			// mark as already in fhcomplete if payments synced, bisio is in mapping table, or all data is synced when double degree
+			if ($paymentInFhc && (hasData($found_bisio_id) || ($ist_double_degree && $bankverbindungInFhc)))
+			{
+				$fhcobj_extended->infhc = true;
+			}
+			elseif ($fhcobj_extended->error === false && !$bisio_found && !$ist_double_degree) // bisios not synced for double degrees
+			{
+				// check if has not mapped bisios in fhcomplete
+				$existingBisiosRes = $this->ci->MoFhcModel->getBisio($fhcobj['bisio']['student_uid']);
+
+				if (isError($existingBisiosRes))
+				{
+					$fhcobj_extended->error = true;
+					$fhcobj_extended->errorMessages[] = 'Fehler beim Prüfen der existierenden Mobilitäten in fhcomplete';
+				}
+
+				if (hasData($existingBisiosRes)) // manually select correct bisio if a bisio already exists
+				{
+					$existingBisios = getData($existingBisiosRes);
+
+					$fhcobj_extended->existingBisios = $existingBisios;
+					$fhcobj_extended->error = true;
+					$fhcobj_extended->errorMessages[] = 'Mobilität existiert bereits in fhcomplete, zum Verlinken bitte auf Tabellenzeile klicken.';
+				}
+			}
+
+			$fhcobj_extended->data = $fhcobj;
+			$outgoings[] = $fhcobj_extended;
+		}
+
+		return $outgoings;
+	}
+
+	/**
 	 * Converts MobilityOnline application to fhcomplete array (with person, prestudent...)
 	 * @param object $moApp MobilityOnline application
 	 * @return array with fhcomplete table arrays
@@ -468,117 +579,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$this->ci->db->trans_commit();
 			return $bisio['student_uid'];
 		}
-	}
-
-	/**
-	 * Gets MobilityOnline outgoings for a fhcomplete studiensemester
-	 * @param string $studiensemester
-	 * @param int $studiengang_kz as in fhc db
-	 * @return array with applications
-	 */
-	public function getOutgoing($studiensemester, $studiengang_kz = null)
-	{
-		$outgoings = array();
-
-		// get application data of Incomings for semester (and Studiengang)
-		$apps = $this->getApplicationBySearchParams($studiensemester, 'OUT', $studiengang_kz);
-
-		foreach ($apps as $application)
-		{
-			$appId = $application->applicationID;
-
-			// get additional data from Mobility Online for each application
-			$bankData = $this->ci->MoGetAppModel->getBankAccountDetails($appId);
-			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appId);
-
-			$institutionAddressesData = array();
-			// get gast intitution for adress
-			$institution_id = $this->getApplicationDataElement($application, 'elementValue', 'inst_id_gast');
-			if (isset($institution_id))
-			{
-				$institutionAddressesData = $this->ci->MoGetMasterDataModel->getAddressesOfInstitution($institution_id);
-			}
-
-			// transform MobilityOnline application to FHC outgoing
-			$fhcobj = $this->mapMoAppToOutgoing($application, $institutionAddressesData, $bankData, $nominationData);
-
-			$fhcobj_extended = new StdClass();
-			$fhcobj_extended->moid = $appId;
-
-			// check if the fhc object has errors
-			$errors = $this->_outgoingObjHasError($fhcobj);
-			$fhcobj_extended->error = $errors->error;
-			$fhcobj_extended->errorMessages = $errors->errorMessages;
-
-			$ist_double_degree = isset($fhcobj['bisio_info']['ist_double_degree']) && $fhcobj['bisio_info']['ist_double_degree'];
-
-			// check if bisio already in fhc
-			$found_bisio_id = $this->_checkBisioInFhc($appId);
-			$bisio_found = false;
-
-			if (isError($found_bisio_id))
-			{
-				$fhcobj_extended->error = true;
-				$fhcobj_extended->errorMessages[] = 'Fehler beim Prüfen von Bisio in FH Complete';
-			}
-			elseif (hasData($found_bisio_id))
-				$bisio_found = true;
-
-			// check if payment already in fhc
-			$paymentInFhc = true;
-
-			foreach ($fhcobj['zahlungen'] as $zlg)
-			{
-				if (!isset($zlg['buchungsinfo']['infhc']) || $zlg['buchungsinfo']['infhc'] == false)
-				{
-					$paymentInFhc = false;
-					break;
-				}
-			}
-
-			//check if bankverbindung already in fhc
-			$bankverbindungInFhc = !isset($fhcobj['bankverbindung']) || isEmptyArray($fhcobj['bankverbindung']);
-			$bankverbindungInFhcRes = $this->_checkBankverbindungInFhc($fhcobj['person']['mo_person_id']);
-
-			if (isSuccess($bankverbindungInFhcRes))
-			{
-				if (hasData($bankverbindungInFhcRes))
-				{
-					$bankverbindungInFhc = true;
-				}
-			}
-
-			// mark as already in fhcomplete if payments synced, bisio is in mapping table, or all data is synced when double degree
-			if ($paymentInFhc && (hasData($found_bisio_id) || ($ist_double_degree && $bankverbindungInFhc)))
-			{
-				$fhcobj_extended->infhc = true;
-			}
-			elseif ($fhcobj_extended->error === false && !$bisio_found && !$ist_double_degree) // bisios not synced for double degrees
-			{
-				// check if has not mapped bisios in fhcomplete
-				$existingBisiosRes = $this->ci->MoFhcModel->getBisio($fhcobj['bisio']['student_uid']);
-
-				if (isError($existingBisiosRes))
-				{
-					$fhcobj_extended->error = true;
-					$fhcobj_extended->errorMessages[] = 'Fehler beim Prüfen der existierenden Mobilitäten in fhcomplete';
-				}
-
-				if (hasData($existingBisiosRes)) // manually select correct bisio if a bisio already exists
-				{
-					$existingBisios = getData($existingBisiosRes);
-
-					$fhcobj_extended->existingBisios = $existingBisios;
-					$fhcobj_extended->error = true;
-					$fhcobj_extended->errorMessages[] = 'Mobilität existiert bereits in fhcomplete, zum Verlinken bitte auf Tabellenzeile klicken.';
-				}
-			}
-
-			$fhcobj_extended->data = $fhcobj;
-			$outgoings[] = $fhcobj_extended;
-		}
-
-		return $outgoings;
 	}
 
 	/**
