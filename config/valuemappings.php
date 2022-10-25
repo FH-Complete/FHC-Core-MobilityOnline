@@ -64,49 +64,6 @@ $config['valuemappings']['frommo']['anrede'] = array(
 	'w' => 'Frau'
 );
 
-//~ $config['valuemappings']['frommo']['studiengang_kz'] = array(
-	//~ 'Biomedical Engineering' => 227,
-	//~ 'Data Science' => 854,
-	//~ 'Campus International' => 10006,
-	//~ 'Elektronik' => 254,
-	//~ 'Elektronik/Wirtschaft' => 255,
-	//~ 'Embedded Systems' => 297,
-	//~ //'Erneuerbare Urbane Energiesysteme' => 578,
-	//~ //'Erneuerbare Energien' => 476,
-	//~ 'Erneuerbare Urbane Energiesysteme Master' => 578,
-	//~ 'Game Engineering und Simulation' => 585,
-	//~ 'Gesundheits- und Rehabilitationstechnik' => 329,
-	//~ 'Industrielle Elektronik' => 300,
-	//~ 'Informatik/Computer Science' => 257,
-	//~ 'Informations- und Kommunikationssysteme' => 258,
-	//~ 'Informationsmanagement und Computersicherheit' => 303, /* alte Bezeichnung */
-	//~ 'IT-Security' => 303,
-	//~ 'Innovations- und Technologiemanagement' => 301,
-	//~ 'Integrative Stadtentwicklung-Smart City' => 334,
-	//~ 'Internationales Wirtschaftsingenieurwesen' => 335,
-	//~ 'Internationales Wirtschaftsingenieurwesen Master' => 336,
-	//~ 'Maschinenbau' => 779,
-	//~ 'Maschinenbau Master' => 804,
-	//~ 'Mechatronik/Robotik' => 330,
-	//~ 'Mechatronik/Robotik Master' => 331,
-	//~ 'Medical Engineering & eHealth' => 228,
-	//~ 'Smart Homes und Assistive Technologien' => 768,
- 	//~ 'Softwareentwicklung' => 299, /* alte Bezeichnung */
-	//~ 'Software Engineering' => 299,
-	//~ 'Sports Equipment Technology' => 327, /* alte Bezeichnung */
-	//~ 'Human Factors and Sports Engineering' => 327,
-	//~ 'Sports Equipment Technology Master' => 328, /* alte Bezeichnung */
-	//~ 'Sports Technology Master' => 328,
-	//~ 'Technisches Umweltmanagement und Ökotoxikologie' => 332,
-	//~ 'Telekommunikation und Internettechnologien' => 298,
-	//~ 'Tissue Engineering and Regenerative Medicine' => 692,
-	//~ 'Unbekannt' => 0,
-	//~ 'Urbane Erneuerbare Energietechnologien' => 476,
-	//~ 'Verkehr und Umwelt' => 333,
-	//~ 'Wirtschaftsinformatik' => 256,
-	//~ 'Wirtschaftsinformatik Master' => 302
-//~ );
-
 $config['valuemappings']['frommo']['studiengang_kz'] = array(
 	'13996' => 585, // AI Engineering
 	'7068' => 227, // Biomedical Engineering
@@ -169,7 +126,7 @@ $config['valuemappings']['frommo']['mobilitaetsprogramm_code'] = array(
 	'946' => 18, // Marshall Plan Scholarship - Marshall
 	'1037' => 14, // Auslandspraktikum (ohne Zuschuss)
 	'1151' => 7, // Erasmus (Kurzzeitmobilität, BIP)
-	'1158' => 203 // Kurzzeitmobilität (Sommer-/ Winterschule, Studienreise, Exkursion etc.) - selbst
+	'1158' => 201 // Kurzzeitmobilität (Sommer-/ Winterschule, Studienreise, Exkursion etc.) - FH-Mob
 	/*	'Erasmus SMS' => 7,
 	'Erasmus SMP' => 7,*/
 	//'Erasmus (Studies)' => 7,
@@ -228,8 +185,8 @@ $config['valuemappings']['frommo']['buchungstext'] = array(
 	'830' => $defaultbuchungen,
 	'946' => $defaultbuchungen
 	/**'682' => array('OEH' => 'ÖH-Beitrag STG Semester',
-						  'Studiengebuehr' => 'Studienbeitrag STG Semester - Freemover',
-						  'Unkostenbeitrag' => 'Unkostenbeitrag STG Semester')**/
+						'Studiengebuehr' => 'Studienbeitrag STG Semester - Freemover',
+						'Unkostenbeitrag' => 'Unkostenbeitrag STG Semester')**/
 );
 
 $config['valuemappings']['frommo']['dokument_kurzbz'] = array(
