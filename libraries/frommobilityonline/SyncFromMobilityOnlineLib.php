@@ -100,6 +100,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	{
 		$searchObj = array();
 
+
 		$fields = $this->moconffields[$objType];
 
 		// prefill search object with mobility online fields from fieldmappings config
@@ -155,11 +156,27 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$hasErrorObj = new StdClass();
 		$hasErrorObj->error = false;
 		$hasErrorObj->errorMessages = array();
-		$allFields = $this->fhcconffields[$objType];
+		$confFields = $this->fhcconffields[$objType];
+		$requiredFields = isset($confFields['required']) ? $confFields['required'] : array();
+		$optionalFields = isset($confFields['optional']) ? $confFields['optional'] : array();
+		$allFields = array_merge($requiredFields, $optionalFields);
+			//~ var_dump("REQUIRED FIELDS");
+			//~ var_dump($requiredFields);
+			//~ var_dump("OPTIONAL FIELDS");
+			//~ var_dump($optionalFields);
+			//~ var_dump("ALL FIELDS");
+			//~ var_dump($allFields);
 
 		// iterate over fields config
 		foreach ($allFields as $table => $fields)
 		{
+			
+			//~ var_dump($confFields);
+			//~ var_dump($table);
+
+			// if the "table" is prestent in the object
+			//var_dump($fhcObj['bankverbindung']);
+
 			if (array_key_exists($table, $fhcObj))
 			{
 				// for each field with its setting parameters
@@ -202,18 +219,25 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					}
 				}
 			}
-			else
+			else // if table not present in object
 			{
-				foreach ($fields as $field)
+				// if the table is required
+				if (in_array($table, array_keys($requiredFields)))
 				{
-					if (isset($field['required']) && $field['required'] === true)
-					{
-						// if required table not present in object - show error
-						$hasErrorObj->errorMessages[] = "Daten fehlen: $table";
-						$hasErrorObj->error = true;
-						break;
-					}
+					// show error
+					$hasErrorObj->errorMessages[] = "Daten fehlen: $table";
+					$hasErrorObj->error = true;
 				}
+				//~ foreach ($fields as $field)
+				//~ {
+					//~ if (isset($field['required']) && $field['required'] === true)
+					//~ {
+						//~ // if required table not present in object - show error
+						//~ $hasErrorObj->errorMessages[] = "Daten fehlen: $table";
+						//~ $hasErrorObj->error = true;
+						//~ break;
+					//~ }
+				//~ }
 			}
 		}
 
@@ -466,12 +490,13 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 * @param $studiengang_kz int type fhc studiengang Kennzahl. If omitted, applications are returned unrestricted by Studiengang.
 	 * @return object success or error
 	 */
-	protected function getApplicationBySearchParams($studiensemester, $applicationType, $studiengang_kz = null)
+	protected function getApplicationBySearchParams($studiensemester, $applicationType, $studiengang_kz = null, $moObjectType = null)
 	{
 		$studiensemesterMo = $this->mapSemesterToMo($studiensemester);
 		$semestersForSearch = array($studiensemesterMo);
 		$searchArrays = array();
 		$apps = array();
+		$moObjectType = isset($moObjectType) ? $moObjectType : $this->moObjectType;
 
 		$stgValuemappings = $this->valuemappings['frommo']['studiengang_kz'];
 		$moStgName = $this->conffieldmappings['application']['prestudent']['studiengang_kz'];
@@ -539,7 +564,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		{
 			// get search object for objecttype, with searchparams ($arr) and returning only specified fields (by default)
 			$searchObj = $this->getSearchObj(
-				$this->moObjectType,
+				$moObjectType,
 				$sarr
 			);
 

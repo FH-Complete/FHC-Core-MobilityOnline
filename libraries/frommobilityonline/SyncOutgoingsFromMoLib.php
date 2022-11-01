@@ -61,7 +61,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				$ist_double_degree = $outgoingData['bisio_info']['ist_double_degree'];
 
 				$infhccheck_bisio_id = null;
-				$bisioIdRes = $this->_checkBisioInFhc($appId);
+				$bisioIdRes = $this->checkBisioInFhc($appId);
 
 				if (isError($bisioIdRes))
 				{
@@ -119,12 +119,16 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	{
 		$outgoings = array();
 
-		// get application data of Incomings for semester (and Studiengang)
+		// get application data of Outgoings for semester (and Studiengang)
 		$apps = $this->getApplicationBySearchParams($studiensemester, 'OUT', $studiengang_kz);
 
 		foreach ($apps as $application)
 		{
 			$appId = $application->applicationID;
+			
+			var_dump($this->ci->MoGetAppModel->getCoursesOfApplicationTranscript(39619));
+			die();
+			
 
 			// get additional data from Mobility Online for each application
 			$bankData = $this->ci->MoGetAppModel->getBankAccountDetails($appId);
@@ -152,7 +156,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$ist_double_degree = isset($fhcobj['bisio_info']['ist_double_degree']) && $fhcobj['bisio_info']['ist_double_degree'];
 
 			// check if bisio already in fhc
-			$found_bisio_id = $this->_checkBisioInFhc($appId);
+			$found_bisio_id = $this->checkBisioInFhc($appId);
 			$bisio_found = false;
 
 			if (isError($found_bisio_id))
@@ -776,7 +780,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * @param int $appId
 	 * @return object error or success with found id if in fhcomplete, success with null if not in fhcomplete
 	 */
-	private function _checkBisioInFhc($appId)
+	public function checkBisioInFhc($appId)
 	{
 		$infhccheck_bisio_id = null;
 		$this->ci->MobisioidzuordnungModel->addSelect('bisio_id');

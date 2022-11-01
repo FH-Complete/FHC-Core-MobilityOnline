@@ -5,7 +5,7 @@ if (! defined('BASEPATH')) exit('No direct script access allowed');
 /**
  * Manages Outgoing students synchronisation between fhcomplete and MobilityOnline
  */
-class MobilityOnlineOutgoing extends Auth_Controller
+class MobilityOnlineOutgoingCourses extends Auth_Controller
 {
 	/**
 	 * Constructor
@@ -15,10 +15,8 @@ class MobilityOnlineOutgoing extends Auth_Controller
 		parent::__construct(
 			array(
 				'index' => 'inout/outgoing:rw',
-				'syncOutgoings' => 'inout/outgoing:rw',
-				'getOutgoingJson' => 'inout/outgoing:r',
-				'getPostMaxSize' => 'inout/outgoing:r',
-				'linkBisio' => 'inout/outgoing:r'
+				'syncOutgoingCourses' => 'inout/outgoing:rw',
+				'getOutgoingCoursesJson' => 'inout/outgoing:r'
 			)
 		);
 
@@ -27,7 +25,8 @@ class MobilityOnlineOutgoing extends Auth_Controller
 		$this->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MoFhcModel');
 		$this->load->library('extensions/FHC-Core-MobilityOnline/MobilityOnlineSyncLib');
 		$this->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/SyncFromMobilityOnlineLib');
-		$this->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/SyncOutgoingsFromMoLib');
+		//$this->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/SyncOutgoingsFromMoLib');
+		$this->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/SyncOutgoingCoursesFromMoLib');
 	}
 
 	/**
@@ -42,23 +41,23 @@ class MobilityOnlineOutgoing extends Auth_Controller
 		$studiensemesterData = $this->StudiensemesterModel->load();
 
 		if (isError($studiensemesterData))
-			show_error($studiensemesterData->retval);
+			show_error(getError($studiensemesterData));
 
 		$currSemData = $this->StudiensemesterModel->getAktOrNextSemester();
 
 		if (isError($currSemData))
-			show_error($currSemData->retval);
+			show_error(getError($currSemData));
 
 		$studiengaenge = $this->MoFhcModel->getStudiengaenge();
 
 		if (isError($studiengaenge))
-			show_error($studiengaenge->retval);
+			show_error(getError($studiengaenge));
 
-		$this->load->view('extensions/FHC-Core-MobilityOnline/mobilityOnlineOutgoing',
+		$this->load->view('extensions/FHC-Core-MobilityOnline/mobilityOnlineOutgoingCourses',
 			array(
-				'semester' => $studiensemesterData->retval,
-				'currsemester' => $currSemData->retval,
-				'studiengaenge' => $studiengaenge->retval
+				'semester' => getData($studiensemesterData),
+				'currsemester' => getData($currSemData),
+				'studiengaenge' => getData($studiengaenge)
 			)
 		);
 	}
@@ -67,43 +66,31 @@ class MobilityOnlineOutgoing extends Auth_Controller
 	 * Syncs incomings (applications) from MobilityOnline to fhcomplete
 	 * input: incomingids, studiensemester
 	 */
-	public function syncOutgoings()
+	public function syncOutgoingCourses()
 	{
 		$studiensemester = $this->input->post('studiensemester');
-		$outgoings = $this->input->post('outgoings');
+		$outgoingCourses = $this->input->post('outgoingCourses');
 
-		$outgoings = json_decode($outgoings, true);
-		$syncOutput = $this->syncoutgoingsfrommolib->startOutgoingSync($outgoings);
+		$outgoingCourses = json_decode($outgoingCourses, true);
+		$syncOutput = $this->syncoutgoingcoursesfrommolib->startOutgoingCoursesSync($outgoingCourses);
 
 		$this->outputJsonSuccess($syncOutput);
 	}
 
 	/**
-	 * Gets incomings for a studiensemester and a studiengang and outputs json
+	 * Gets outgoing courses for a studiensemester and a studiengang and outputs json
 	 */
-	public function getOutgoingJson()
+	public function getOutgoingCoursesJson()
 	{
 		$studiensemester = $this->input->get('studiensemester');
 		$studiengang_kz = $this->input->get('studiengang_kz');
+		$studiengang_kz = 256;
 
-		$outgoingData = $this->syncoutgoingsfrommolib->getOutgoing($studiensemester, $studiengang_kz);
+		$outgoingCoursesData = $this->syncoutgoingcoursesfrommolib->getOutgoingCourses($studiensemester, $studiengang_kz);
 
-		$this->outputJsonSuccess($outgoingData);
-	}
+		var_dump($outgoingCoursesData);
+		die();
 
-	/**
-	 * Links a FHC Mobilität (bisio) with a Mobility Online application.
-	 */
-	public function linkBisio()
-	{
-		$moid = $this->input->post('moid');
-		$bisio_id = $this->input->post('bisio_id');
-
-		$linkBisioRes = $this->syncoutgoingsfrommolib->linkBisio($moid, $bisio_id);
-
-		if (hasData($linkBisioRes))
-			$this->outputJsonSuccess(getData($linkBisioRes));
-		else
-			$this->outputJsonError('Fehler beim Verlinken des Outgoing');
+		$this->outputJsonSuccess($outgoingCoursesData);
 	}
 }

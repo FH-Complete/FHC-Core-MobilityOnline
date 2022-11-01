@@ -219,6 +219,27 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 		else
 			return null;
 	}
+	
+		/**
+	 * Get Courses an applicant has assigned for
+	 * @param int $appId
+	 * @return array courses on success, null otherwise
+	 */
+	public function getCoursesOfApplicationTranscript($appId)
+	{
+		$success = $this->performCall('getCoursesOfTranscript', array('applicationID' => $appId));
+
+		if (isset($success->return))
+		{
+			if (is_array($success->return) || !is_object($success->return))
+				return $success->return;
+			else
+				return array($success->return);
+		}
+		else
+			return null;
+	}
+
 
 	/**
 	 * Gets files associated with an application, for a certain upload setting (i.e. file type)

@@ -35,4 +35,9 @@ $config['navigation_menu']['extensions/FHC-Core-MobilityOnline/*'] = array(
 		'description' => 'Outgoings',
 		'icon' => 'group'
 	),
+		'MobilityOnline Outgoing courses sync' => array(
+		'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineOutgoingCourses'),
+		'description' => 'Outgoing Kurse',
+		'icon' => 'group'
+	),
 );

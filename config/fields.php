@@ -6,7 +6,7 @@
  * "name" is display name for errors
  */
 
-$config['fhcfields']['application'] = array(
+$config['fhcfields']['application']['required'] = array(
 	'person' => array(
 		'vorname' => array('required' => true),
 		'nachname' => array('required' => true),
@@ -50,16 +50,7 @@ $config['fhcfields']['application'] = array(
 	'kontaktmail' => array(
 		'kontakt' => array('required' => true, 'name' => 'E-Mail-Adresse')
 	),
-	'kontaktnotfall' => array(
-		'kontakt' => array('name' => 'Notfallkontakt')
-	),
-	'kontakttel' => array(
-		'kontakt' => array('name' => 'Phone number')
-	),
-	'lichtbild' => array(
-		'inhalt' => array('name' => 'Photodokument', 'type' => 'base64')
-	),
-	'bisio' => array(
+		'bisio' => array(
 		'von' => array('required' => true, 'name' => 'Aufenthalt von', 'type' => 'date'),
 		'bis' => array('required' => true, 'name' => 'Aufenthalt bis', 'type' => 'date'),
 		'nation_code' => array('required' => true, 'name' => 'Nation', 'ref' => 'bis.tbl_nation'),
@@ -73,13 +64,25 @@ $config['fhcfields']['application'] = array(
 	),
 	'bisio_zweck' => array(
 		'zweck_code' => array('required' => true, 'name' => 'Aufenthaltszweck', 'type' => 'integer', 'ref' => 'bis.tbl_zweck')
+	)
+);
+
+$config['fhcfields']['application']['optional'] = array(
+	'kontaktnotfall' => array(
+		'kontakt' => array('name' => 'Notfallkontakt')
+	),
+	'kontakttel' => array(
+		'kontakt' => array('name' => 'Phone number')
+	),
+	'lichtbild' => array(
+		'inhalt' => array('name' => 'Photodokument', 'type' => 'base64')
 	),
 	'akte' => array(
 		'file_content' => array('name' => 'Dokument', 'type' => 'base64Document')
 	)
 );
 
-$config['fhcfields']['applicationout'] = array(
+$config['fhcfields']['applicationout']['required'] = array(
 	'person' => array(
 		'vorname' => array('required' => true),
 		'nachname' => array('required' => true),
@@ -116,7 +119,10 @@ $config['fhcfields']['applicationout'] = array(
 	),
 	'kontaktmail' => array(
 		'kontakt' => array('required' => true, 'name' => 'E-Mail-Adresse')
-	),
+	)
+);
+
+$config['fhcfields']['applicationout']['optional'] = array(
 	'institution_adresse' => array(
 		'ort' => array('required' => false, 'name' => 'Nation'),
 		'nation' => array('required' => false, 'name' => 'Ort')
@@ -165,6 +171,7 @@ $applicationSearchFields = array(
 
 $config['mofields']['application'] = $applicationSearchFields;
 $config['mofields']['applicationout'] = $applicationSearchFields;
+$config['mofields']['outgoingcoursesapplication'] = $applicationSearchFields;
 
 $config['mofields']['course'] = array(
 	'semesterDescription',

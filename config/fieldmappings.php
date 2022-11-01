@@ -179,6 +179,20 @@ $config['fieldmappings']['payment']['buchungsinfo'] = array(
 	'angewiesen' => 'paymentAuthorised'
 );
 
+// application outgoing course
+$config['fieldmappings']['outgoingcoursesapplication']['person'] = $personbasemapping;
+$config['fieldmappings']['outgoingcoursesapplication']['person']['email'] = 'email';
+$config['fieldmappings']['outgoingcoursesapplication']['bisio']['student_uid'] = 'bew_ber_matr_nr';
+
+$config['fieldmappings']['outgoingcourse']['mo_outgoing_lv'] = array(
+	'mo_lvid' => 'courseID',
+	'lv_nr_gast' => 'hostCourseNumber',
+	'lv_bez_gast' => 'hostCourseName',
+	'lv_semesterstunden_gast' => 'hostCourseLessonNumbers',
+	'ects_punkte_gast' => 'hostCourseECTS',
+	'note_local_gast' => 'hostGrade'
+);
+
 // Mappings for sync from FHC to MO
 $config['fieldmappings']['course'] = array(
 	'lv_bezeichnung' => 'courseName',
