@@ -181,7 +181,7 @@ $config['fieldmappings']['payment']['buchungsinfo'] = array(
 
 // application outgoing course
 $config['fieldmappings']['outgoingcoursesapplication']['person'] = $personbasemapping;
-$config['fieldmappings']['outgoingcoursesapplication']['person']['email'] = 'email';
+$config['fieldmappings']['outgoingcoursesapplication']['kontaktmail'] = $mailmapping;
 $config['fieldmappings']['outgoingcoursesapplication']['bisio']['student_uid'] = 'bew_ber_matr_nr';
 
 $config['fieldmappings']['outgoingcourse']['mo_outgoing_lv'] = array(

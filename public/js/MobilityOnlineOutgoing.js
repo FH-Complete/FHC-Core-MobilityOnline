@@ -46,9 +46,9 @@ $(document).ready(function()
 			}
 		);
 
-		//select all incoming checkboxes
+		//select all outgoing checkboxes
 		MobilityOnlineApplicationsHelper.setSelectAllApplicationsEvent();
-		//select incoming application which are not in FHC yet
+		//select outgoing application which are not in FHC yet
 		MobilityOnlineApplicationsHelper.setSelectNewApplicationsEvent();
 	}
 );

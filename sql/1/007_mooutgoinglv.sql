@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION extension_mobilityonline_create_table () RETURNS TEXT
 		mo_lvid integer NOT NULL,
 		lv_nr_gast varchar(64) NOT NULL,
 		lv_bez_gast varchar(128),
-		lv_semesterstunden_gast integer,
+		lv_semesterstunden_gast numeric(5,2),
 		ects_punkte_gast numeric(5,2),
 		note_local_gast varchar(32) NOT NULL,
 		angerechnet boolean default NULL,
@@ -19,6 +19,7 @@ CREATE OR REPLACE FUNCTION extension_mobilityonline_create_table () RETURNS TEXT
 	ALTER TABLE extension.tbl_mo_outgoing_lv ADD CONSTRAINT pk_mo_outgoing_lv PRIMARY KEY (outgoing_lehrveranstaltung_id);
 	ALTER TABLE extension.tbl_mo_outgoing_lv ADD CONSTRAINT uk_mo_outgoing_lv_mo_lvid UNIQUE (mo_lvid);
 	ALTER TABLE extension.tbl_mo_outgoing_lv ADD CONSTRAINT fk_mo_outgoing_lv_bisio_id FOREIGN KEY (bisio_id) REFERENCES bis.tbl_bisio (bisio_id) ON DELETE RESTRICT ON UPDATE CASCADE;
+	-- ALTER TABLE extension.tbl_mo_outgoing_lv ADD CONSTRAINT uk_mo_outgoing_lv_mo_lvid_bisio_id UNIQUE (mo_lvid, bisio_id);
 
 	CREATE SEQUENCE extension.seq_mo_outgoing_lv_outgoing_lehrveranstaltung_id
 		START WITH 1
@@ -41,10 +42,10 @@ $$
 LANGUAGE 'sql';
 
 SELECT
-  CASE
-  WHEN (SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'extension' AND tablename  = 'tbl_mo_outgoing_lv')
-    THEN (SELECT 'success'::TEXT)
-  ELSE (SELECT extension_mobilityonline_create_table())
-END;
+	CASE
+		WHEN (SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'extension' AND tablename  = 'tbl_mo_outgoing_lv')
+		THEN (SELECT 'success'::TEXT)
+		ELSE (SELECT extension_mobilityonline_create_table())
+	END;
 
-  DROP FUNCTION extension_mobilityonline_create_table();
+DROP FUNCTION extension_mobilityonline_create_table();

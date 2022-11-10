@@ -8,7 +8,7 @@ if (! defined('BASEPATH')) exit('No direct script access allowed');
 class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 {
 	const MO_OBJECT_APPLICATION_TYPE = 'outgoingcoursesapplication';
-	
+
 	public function __construct()
 	{
 		parent::__construct();
@@ -102,8 +102,8 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			$appId = $application->applicationID;
 
-			$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplicationTranscript(39619);
-
+			//$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplicationTranscript(39619);
+			$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplicationTranscript($appId);
 
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appId;
@@ -132,47 +132,31 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 			$fhcobj = $this->mapMoCourseToOutgoingLv($application, $coursesData, $bisio_id);
 
 			// check if the fhc object has errors
-			$errors = $this->_outgoingCourseObjHasError($fhcobj);
-			$fhcobj_extended->error = $errors->error;
-			$fhcobj_extended->errorMessages = $errors->errorMessages;
+			for ($i = 0; $i < count($fhcobj['kurse']); $i++)
+			{
+				$kurs = $fhcobj['kurse'][$i];
+				$hasErrorObj = $this->fhcObjHasError($kurs, $this->moObjectType);
+
+				if ($hasErrorObj->error)
+				{
+					$fhcobj['kurse'][$i]['kursinfo']['error'] = true;
+					$fhcobj['kurse'][$i]['kursinfo']['errorMessages'] = $hasErrorObj->errorMessages;
+				}
+
+				if (!isset($kurs['kursinfo']['infhc']) || $kurs['kursinfo']['infhc'] == false)
+				{
+					$coursesInFhc = false;
+				}
+			}
 
 			// check if courses already in fhc
 			$coursesInFhc = true;
 
-			foreach ($fhcobj['kurse'] as $kurs)
-			{
-				if (!isset($kurs['kursinfo']['infhc']) || $kurs['kursinfo']['infhc'] == false)
-				{
-					$coursesInFhc = false;
-					break;
-				}
-			}
-
-			// mark as already in fhcomplete if payments synced, bisio is in mapping table, or all data is synced when double degree
-			if ($paymentInFhc && hasData($found_bisio_id) && $coursesInFhc)
+			// mark as already in fhcomplete if courses synced
+			if (hasData($found_bisio_id) && $coursesInFhc)
 			{
 				$fhcobj_extended->infhc = true;
 			}
-			//~ elseif ($fhcobj_extended->error === false && !$bisio_found && !$ist_double_degree) // bisios not synced for double degrees
-			//~ {
-				//~ // check if has not mapped bisios in fhcomplete
-				//~ $existingBisiosRes = $this->ci->MoFhcModel->getBisio($fhcobj['bisio']['student_uid']);
-
-				//~ if (isError($existingBisiosRes))
-				//~ {
-					//~ $fhcobj_extended->error = true;
-					//~ $fhcobj_extended->errorMessages[] = 'Fehler beim Prüfen der existierenden Mobilitäten in fhcomplete';
-				//~ }
-
-				//~ if (hasData($existingBisiosRes)) // manually select correct bisio if a bisio already exists
-				//~ {
-					//~ $existingBisios = getData($existingBisiosRes);
-
-					//~ $fhcobj_extended->existingBisios = $existingBisios;
-					//~ $fhcobj_extended->error = true;
-					//~ $fhcobj_extended->errorMessages[] = 'Mobilität existiert bereits in fhcomplete, zum Verlinken bitte auf Tabellenzeile klicken.';
-				//~ }
-			//~ }
 
 			$fhcobj_extended->data = $fhcobj;
 			$outgoingCourses[] = $fhcobj_extended;
@@ -237,7 +221,7 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 		$fhcObj = $this->convertToFhcFormat($moAppElementsExtracted, self::MO_OBJECT_APPLICATION_TYPE);
 
-		var_dump($moAppElementsExtracted);
+		//var_dump($moAppElementsExtracted);
 
 		// courses
 		$fhcCourses = array();
@@ -255,16 +239,16 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 			// TODO constraint - mo id and fhc bisio id should be unique
 			$checkRes = $this->_checkOutgoingCourseInFhc($fhcCourses[$i]['mo_outgoing_lv']['mo_lvid'], $bisio_id);
 
-			if (hasData($checkRes))
-			{
-				$fhcCourses[$i]['mo_outgoing_lv']['infhc'] = hasData($checkRes);
-			}
+			$fhcCourses[$i]['kursinfo']['infhc'] = hasData($checkRes);
+
+			// add bisio_id
+			$fhcCourses[$i]['mo_outgoing_lv']['bisio_id'] = $bisio_id;
 		}
 
 		$fhcObj = array_merge($fhcObj, array('kurse' => $fhcCourses));
 
-		var_dump($fhcObj);
-		die();
+		//~ var_dump($fhcObj);
+		//~ die();
 
 		return $fhcObj;
 	}
@@ -485,39 +469,5 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		return success($outgoing_lehrveranstaltung_id);
-	}
-
-	/**
-	 * Check if an outgoing object has errors. Checks "sub objects" as well.
-	 * @param array $outgoing
-	 * @return object error object with messages
-	 */
-	private function _outgoingObjHasError($outgoing)
-	{
-		$errorResults = new StdClass();
-		$errorResults->error = false;
-		$errorResults->errorMessages = array();
-
-		$objToCheck = array(
-			$this->moObjectType => array($outgoing),
-			'payment' => isset($outgoing['zahlungen']) ? $outgoing['zahlungen'] : array(),
-			'file' => isset($outgoing['akten']) ? $outgoing['akten'] : array(),
-		);
-
-		foreach ($objToCheck as $objName => $objects)
-		{
-			foreach ($objects as $object)
-			{
-				$hasErrorObj = $this->fhcObjHasError($object, $objName);
-
-				if ($hasErrorObj->error)
-				{
-					$errorResults->error = true;
-					$errorResults->errorMessages[] = array_merge($errorResults->errorMessages, $hasErrorObj->errorMessages);
-				}
-			}
-		}
-
-		return $errorResults;
 	}
 }

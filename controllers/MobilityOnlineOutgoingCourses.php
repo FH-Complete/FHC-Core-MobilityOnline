@@ -84,12 +84,11 @@ class MobilityOnlineOutgoingCourses extends Auth_Controller
 	{
 		$studiensemester = $this->input->get('studiensemester');
 		$studiengang_kz = $this->input->get('studiengang_kz');
-		$studiengang_kz = 256;
 
 		$outgoingCoursesData = $this->syncoutgoingcoursesfrommolib->getOutgoingCourses($studiensemester, $studiengang_kz);
 
-		var_dump($outgoingCoursesData);
-		die();
+		//~ var_dump($outgoingCoursesData);
+		//~ die();
 
 		$this->outputJsonSuccess($outgoingCoursesData);
 	}

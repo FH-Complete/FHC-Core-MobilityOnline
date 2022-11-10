@@ -160,23 +160,11 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$requiredFields = isset($confFields['required']) ? $confFields['required'] : array();
 		$optionalFields = isset($confFields['optional']) ? $confFields['optional'] : array();
 		$allFields = array_merge($requiredFields, $optionalFields);
-			//~ var_dump("REQUIRED FIELDS");
-			//~ var_dump($requiredFields);
-			//~ var_dump("OPTIONAL FIELDS");
-			//~ var_dump($optionalFields);
-			//~ var_dump("ALL FIELDS");
-			//~ var_dump($allFields);
 
 		// iterate over fields config
 		foreach ($allFields as $table => $fields)
 		{
-			
-			//~ var_dump($confFields);
-			//~ var_dump($table);
-
 			// if the "table" is prestent in the object
-			//var_dump($fhcObj['bankverbindung']);
-
 			if (array_key_exists($table, $fhcObj))
 			{
 				// for each field with its setting parameters
@@ -191,7 +179,17 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 					foreach ($fhcFields as $fhcField)
 					{
-						if (isset($fhcField[$table][$field]))
+						//~ if ($field == 'note_local_gast')
+						//~ {
+						//~ var_dump($fhcField[$table][$field]);
+						//~ var_dump($required);
+					//~ }
+						if ($required && (!isset($fhcField[$table][$field]) || isEmptyString($fhcField[$table][$field])))
+						{
+							$hasError = true;
+							$errorText = 'existiert nicht';
+						}
+						elseif (isset($fhcField[$table][$field]))
 						{
 							$value = $fhcField[$table][$field];
 
@@ -202,11 +200,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 							if ($hasError)
 								break;
-						}
-						elseif ($required)
-						{
-							$hasError = true;
-							$errorText = 'existiert nicht';
 						}
 					}
 

@@ -50,7 +50,7 @@ $config['fhcfields']['application']['required'] = array(
 	'kontaktmail' => array(
 		'kontakt' => array('required' => true, 'name' => 'E-Mail-Adresse')
 	),
-		'bisio' => array(
+	'bisio' => array(
 		'von' => array('required' => true, 'name' => 'Aufenthalt von', 'type' => 'date'),
 		'bis' => array('required' => true, 'name' => 'Aufenthalt bis', 'type' => 'date'),
 		'nation_code' => array('required' => true, 'name' => 'Nation', 'ref' => 'bis.tbl_nation'),
@@ -104,15 +104,15 @@ $config['fhcfields']['applicationout']['required'] = array(
 			'type' => 'integer',
 			'ref' => 'bis.tbl_mobilitaetsprogramm'
 		),
-		'ects_erworben' => array('required' => false, 'name' => 'ECTS erworben', 'type' => 'float'),
-		'ects_angerechnet' => array('required' => false, 'name' => 'ECTS angerechnet', 'type' => 'float')
+		'ects_erworben' => array('name' => 'ECTS erworben', 'type' => 'float'),
+		'ects_angerechnet' => array('name' => 'ECTS angerechnet', 'type' => 'float')
 	),
 	'bisio_zweck' => array(
 		'zweck_code' => array('required' => true, 'name' => 'Aufenthaltszweck', 'type' => 'integer', 'ref' => 'bis.tbl_zweck')
 	),
 	'bisio_aufenthaltfoerderung' => array(
 		'aufenthaltfoerderung_code' => array(
-			'required' => true,
+			'required' => false,
 			'name' => 'Aufenthaltsförderung',
 			'type' => 'integer',
 			'ref' => 'bis.tbl_bisio_aufenthaltfoerderung')
@@ -124,8 +124,8 @@ $config['fhcfields']['applicationout']['required'] = array(
 
 $config['fhcfields']['applicationout']['optional'] = array(
 	'institution_adresse' => array(
-		'ort' => array('required' => false, 'name' => 'Nation'),
-		'nation' => array('required' => false, 'name' => 'Ort')
+		'ort' => array('name' => 'Nation'),
+		'nation' => array('name' => 'Ort')
 	),
 	'bankverbindung' => array(
 		'bic' => array('name' => 'BIC'),
@@ -133,7 +133,7 @@ $config['fhcfields']['applicationout']['optional'] = array(
 	)
 );
 
-$config['fhcfields']['payment'] = array(
+$config['fhcfields']['payment']['required'] = array(
 	'konto' => array(
 		'betrag' => array('required' => true, 'name' => 'Betrag', 'type' => 'float'),
 		'buchungstyp_kurzbz' => array('required' => true, 'name' => 'Buchungstyp', 'ref' => 'public.tbl_buchungstyp'),
@@ -141,11 +141,22 @@ $config['fhcfields']['payment'] = array(
 	)
 );
 
-$config['fhcfields']['file'] = array(
+$config['fhcfields']['file']['required'] = array(
 	'akte' => array(
 		'dokument_kurzbz' => array('required' => true, 'name' => 'Dokumentkurzbezeichnung'),
 		'dokument_bezeichnung' => array('required' => true, 'name' => 'Dokumentbezeichnung'),
 		'file_content' => array('required' => true, 'name' => 'Dokumentinhalt', 'type' => 'base64Document')
+	)
+);
+
+$config['fhcfields']['outgoingcourse']['required'] = array(
+	'mo_outgoing_lv' => array(
+		'mo_lvid' => array('required' => true, 'name' => 'Lehrveranstaltungsid', 'type' => 'integer'),
+		'lv_nr_gast' => array('required' => true, 'name' => 'Lehrveranstatlungsnummer Gast'),
+		'lv_bez_gast' => array('name' => 'Lehrveranstaltungsbezeichnung Gast'),
+		'lv_semesterstunden_gast' => array('name' => 'Lehrveranstaltungssemesterstunden Gast', 'type' => 'float'),
+		'ects_punkte_gast' => array('name' => 'ECTS Punkte Gast', 'type' => 'float'),
+		'note_local_gast' => array('required' => true, 'name' => 'Note Gast')
 	)
 );
 

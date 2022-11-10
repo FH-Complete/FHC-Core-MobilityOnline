@@ -29,7 +29,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Executes sync of incomings for a Studiensemester from MO to FHC. Adds or updates incomings.
+	 * Executes sync of outgoings for a Studiensemester from MO to FHC. Adds or updates outgoings.
 	 * @param array $outgoings
 	 * @return array syncoutput containing info about failures/success
 	 */
@@ -125,10 +125,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		foreach ($apps as $application)
 		{
 			$appId = $application->applicationID;
-			
-			var_dump($this->ci->MoGetAppModel->getCoursesOfApplicationTranscript(39619));
-			die();
-			
 
 			// get additional data from Mobility Online for each application
 			$bankData = $this->ci->MoGetAppModel->getBankAccountDetails($appId);
@@ -389,7 +385,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Saves an outgoing
+	 * Saves an outgoing.
 	 * @param int $appId
 	 * @param array $outgoing
 	 * @param int $bisio_id_existing if bisio id if bisio already exists
