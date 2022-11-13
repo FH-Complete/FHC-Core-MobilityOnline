@@ -39,44 +39,45 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	public function startOutgoingCoursesSync($outgoingCourses)
 	{
 		$results = array('added' => array(), 'updated' => array(), 'errors' => 0, 'syncoutput' => array());
-		$studCount = count($outgoingCourses);
 
-		if (!is_array($outgoingCourses) || isEmptyArray($outgoingCourses) || $studCount <= 0)
+		if (!is_array($outgoingCourses) || isEmptyArray($outgoingCourses))
 		{
-			$this->addInfoOutput('Keine Outgoings Kurse für Sync gefunden! Abbruch.');
+			$this->addInfoOutput('Keine Outgoing Kurse für Sync gefunden! Abbruch.');
 		}
 		else
 		{
 			foreach ($outgoingCourses as $outgoingCourse)
 			{
-				$outgoingCourseData = $outgoingCourse['data'];
-				$appId = $outgoingCourse['moid'];
+				$mo_outgoing_lv = $outgoingCourse['mo_outgoing_lv'];
+				$mo_lvid = $mo_outgoing_lv['mo_lvid'];
+				$bisio_id = $mo_outgoing_lv['bisio_id'];
 
-				$infhccheck_bisio_id = $this->checkMoIdInFhc($appId);
+				$infhccheck_mo_lvid = $this->_checkOutgoingCourseInFhc($mo_lvid, $bisio_id);
 
-				$outgoing_course_id = $this->saveOutgoingCourse($appId, $outgoingCourseData);
+				$outgoing_course_id = $this->saveOutgoingCourse($outgoingCourse);
 
-				if (isset($outgoing_course_id))
+				//var_dump($outgoing_course_id);
+
+				if (isSuccess($outgoing_course_id))
 				{
-					if (isset($infhccheck_bisio_id))
+					if (hasData($infhccheck_mo_lvid))
 					{
-						$results['updated'][] = $appId;
+						$results['updated'][] = $mo_lvid;
 						$actionText = 'aktualisiert';
 					}
 					else
 					{
-						$results['added'][] = $appId;
+						$results['added'][] = $mo_lvid;
 						$actionText = 'hinzugefügt';
 					}
 
-					$this->addSuccessOutput("Student mit applicationid $appId - " .
-						$outgoingCourseData['person']['vorname'] . " " . $outgoingCourseData['person']['nachname'] . " erfolgreich $actionText");
+					$this->addSuccessOutput("Kurs mit Id $mo_lvid - " . $mo_outgoing_lv['lv_bez_gast'] . " erfolgreich $actionText");
 				}
 				else
 				{
 					$results['errors']++;
-					$this->addErrorOutput("Fehler beim Synchronisieren des Studierenden mit applicationid $appId - " .
-						$outgoingCourseData['person']['vorname'] . " " . $outgoingCourseData['person']['nachname']);
+					$this->addErrorOutput("Fehler beim Synchronisieren des Kurses mit Id $mo_lvid - " .
+						$mo_outgoing_lv['lv_bez_gast']);
 				}
 			}
 		}
@@ -221,8 +222,6 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 		$fhcObj = $this->convertToFhcFormat($moAppElementsExtracted, self::MO_OBJECT_APPLICATION_TYPE);
 
-		//var_dump($moAppElementsExtracted);
-
 		// courses
 		$fhcCourses = array();
 		if (!isEmptyArray($coursesData))
@@ -247,27 +246,20 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 		$fhcObj = array_merge($fhcObj, array('kurse' => $fhcCourses));
 
-		//~ var_dump($fhcObj);
-		//~ die();
-
 		return $fhcObj;
 	}
 
 	/**
-	 * Saves an outgoing
+	 * Saves an outgoing course.
 	 * @param int $appId
 	 * @param array $outgoing
 	 * @param int $bisio_id_existing if bisio id if bisio already exists
 	 * @return string prestudent_id of saved prestudent
 	 */
-	public function saveOutgoing($appId, $outgoing, $bisio_id_existing)
+	public function saveOutgoingCourse($outgoingCourse)
 	{
 		//error check for missing data etc.
-		$errors = $this->_outgoingObjHasError($outgoing);
-
-		// check Zahlungen and Akten for errors separately
-		$zahlungen = isset($outgoing['zahlungen']) ? $outgoing['zahlungen'] : array();
-		$akten = isset($outgoing['akten']) ? $outgoing['akten'] : array();
+		$errors = $this->fhcObjHasError($outgoingCourse, $this->moObjectType);
 
 		if ($errors->error)
 		{
@@ -276,178 +268,52 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 				$this->addErrorOutput($errorMessage);
 			}
 
-			$this->addErrorOutput("Abbruch der Outgoing Speicherung");
+			$this->addErrorOutput("Abbruch der Outgoing Kursspeicherung");
 			return null;
 		}
 
-		$person = $outgoing['person'];
-		$prestudent = $outgoing['prestudent'];
-		$bisio = $outgoing['bisio'];
-		$bisio_zweck = $outgoing['bisio_zweck'];
-		$bisio_aufenthaltfoerderung = $outgoing['bisio_aufenthaltfoerderung'];
-
-		// optional fields
-
-		if (isset($outgoing['institution_adresse'])) // instituion adress is optional
-		{
-			$bisio_adresse = $outgoing['institution_adresse'];
-
-			// get Bezeichnung of Nation by code
-			$nationRes = $this->ci->NationModel->loadWhere(array('nation_code' => $bisio_adresse['nation']));
-
-			if (hasData($nationRes))
-			{
-				// set bisio ort from and Nation from institution address
-				$bisio['ort'] = $bisio_adresse['ort'] . ', ' . getData($nationRes)[0]->langtext;
-			}
-		}
-
-		if (isset($outgoing['bisio_info']))
-			$bisio_info = $outgoing['bisio_info'];
+		$mo_outgoing_lv = $outgoingCourse['mo_outgoing_lv'];
+		$mo_lvid = $mo_outgoing_lv['mo_lvid'];
+		$bisio_id = $mo_outgoing_lv['bisio_id'];
 
 		// Start DB transaction
-		$this->ci->db->trans_begin();
+		//$this->ci->db->trans_begin();
 
-		// get person_id
-		$personRes = $this->ci->PersonModel->getByUid($bisio['student_uid']);
-		// get prestudent_id
-		$this->ci->StudentModel->addSelect('prestudent_id');
-		$prestudentRes = $this->ci->StudentModel->loadWhere(array('student_uid' => $bisio['student_uid']));
+		// check if outgoing course is already in fhcomplete
+		$checkRes = $this->_checkOutgoingCourseInFhc($mo_lvid, $bisio_id);
 
-		if (hasData($personRes) && hasData($prestudentRes))
+		if (isSuccess($checkRes))
 		{
-			$person_id = getData($personRes)[0]->person_id;
-			$prestudent_id = getData($prestudentRes)[0]->prestudent_id;
-			$ist_double_degree = (isset($bisio_info['ist_double_degree']) && $bisio_info['ist_double_degree'] === true);
-
-			if (!$ist_double_degree) // for double degree students, only payments are transferred, no bisio
+			// if in fhc, update
+			if (hasData($checkRes))
 			{
-				// bisio
-				$bisio_id = $this->_saveBisio($appId, $bisio_id_existing, $bisio);
-
-				if (isset($bisio_id))
-				{
-					// bisio Zweck
-
-					$zweckCodesToSync = array();
-
-					// if praktikum flag is set -> only one Zweck "Studium und Praktikum"
-					if (isset($bisio_info['ist_praktikum']) && $bisio_info['ist_praktikum'] === true)
-					{
-						$bisio_zweck = $outgoing['bisio_zweck_studium_praktikum'];
-					}
-
-					// insert primary Zweck
-					$bisio_zweck['bisio_id'] = $bisio_id;
-					$zweckCodesToSync[] = $bisio_zweck['zweck_code'];
-
-					$bisio_zweckresult = $this->ci->MoFhcModel->saveBisioZweck($bisio_zweck);
-
-					if (hasData($bisio_zweckresult))
-					{
-						$this->log('insert', $bisio_zweckresult, 'bisio_zweck');
-					}
-
-					// if student writes Masterarbeit as well, insert secondary Diplom-/Masterarbeit bzw. Dissertation Zweck
-					if (isset($bisio_info['ist_masterarbeit']) && $bisio_info['ist_masterarbeit'] === true)
-					{
-						$bisio_zweck = $outgoing['bisio_zweck_masterarbeit'];
-						$bisio_zweck['bisio_id'] = $bisio_id;
-
-						$zweckCodesToSync[] = $bisio_zweck['zweck_code'];
-
-						$bisio_zweckresult = $this->ci->MoFhcModel->saveBisioZweck($bisio_zweck);
-
-						if (hasData($bisio_zweckresult))
-						{
-							$this->log('insert', $bisio_zweckresult, 'bisio_zweck');
-						}
-					}
-
-					// delete any Zweck which was not inserted/updated
-					$this->ci->MoFhcModel->deleteBisioZweck($bisio_id, $zweckCodesToSync);
-
-					// bisio Aufenthaltsförderung
-					$aufenthaltfoerderungCodesToSync = array();
-
-					$bisio_aufenthaltfoerderung['bisio_id'] = $bisio_id;
-
-					$aufenthaltfoerderungCodesToSync[] = $bisio_aufenthaltfoerderung['aufenthaltfoerderung_code'];
-
-					$bisio_aufenthaltfoerderungresult = $this->ci->MoFhcModel->saveBisioAufenthaltfoerderung($bisio_aufenthaltfoerderung);
-
-					if (hasData($bisio_aufenthaltfoerderungresult))
-					{
-						$this->log('insert', $bisio_aufenthaltfoerderungresult, 'bisio_aufenthaltfoerderung');
-					}
-
-					// add additional aufenthaltfoerderung if Beihilfe from Bund
-					if (isset($bisio_info['ist_beihilfe']) && $bisio_info['ist_beihilfe'] === true)
-					{
-						$bisio_aufenthaltfoerderung = $outgoing['bisio_aufenthaltfoerderung_beihilfe'];
-						$bisio_aufenthaltfoerderung['bisio_id'] = $bisio_id;
-
-						$aufenthaltfoerderungCodesToSync[] = $bisio_aufenthaltfoerderung['aufenthaltfoerderung_code'];
-
-						$bisio_aufenthaltfoerderungresult = $this->ci->MoFhcModel->saveBisioAufenthaltfoerderung($bisio_aufenthaltfoerderung);
-
-						if (hasData($bisio_aufenthaltfoerderungresult))
-						{
-							$this->log('insert', $bisio_aufenthaltfoerderungresult, 'bisio_aufenthaltfoerderung');
-						}
-					}
-
-					// delete any Aufenthaltförderung code which was not inserted/updated
-					$this->ci->MoFhcModel->deleteBisioAufenthaltfoerderung($bisio_id, $aufenthaltfoerderungCodesToSync);
-				}
+				return $this->ci->MoOutgoingLvModel->update(array($mo_lvid), $mo_outgoing_lv);
 			}
-
-			// if bisio is set or is double degree student
-			if (isset($bisio_id) || $ist_double_degree)
+			else
 			{
-				// Bankverbindung
-				if (isset($outgoing['bankverbindung']['iban']) && !isEmptyString($outgoing['bankverbindung']['iban']))
-				{
-					$bankverbindung = $outgoing['bankverbindung'];
-					$bankverbindung['person_id'] = $person_id;
-					$this->_saveBankverbindung($bankverbindung, $person['mo_person_id']);
-				}
-
-				// Zahlungen
-				foreach ($zahlungen as $zahlung)
-				{
-					$zahlung['konto']['studiengang_kz'] = $prestudent['studiengang_kz'];
-					$zahlung['konto']['studiensemester_kurzbz'] = $prestudent['studiensemester_kurzbz'];
-					$zahlung['konto']['buchungstext'] = $zahlung['buchungsinfo']['mo_zahlungsgrund'];
-
-					// TODO studiensemester auch - aber was ist wenn in MO tatsächlich Studiensemester geändert wird? Trotzdem neue Zahlung anlegen?
-					$this->_saveZahlung($zahlung, $person_id/*, $prestudent['studiensemester_kurzbz']*/);
-				}
-
-				// Documents
-				// save documents
-				foreach ($akten as $akte)
-				{
-					$this->saveAkte($person_id, $akte['akte'], $prestudent_id);
-				}
+				// otherwise insert
+				return $this->ci->MoOutgoingLvModel->insert($mo_outgoing_lv);
 			}
 		}
 
+		return null;
+
+		
 		// Transaction complete!
-		$this->ci->db->trans_complete();
+		//$this->ci->db->trans_complete();
 
 		// Check if everything went ok during the transaction
-		if ($this->ci->db->trans_status() === false)
-		{
-			$this->addInfoOutput("rolling back...");
-			$this->ci->db->trans_rollback();
-			return null;
-		}
-		else
-		{
-			$this->ci->db->trans_commit();
-			return $bisio['student_uid'];
-		}
+		//~ if ($this->ci->db->trans_status() === false)
+		//~ {
+			//~ $this->addInfoOutput("rolling back...");
+			//~ $this->ci->db->trans_rollback();
+			//~ return null;
+		//~ }
+		//~ else
+		//~ {
+			//~ $this->ci->db->trans_commit();
+			//~ return $bisio['student_uid'];
+		//~ }
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -465,7 +331,7 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 		if (hasData($outgoingLvRes))
 		{
-			$outgoing_lehrveranstaltung_id = getData($outgoingLvRes)[0]->bisio_id;
+			$outgoing_lehrveranstaltung_id = getData($outgoingLvRes)[0]->outgoing_lehrveranstaltung_id;
 		}
 
 		return success($outgoing_lehrveranstaltung_id);

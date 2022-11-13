@@ -25,23 +25,25 @@ $(document).ready(function()
 		);
 
 		//init sync
-		//~ $("#applicationsyncbtn").click(
-			//~ function()
-			//~ {
-				//~ let outgoingElem = $("#applications input[type=checkbox]:checked");
-				//~ let outgoings = [];
-				//~ outgoingElem.each(
-					//~ function()
-					//~ {
-						//~ outgoings.push(MobilityOnlineOutgoingCourses._findOutgoingByMoid($(this).val())[0]);
-					//~ }
-				//~ );
+		$("#applicationsyncbtn").click(
+			function()
+			{
+				let coursesElem = $("#applications input[type=checkbox]:checked");
+				let courses = [];
+				coursesElem.each(
+					function()
+					{
+						courses.push(MobilityOnlineOutgoingCourses._findCourseByMoid($(this).val())[0]);
+					}
+				);
 
-				//~ $("#applicationsyncoutput div").empty();
+				$("#applicationsyncoutput div").empty();
 
-				//~ MobilityOnlineOutgoingCourses.syncOutgoingCourses(outgoings, $("#studiensemester").val());
-			//~ }
-		//~ );
+				console.log(courses);
+
+				MobilityOnlineOutgoingCourses.syncOutgoingCourses(courses, $("#studiensemester").val());
+			}
+		);
 
 		//select all incoming checkboxes
 		MobilityOnlineApplicationsHelper.setSelectAllApplicationsEvent();
@@ -72,7 +74,7 @@ var MobilityOnlineOutgoingCourses = {
 					if (FHC_AjaxClient.hasData(data))
 					{
 						let outgoings = FHC_AjaxClient.getData(data);
-						console.log(outgoings);
+						//console.log(outgoings);
 						MobilityOnlineOutgoingCourses.outgoings = outgoings;
 
 						MobilityOnlineOutgoingCourses._showKurse();
@@ -95,41 +97,43 @@ var MobilityOnlineOutgoingCourses = {
 			}
 		);
 	},
-	syncOutgoingCourses: function(outgoings, studiensemester)
+	syncOutgoingCourses: function(outgoingCourses, studiensemester)
 	{
 		FHC_AjaxClient.ajaxCallPost(
 			FHC_JS_DATA_STORAGE_OBJECT.called_path + '/syncOutgoingCourses',
 			{
-				"outgoings": JSON.stringify(outgoings),
+				"outgoingCourses": JSON.stringify(outgoingCourses),
 				"studiensemester": studiensemester
 			},
 			{
 				successCallback: function(data, textStatus, jqXHR)
 				{
+						console.log(data);
 					if (FHC_AjaxClient.hasData(data))
 					{
 						let syncRes = FHC_AjaxClient.getData(data);
 
-						$("#applications td").css("background-color", ""); // remove background color of applications table
 
-						MobilityOnlineApplicationsHelper.writeSyncOutput(syncRes.syncoutput);
+						//~ $("#applications td").css("background-color", ""); // remove background color of applications table
 
-						$("#applicationsyncoutputtext").append(data.retval.syncoutput);
+						//~ MobilityOnlineApplicationsHelper.writeSyncOutput(syncRes.syncoutput);
 
-						if ($("#applicationsyncoutputheading").text().length > 0)
-						{
-							$("#nradd").text(parseInt($("#nradd").text()) + syncRes.added.length);
-							$("#nrupdate").text(parseInt($("#nrupdate").text()) + syncRes.updated.length);
-						}
-						else
-						{
-							$("#applicationsyncoutputheading")
-								.append("<br />MOBILITY ONLINE OUTGOING SYNC ENDE<br />"+
-									"<span id = 'nradd'>" +syncRes.added.length + "</span> hinzugefügt, "+
-									"<span id = 'nrupdate'>" + syncRes.updated.length + "</span> aktualisiert</div>")
-								.append("<br />-----------------------------------------------<br />");
-						}
-						MobilityOnlineOutgoingCourses.refreshOutgoingsSyncStatus(syncRes.added.concat(syncRes.updated));
+						//~ $("#applicationsyncoutputtext").append(data.retval.syncoutput);
+
+						//~ if ($("#applicationsyncoutputheading").text().length > 0)
+						//~ {
+							//~ $("#nradd").text(parseInt($("#nradd").text()) + syncRes.added.length);
+							//~ $("#nrupdate").text(parseInt($("#nrupdate").text()) + syncRes.updated.length);
+						//~ }
+						//~ else
+						//~ {
+							//~ $("#applicationsyncoutputheading")
+								//~ .append("<br />MOBILITY ONLINE OUTGOING SYNC ENDE<br />"+
+									//~ "<span id = 'nradd'>" +syncRes.added.length + "</span> hinzugefügt, "+
+									//~ "<span id = 'nrupdate'>" + syncRes.updated.length + "</span> aktualisiert</div>")
+								//~ .append("<br />-----------------------------------------------<br />");
+						//~ }
+						//~ MobilityOnlineOutgoingCourses.refreshOutgoingsSyncStatus(syncRes.added.concat(syncRes.updated));
 					}
 				},
 				errorCallback: function()
@@ -266,20 +270,30 @@ var MobilityOnlineOutgoingCourses = {
 			Tablesort.addTablesorter("applicationstbl", [[1, 0], [2, 0], [3, 0], [7, 0]], ["filter"], 2, tablesortParams);
 		}
 	},
-	_findOutgoingByMoid(moid)
+	_findCourseByMoid(mo_lvid)
 	{
-		let outgoingFound = [];
+		let coursesFound = [];
 		for (let outgoing in MobilityOnlineOutgoingCourses.outgoings)
 		{
-			let moinc = MobilityOnlineOutgoingCourses.outgoings[outgoing];
-			if (moinc.moid == moid)
+			let mooutg = MobilityOnlineOutgoingCourses.outgoings[outgoing];
+
+			console.log(mooutg);
+
+			let kurse = mooutg.data.kurse;
+			for (let i = 0; i < kurse.length; i++)
 			{
-				outgoingFound.push(moinc);
-				break;
+				if (kurse[i].mo_outgoing_lv.mo_lvid == mo_lvid)
+					coursesFound.push(kurse[i]);
 			}
+			
+			//~ if (moinc.moid == moid)
+			//~ {
+				//~ outgoingFound.push(moinc);
+				//~ break;
+			//~ }
 		}
 
-		return outgoingFound;
+		return coursesFound;
 	}
 	//~ _blackInApplicationRow: function(moid)
 	//~ {
