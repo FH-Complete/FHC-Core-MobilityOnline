@@ -1,10 +1,10 @@
 /**
- * javascript file for Mobility Online incoming sync
+ * javascript file for Mobility Online outgoing course sync
  */
 
 $(document).ready(function()
 	{
-		// get outgoings
+		// get outgoings with courses
 		MobilityOnlineOutgoingCourses.getOutgoingCourses($("#studiensemester").val(), $("#studiengang_kz").val());
 
 		let getOutgoingFunc = function()
@@ -15,7 +15,7 @@ $(document).ready(function()
 			MobilityOnlineOutgoingCourses.getOutgoingCourses(studiensemester, studiengang_kz);
 		}
 
-		// get Outgoings when Dropdown selected
+		// get outgoings with courses when Dropdown selected
 		$("#studiensemester,#studiengang_kz").change(
 			getOutgoingFunc
 		);
@@ -45,9 +45,9 @@ $(document).ready(function()
 			}
 		);
 
-		//select all incoming checkboxes
+		//select all outgoing courses checkboxes
 		MobilityOnlineApplicationsHelper.setSelectAllApplicationsEvent();
-		//select incoming application which are not in FHC yet
+		//select outgoing courses which are not in FHC yet
 		MobilityOnlineApplicationsHelper.setSelectNewApplicationsEvent();
 	}
 );
@@ -74,16 +74,16 @@ var MobilityOnlineOutgoingCourses = {
 					if (FHC_AjaxClient.hasData(data))
 					{
 						let outgoings = FHC_AjaxClient.getData(data);
-						//console.log(outgoings);
 						MobilityOnlineOutgoingCourses.outgoings = outgoings;
 
+						// show the courses
 						MobilityOnlineOutgoingCourses._showKurse();
 
-							// number of applications selected via checkboxes
-							$("#applications input[type=checkbox][name='applications[]']").change(
-								MobilityOnlineApplicationsHelper.refreshApplicationsNumber
-							);
-							MobilityOnlineApplicationsHelper.refreshApplicationsNumber();
+						// courses selected via checkboxes
+						$("#applications input[type=checkbox][name='applications[]']").change(
+							MobilityOnlineApplicationsHelper.refreshApplicationsNumber
+						);
+						MobilityOnlineApplicationsHelper.refreshApplicationsNumber();
 					}
 					else
 					{
@@ -92,7 +92,7 @@ var MobilityOnlineOutgoingCourses = {
 				},
 				errorCallback: function()
 				{
-					$("#applicationsyncoutputtext").html("<div class='text-center'>Fehler beim Holen der Outgoings!</div>");
+					$("#applicationsyncoutputtext").html("<div class='text-center'>Fehler beim Holen der Outgoings mit Kursen!</div>");
 				}
 			}
 		);
@@ -108,32 +108,27 @@ var MobilityOnlineOutgoingCourses = {
 			{
 				successCallback: function(data, textStatus, jqXHR)
 				{
-						console.log(data);
 					if (FHC_AjaxClient.hasData(data))
 					{
 						let syncRes = FHC_AjaxClient.getData(data);
 
+						MobilityOnlineApplicationsHelper.writeSyncOutput(syncRes.syncoutput);
 
-						//~ $("#applications td").css("background-color", ""); // remove background color of applications table
+						if ($("#applicationsyncoutputheading").text().length > 0)
+						{
+							$("#nradd").text(parseInt($("#nradd").text()) + syncRes.added.length);
+							$("#nrupdate").text(parseInt($("#nrupdate").text()) + syncRes.updated.length);
+						}
+						else
+						{
+							$("#applicationsyncoutputheading")
+								.append("<br />MOBILITY ONLINE OUTGOING SYNC ENDE<br />"+
+									"<span id = 'nradd'>" +syncRes.added.length + "</span> hinzugefügt, "+
+									"<span id = 'nrupdate'>" + syncRes.updated.length + "</span> aktualisiert</div>")
+								.append("<br />-----------------------------------------------<br />");
+						}
 
-						//~ MobilityOnlineApplicationsHelper.writeSyncOutput(syncRes.syncoutput);
-
-						//~ $("#applicationsyncoutputtext").append(data.retval.syncoutput);
-
-						//~ if ($("#applicationsyncoutputheading").text().length > 0)
-						//~ {
-							//~ $("#nradd").text(parseInt($("#nradd").text()) + syncRes.added.length);
-							//~ $("#nrupdate").text(parseInt($("#nrupdate").text()) + syncRes.updated.length);
-						//~ }
-						//~ else
-						//~ {
-							//~ $("#applicationsyncoutputheading")
-								//~ .append("<br />MOBILITY ONLINE OUTGOING SYNC ENDE<br />"+
-									//~ "<span id = 'nradd'>" +syncRes.added.length + "</span> hinzugefügt, "+
-									//~ "<span id = 'nrupdate'>" + syncRes.updated.length + "</span> aktualisiert</div>")
-								//~ .append("<br />-----------------------------------------------<br />");
-						//~ }
-						//~ MobilityOnlineOutgoingCourses.refreshOutgoingsSyncStatus(syncRes.added.concat(syncRes.updated));
+						MobilityOnlineOutgoingCourses.refreshOutgoingsSyncStatus(syncRes.added.concat(syncRes.updated));
 					}
 				},
 				errorCallback: function()
@@ -146,50 +141,46 @@ var MobilityOnlineOutgoingCourses = {
 		);
 	},
 	/**
-	 * Refreshes status (infhc, not in fhc) of outgoings
+	 * Refreshes status (infhc, not in fhc) of outgoing courses
 	 */
 	refreshOutgoingsSyncStatus: function(synced_moids)
 	{
+		console.log(synced_moids);
 		for (let idx in synced_moids)
 		{
 			let moId = synced_moids[idx];
+
+			console.log(MobilityOnlineOutgoingCourses.outgoings);
 
 			// refresh JS array
 			for (let outgoing in MobilityOnlineOutgoingCourses.outgoings)
 			{
 				let outgoingsObj = MobilityOnlineOutgoingCourses.outgoings[outgoing];
 
-				if (outgoingsObj.moid === parseInt(moId))
-				{
-					outgoingsObj.infhc = true;
+				outgoingData = outgoingsObj.data;
 
-					for (let zlg in outgoingsObj.data.zahlungen)
+				for (let kurs in outgoingData.kurse)
+				{
+					if (outgoingData.kurse[kurs].mo_outgoing_lv == parseInt(moId))
 					{
-						outgoingsObj.data.zahlungen[zlg].buchungsinfo.infhc = true;
+						outgoingData.kurse[kurs].infhc = true;
 					}
-					break;
 				}
 			}
+			console.log(MobilityOnlineOutgoingCourses.outgoings);
 
-			// refresh Outgoings Table "in FHC" field
+			// refresh courses "in FHC" field
 			let inFhcIconEl = $("#infhcicon_" + moId);
 			let inFhcEl = $("#infhc_" + moId);
 
 			inFhcIconEl.removeClass();
 			inFhcEl.val("1");
 			inFhcIconEl.addClass("fa fa-check");
-
-			// refresh zahlungen infhc flags too
-			let zlgInFhcIconEl = $(".zlgInFhc_"+moId);
-			let zlginfhcel = $("#infhc_" + moId);
-
-			zlgInFhcIconEl.removeClass();
-			zlginfhcel.val("1");
-			zlgInFhcIconEl.addClass("fa fa-check");
 		}
 	},
 	_showKurse: function()
 	{
+		let numCourses = 0;
 		for (let outgoingIdx in MobilityOnlineOutgoingCourses.outgoings)
 		{
 			let outgoing = MobilityOnlineOutgoingCourses.outgoings[outgoingIdx];
@@ -207,6 +198,7 @@ var MobilityOnlineOutgoingCourses = {
 			let person = outgoing.data.person;
 			let kontaktmail = outgoing.data.kontaktmail;
 			let kurse = outgoing.data.kurse;
+			numCourses += kurse.length;
 			for (let krs in kurse)
 			{
 				let kurs = kurse[krs];
@@ -214,14 +206,14 @@ var MobilityOnlineOutgoingCourses = {
 				let mo_outgoing_lv = kurs.mo_outgoing_lv;
 				let mo_lvid = mo_outgoing_lv.mo_lvid;
 
-				console.log(kursinfo);
-
+				// display errors from application and courses
 				let allErrorTexts = errorTexts;
 				if (kursinfo.error)
 				{
 					allErrorTexts = allErrorTexts.concat(kursinfo.errorMessages);
 				}
 
+				// show row selection checkbox
 				let inactive = "";
 				let tooltip = "";
 				let chkbxString = "";
@@ -233,17 +225,19 @@ var MobilityOnlineOutgoingCourses = {
 				else
 					chkbxString = "<input type='checkbox' value='" + mo_lvid + "' name='applications[]'>";
 
+				// show "in fhcomplete" indicator
 				if (kursinfo.infhc)
 				{
-					newicon = "<i id='courseInFhcicon_" + mo_lvid + "' class='fa fa-check courseInFhc_" + mo_lvid + "'></i>"
+					newicon = "<i id='infhcicon_" + mo_lvid + "' class='fa fa-check courseInFhc_" + mo_lvid + "'></i>"
 					+"<input type='hidden' id='infhc_" + mo_lvid + "' class='infhc' value='1'>";
 				}
 				else
 				{
-					newicon = "<i id='courseInFhcicon_" + mo_lvid + "' class='fa fa-times courseInFhc_" + mo_lvid + "'></i>"
+					newicon = "<i id='infhcicon_" + mo_lvid + "' class='fa fa-times courseInFhc_" + mo_lvid + "'></i>"
 					+"<input type='hidden' id='infhc_" + mo_lvid + "' class='infhc' value='0'>";
 				}
 
+				// append the row
 				$("#applications").append(
 					"<tr class='courseRow courserow_" + mo_lvid + inactive+"'"+tooltip+">" +
 						"<td class='text-center'>" + chkbxString + "</td>" +
@@ -259,6 +253,7 @@ var MobilityOnlineOutgoingCourses = {
 				);
 			}
 
+			// add tablesorter
 			let tablesortParams = {
 				headers: {
 					0: {sorter: false, filter: false},
@@ -269,6 +264,9 @@ var MobilityOnlineOutgoingCourses = {
 
 			Tablesort.addTablesorter("applicationstbl", [[1, 0], [2, 0], [3, 0], [7, 0]], ["filter"], 2, tablesortParams);
 		}
+
+		if (numCourses <= 0)
+			$("#applicationsyncoutputtext").html("<div class='text-center'>Keine Kurse gefunden!</div>");
 	},
 	_findCourseByMoid(mo_lvid)
 	{
@@ -277,39 +275,14 @@ var MobilityOnlineOutgoingCourses = {
 		{
 			let mooutg = MobilityOnlineOutgoingCourses.outgoings[outgoing];
 
-			console.log(mooutg);
-
 			let kurse = mooutg.data.kurse;
 			for (let i = 0; i < kurse.length; i++)
 			{
 				if (kurse[i].mo_outgoing_lv.mo_lvid == mo_lvid)
 					coursesFound.push(kurse[i]);
 			}
-			
-			//~ if (moinc.moid == moid)
-			//~ {
-				//~ outgoingFound.push(moinc);
-				//~ break;
-			//~ }
 		}
 
 		return coursesFound;
 	}
-	//~ _blackInApplicationRow: function(moid)
-	//~ {
-		//~ $("#applicationsyncoutputheading").html('');
-		//~ let applicationsrowEl = $("#applicationsrow_"+moid);
-		//~ applicationsrowEl.css("color", "black");
-		//~ applicationsrowEl.off("click"); // row not clickable anymore
-		//~ applicationsrowEl.removeClass("clickableApplicationsrow"); // row not clickable anymore
-		//~ applicationsrowEl.removeAttr("title"); // remove tooltip
-
-		//~ let chkboxElement = $("<input type='checkbox' value='" + moid + "' name='applications[]'>");
-
-		//~ // reassign outgoing number event to new checkbox
-		//~ chkboxElement.change(
-			//~ MobilityOnlineApplicationsHelper.refreshApplicationsNumber
-		//~ );
-		//~ $("#checkboxcell_"+moid).append(chkboxElement);
-	//~ }
 };

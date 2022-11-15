@@ -1,5 +1,5 @@
 /**
- * javascript file for Mobility Online incoming sync
+ * javascript file for Mobility Online outgoing sync
  */
 
 $(document).ready(function()

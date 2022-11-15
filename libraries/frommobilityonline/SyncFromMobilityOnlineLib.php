@@ -179,11 +179,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 					foreach ($fhcFields as $fhcField)
 					{
-						//~ if ($field == 'note_local_gast')
-						//~ {
-						//~ var_dump($fhcField[$table][$field]);
-						//~ var_dump($required);
-					//~ }
 						if ($required && (!isset($fhcField[$table][$field]) || isEmptyString($fhcField[$table][$field])))
 						{
 							$hasError = true;
@@ -221,16 +216,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 					$hasErrorObj->errorMessages[] = "Daten fehlen: $table";
 					$hasErrorObj->error = true;
 				}
-				//~ foreach ($fields as $field)
-				//~ {
-					//~ if (isset($field['required']) && $field['required'] === true)
-					//~ {
-						//~ // if required table not present in object - show error
-						//~ $hasErrorObj->errorMessages[] = "Daten fehlen: $table";
-						//~ $hasErrorObj->error = true;
-						//~ break;
-					//~ }
-				//~ }
 			}
 		}
 

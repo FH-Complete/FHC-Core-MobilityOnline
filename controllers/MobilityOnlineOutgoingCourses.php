@@ -3,7 +3,7 @@
 if (! defined('BASEPATH')) exit('No direct script access allowed');
 
 /**
- * Manages Outgoing students synchronisation between fhcomplete and MobilityOnline
+ * Manages Outgoing courses synchronisation between fhcomplete and MobilityOnline
  */
 class MobilityOnlineOutgoingCourses extends Auth_Controller
 {
@@ -25,7 +25,6 @@ class MobilityOnlineOutgoingCourses extends Auth_Controller
 		$this->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MoFhcModel');
 		$this->load->library('extensions/FHC-Core-MobilityOnline/MobilityOnlineSyncLib');
 		$this->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/SyncFromMobilityOnlineLib');
-		//$this->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/SyncOutgoingsFromMoLib');
 		$this->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/SyncOutgoingCoursesFromMoLib');
 	}
 
@@ -63,8 +62,7 @@ class MobilityOnlineOutgoingCourses extends Auth_Controller
 	}
 
 	/**
-	 * Syncs incomings (applications) from MobilityOnline to fhcomplete
-	 * input: incomingids, studiensemester
+	 * Syncs outgoing courses from MobilityOnline to fhcomplete
 	 */
 	public function syncOutgoingCourses()
 	{
@@ -86,9 +84,6 @@ class MobilityOnlineOutgoingCourses extends Auth_Controller
 		$studiengang_kz = $this->input->get('studiengang_kz');
 
 		$outgoingCoursesData = $this->syncoutgoingcoursesfrommolib->getOutgoingCourses($studiensemester, $studiengang_kz);
-
-		//~ var_dump($outgoingCoursesData);
-		//~ die();
 
 		$this->outputJsonSuccess($outgoingCoursesData);
 	}

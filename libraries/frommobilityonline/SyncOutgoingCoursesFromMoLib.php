@@ -3,7 +3,7 @@
 if (! defined('BASEPATH')) exit('No direct script access allowed');
 
 /**
- * Functionality for syncing incomings from MobilityOnline to fhcomplete
+ * Functionality for syncing outgoing courses from MobilityOnline to fhcomplete
  */
 class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 {
@@ -23,16 +23,14 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('person/bankverbindung_model', 'BankverbindungModel');
 		$this->ci->load->model('crm/konto_model', 'KontoModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
-		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetmasterdata_model', 'MoGetMasterDataModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobisioidzuordnung_model', 'MobisioidzuordnungModel');
-		//$this->ci->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MoFhcModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mooutgoinglv_model', 'MoOutgoingLvModel');
 
 		$this->ci->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/SyncOutgoingsFromMoLib');
 	}
 
 	/**
-	 * Executes sync of incomings for a Studiensemester from MO to FHC. Adds or updates incomings.
+	 * Executes sync of outgoing courses for a Studiensemester from MO to FHC. Adds or updates outgoing courses.
 	 * @param array $outgoingCourses
 	 * @return array syncoutput containing info about failures/success
 	 */
@@ -55,8 +53,6 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 				$infhccheck_mo_lvid = $this->_checkOutgoingCourseInFhc($mo_lvid, $bisio_id);
 
 				$outgoing_course_id = $this->saveOutgoingCourse($outgoingCourse);
-
-				//var_dump($outgoing_course_id);
 
 				if (isSuccess($outgoing_course_id))
 				{
@@ -87,7 +83,7 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Gets MobilityOnline outgoings for a fhcomplete studiensemester
+	 * Gets MobilityOnline outgoings for a fhcomplete studiensemester.
 	 * @param string $studiensemester
 	 * @param int $studiengang_kz as in fhc db
 	 * @return array with applications
@@ -103,8 +99,9 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			$appId = $application->applicationID;
 
-			//$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplicationTranscript(39619);
+			// TODO: take course from transcript or learning agreement?
 			$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplicationTranscript($appId);
+			//$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplication($appId);
 
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appId;
@@ -167,30 +164,13 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Converts MobilityOnline application to fhcomplete array (with person, prestudent...)
+	 * Converts MobilityOnline course to fhcomplete array (with person, prestudent...)
 	 * @param object $moApp MobilityOnline application
 	 * @return array with fhcomplete table arrays
 	 */
 	public function mapMoCourseToOutgoingLv($moApp, $coursesData, $bisio_id)
 	{
 		$fieldMappings = $this->conffieldmappings[$this->moObjectType];
-		//$bisioinfoMappings = $fieldMappings['bisio_info'];
-
-		$applicationDataElementsByValueType = array(
-			// applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
-			'comboboxFirstValue' => array(
-			),
-			// applicationDataElements for which comboboxSecondValue is retrieved instead of elementValue
-			'comboboxSecondValue' => array(
-			),
-			// applicationDataElements for which elementValueBoolean is retrieved instead of elementValue
-			'elementValueBoolean' => array(
-				//~ $bisioinfoMappings['ist_praktikum'],
-				//~ $bisioinfoMappings['ist_masterarbeit'],
-				//~ $bisioinfoMappings['ist_beihilfe'],
-				//~ $bisioinfoMappings['ist_double_degree']
-			)
-		);
 
 		$moAppElementsExtracted = $moApp;
 
@@ -200,14 +180,6 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 			foreach ($fhcTable as $elementName)
 			{
 				$valueType = 'elementValue';
-				foreach ($applicationDataElementsByValueType as $valueTypeKey => $elementNameValues)
-				{
-					if (in_array($elementName, $elementNameValues))
-					{
-						$valueType = $valueTypeKey;
-						break;
-					}
-				}
 
 				$found = false;
 				$appDataValue = $this->getApplicationDataElement($moApp, $valueType, $elementName, $found);
@@ -250,7 +222,7 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Saves an outgoing course.
+	 * Saves (inserts or updates) an outgoing course.
 	 * @param int $appId
 	 * @param array $outgoing
 	 * @param int $bisio_id_existing if bisio id if bisio already exists
@@ -287,7 +259,9 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 			// if in fhc, update
 			if (hasData($checkRes))
 			{
-				return $this->ci->MoOutgoingLvModel->update(array($mo_lvid), $mo_outgoing_lv);
+				// unset id for update
+				unset($mo_outgoing_lv['mo_lvid']);
+				return $this->ci->MoOutgoingLvModel->update(array('mo_lvid' => $mo_lvid), $mo_outgoing_lv);
 			}
 			else
 			{
@@ -298,7 +272,7 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 		return null;
 
-		
+
 		// Transaction complete!
 		//$this->ci->db->trans_complete();
 
@@ -319,6 +293,11 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	// -----------------------------------------------------------------------------------------------------------------
 	// Private methods for saving an outgoing
 
+	/**
+	 * Checks if an outgoing course in already in fhcomplete.
+	 * @param int $mo_lvid
+	 * @param int $bisio_id
+	 */
 	private function _checkOutgoingCourseInFhc($mo_lvid, $bisio_id)
 	{
 		$this->ci->MoOutgoingLvModel->addSelect('outgoing_lehrveranstaltung_id');
