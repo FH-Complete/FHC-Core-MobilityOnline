@@ -112,7 +112,7 @@ $config['fhcfields']['applicationout']['required'] = array(
 	),
 	'bisio_aufenthaltfoerderung' => array(
 		'aufenthaltfoerderung_code' => array(
-			'required' => false,
+			'required' => true,
 			'name' => 'Aufenthaltsförderung',
 			'type' => 'integer',
 			'ref' => 'bis.tbl_bisio_aufenthaltfoerderung')

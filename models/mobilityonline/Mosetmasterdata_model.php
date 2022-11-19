@@ -68,11 +68,13 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 	 */
 	public function removeCoursesPerSemesterBySearchParameters($semester, $academicYear)
 	{
-		$success = $this->performCall('removeCoursesPerSemesterBySearchParameters', array('semester' => $semester, 'academicYear' => array('description' => $academicYear)));
+		$success = $this->performCall(
+			'removeCoursesPerSemesterBySearchParameters',
+			array('semester' => $semester, 'academicYear' => array('description' => $academicYear))
+		);
 		if (isset($success->return))
 			return $success->return;
 		else
 			return false;
 	}
-
 }

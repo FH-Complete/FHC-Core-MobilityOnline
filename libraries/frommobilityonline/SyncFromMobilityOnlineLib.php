@@ -100,7 +100,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	{
 		$searchObj = array();
 
-
 		$fields = $this->moconffields[$objType];
 
 		// prefill search object with mobility online fields from fieldmappings config
@@ -179,7 +178,10 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 					foreach ($fhcFields as $fhcField)
 					{
-						if ($required && (!isset($fhcField[$table][$field]) || isEmptyString($fhcField[$table][$field])))
+						// if the field is required, check that it's not empty (but can be 0)
+						if ($required
+							&& (!isset($fhcField[$table][$field])
+								|| (isEmptyString($fhcField[$table][$field])) && !is_numeric($fhcField[$table][$field])))
 						{
 							$hasError = true;
 							$errorText = 'existiert nicht';
@@ -318,7 +320,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 				if (!empty($fhcIndeces))
 				{
-
 					foreach ($fhcIndeces as $fhcIndex)
 					{
 						// if value is in object returned from MO, extract value
@@ -627,13 +628,26 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 							$this->addInfoOutput($akte['dokument_bezeichnung'] . ' existiert bereits, akte_id ' . $akte_id);
 						}
 						// update existing akte
-						$akteResp = $this->ci->aktelib->update($akte_id, $akte['titel'], $akte['mimetype'], $fileHandle, $akte['dokument_bezeichnung']);
+						$akteResp = $this->ci->aktelib->update(
+							$akte_id,
+							$akte['titel'],
+							$akte['mimetype'],
+							$fileHandle,
+							$akte['dokument_bezeichnung']
+						);
 						$this->log('update', $akteResp, 'akte');
 					}
 					else
 					{
 						// save new akte
-						$akteResp = $this->ci->aktelib->add($person_id, $dokument_kurzbz, $akte['titel'], $akte['mimetype'], $fileHandle, $akte['dokument_bezeichnung']);
+						$akteResp = $this->ci->aktelib->add(
+							$person_id,
+							$dokument_kurzbz,
+							$akte['titel'],
+							$akte['mimetype'],
+							$fileHandle,
+							$akte['dokument_bezeichnung']
+						);
 						$this->log('insert', $akteResp, 'akte');
 
 						if (hasData($akteResp))
@@ -1083,8 +1097,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	{
 		$dokumentprestudent = null;
 
-		$dokumentPrestudentCheckResp = $this->ci->DokumentprestudentModel->loadWhere
-		(
+		$dokumentPrestudentCheckResp = $this->ci->DokumentprestudentModel->loadWhere(
 			array(
 				'dokument_kurzbz' => $dokument_kurzbz,
 				'prestudent_id' => $prestudent_id
