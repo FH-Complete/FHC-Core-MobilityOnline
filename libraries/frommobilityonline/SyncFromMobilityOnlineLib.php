@@ -27,33 +27,35 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 	// fhc value replacements for mo values
 	private $_replacementsarrToFHC = array(
-		'gebdatum' => '_mapDateToFhc',
-		'von' => '_mapDateToFhc',
-		'bis' => '_mapDateToFhc',
-		'studiengang_kz' => 'replaceByEmptyString',// empty string if no studiengang found in value mappings
+		'studiensemester_kurzbz' => 'mapStudiensemesterToFhc',
+		'studienjahr_kurzbz' => 'mapStudienjahrToFhc',
+		'gebdatum' => 'mapDateToFhc',
+		'von' => 'mapDateToFhc',
+		'bis' => 'mapDateToFhc',
+		'studiengangkz' => 'replaceByEmptyString',// empty string if no studiengang found in value mappings
 		'anmerkung' => 'replaceEmptyByNull',
 		'zgvnation' => 'replaceEmptyByNull',
-		'zgvdatum' => '_mapDateToFhc',
+		'zgvdatum' => 'mapDateToFhc',
 		'zgvmas_code' => 'replaceEmptyByNull',
 		'zgvmanation' => 'replaceEmptyByNull',
-		'zgvmadatum' => '_mapDateToFhc',
+		'zgvmadatum' => 'mapDateToFhc',
 		'geburtsnation' => 'replaceEmptyByNull',
-		'foto' => '_resizeBase64ImageSmall',
-		'titel' => '_getFileExtension',
-		'mimetype' => '_mapFileToMimetype', // is placed before inhalt to get mime type from unencoded document
+		'foto' => 'resizeBase64ImageSmall',
+		'titel' => 'getFileExtension',
+		'mimetype' => 'mapFileToMimetype', // is placed before inhalt to get mime type from unencoded document
 		/*'inhalt' => array( // field inhalt can be filled from different mo object, with different functions to execute
-			'photo' => '_resizeBase64ImageBig'
+			'photo' => 'resizeBase64ImageBig'
 		),*/
-		'inhalt' => '_resizeBase64ImageBig',
-		'file_content' => '_encodeToBase64',
-		'erstelltam' => '_mapIsoDateToFhc',
+		'inhalt' => 'resizeBase64ImageBig',
+		'file_content' => 'encodeToBase64',
+		'erstelltam' => 'mapIsoDateToFhc',
 		'student_uid' => 'replaceEmptyByNull',
 		'aufenthaltfoerderung_code' => 'replaceEmptyByNull',
 		'zweck_code' => 'replaceEmptyByNull',
-		'ects_erworben' => '_mapEctsToFhc',
-		'ects_angerechnet' => '_mapEctsToFhc',
-		'betrag' => '_mapBetragToFhc',
-		'buchungsdatum' => '_mapIsoDateToFhc'
+		'ects_erworben' => 'mapEctsToFhc',
+		'ects_angerechnet' => 'mapEctsToFhc',
+		'betrag' => 'mapBetragToFhc',
+		'buchungsdatum' => 'mapIsoDateToFhc'
 	);
 
 	/**
@@ -75,6 +77,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moakteidzuordnung_model', 'MoakteidzuordnungModel');
 
 		$this->ci->load->library('AkteLib', array('who' => self::IMPORTUSER));
+		$this->ci->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/FromMobilityOnlineDataConversionLib');
 	}
 
 
@@ -389,8 +392,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 				}
 
 				// call replacement function
-				if (is_string($replacementFunc))
-					$fhcValue = $this->{$replacementFunc}($fhcValue);
+				if (is_string($replacementFunc) && is_callable(array($this->ci->frommobilityonlinedataconversionlib, $replacementFunc)))
+					$fhcValue = $this->ci->frommobilityonlinedataconversionlib->{$replacementFunc}($fhcValue);
 			}
 		}
 		return $fhcValue;
@@ -417,7 +420,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			}
 			else
 			{
-				$this->_setOutput(self::ERROR_TYPE, "$table $modtype Fehler");
+				$this->_setOutput(self::ERROR_TYPE, "$table $modtype Fehler: ".getError($response));
 			}
 		}
 	}
@@ -471,7 +474,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 */
 	protected function getApplicationBySearchParams($studiensemester, $applicationType, $studiengang_kz = null, $moObjectType = null)
 	{
-		$studiensemesterMo = $this->mapSemesterToMo($studiensemester);
+		$studiensemesterMo = $this->ci->tomobilityonlinedataconversionlib->mapSemesterToMo($studiensemester);
 		$semestersForSearch = array($studiensemesterMo);
 		$searchArrays = array();
 		$apps = array();
@@ -504,7 +507,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		}
 
 		// Also search for Outgoings who have entered Studienjahr as their Semester
-		$studienjahrSemesterMo = $this->mapSemesterToMoStudienjahr($studiensemester);
+		$studienjahrSemesterMo = $this->ci->tomobilityonlinedataconversionlib->mapSemesterToMoStudienjahr($studiensemester);
 		if (isset($studienjahrSemesterMo))
 			$semestersForSearch[] = $studienjahrSemesterMo;
 
@@ -762,7 +765,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 						}
 						break;
 					case 'date':
-						if (!$this->_validateDate($value))
+						if (!$this->ci->frommobilityonlinedataconversionlib->validateDate($value))
 						{
 							$wrongDataType = true;
 						}
@@ -892,177 +895,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
-	 * Converts MobilityOnline date to fhcomplete date format.
-	 * @param string $moDate
-	 * @return string fhcomplete date
-	 */
-	private function _mapDateToFhc($moDate)
-	{
-		$pattern = '/^(\d{1,2}).(\d{1,2}).(\d{4})$/';
-		if (preg_match($pattern, $moDate))
-		{
-			$date = DateTime::createFromFormat('d.m.Y', $moDate);
-			return date_format($date, 'Y-m-d');
-		}
-		else
-			return null;
-	}
-
-	/**
-	 * Converts MobilityOnline ects amount to fhcomplete format.
-	 * @param float $moEcts
-	 * @return float fhcomplete ects
-	 */
-	private function _mapEctsToFhc($moEcts)
-	{
-		$pattern = '/^(\d+),(\d{2})$/';
-		if (preg_match($pattern, $moEcts))
-		{
-			return (float)str_replace(',', '.', $moEcts);
-		}
-		else
-			return null;
-	}
-
-	/**
-	 * Converts MobilityOnline ects amount to fhcomplete format.
-	 * @param float $moBetrag
-	 * @return string fhcomplete betrag
-	 */
-	private function _mapBetragToFhc($moBetrag)
-	{
-		return number_format($moBetrag, 2, '.', '');
-	}
-
-	/**
-	 * Converts MobilityOnline Buchungsdatum to fhcomplete format.
-	 * @param string $buchungsdatum
-	 * @return string fhcomplete betrag
-	 */
-	private function _mapIsoDateToFhc($buchungsdatum)
-	{
-		$fhcDate = substr($buchungsdatum, 0, 10);
-		if ($this->_validateDate($fhcDate))
-			return $fhcDate;
-		else
-			return null;
-	}
-
-	/**
-	 * Encodes document into base64 string.
-	 * @param string $moDoc
-	 * @return string encoded string
-	 */
-	private function _encodeToBase64($moDoc)
-	{
-		return base64_encode($moDoc);
-	}
-
-	/**
-	 * Extracts mimetype from file data.
-	 * @param $moDoc file data
-	 * @return string
-	 */
-	private function _mapFileToMimetype($moDoc)
-	{
-		$file_info = new finfo(FILEINFO_MIME_TYPE);
-		$mimetype = $file_info->buffer($moDoc);
-
-		if (is_string($mimetype))
-			return $mimetype;
-
-		return null;
-	}
-
-	/**
-	 * Extracts file extension from a filename.
-	 * @param string $moFilename
-	 * @return string the file extension with pointor empty string if extension not determined
-	 */
-	private function _getFileExtension($moFilename)
-	{
-		$fileExtension = pathinfo($moFilename, PATHINFO_EXTENSION);
-
-		if (isEmptyString($fileExtension))
-			return '';
-
-		return '.'.strtolower($fileExtension);
-	}
-
-	/**
-	 * Makes sure base 64 image is not bigger than thumbnail size.
-	 * @param string $moImage
-	 * @return string resized image
-	 */
-	private function _resizeBase64ImageSmall($moImage)
-	{
-		return $this->_resizeBase64Image($moImage, 101, 130);
-	}
-
-	/**
-	 * Makes sure base 64 image is not bigger than max fhc db image size.
-	 * @param $moImage
-	 * @return string resized image
-	 */
-	private function _resizeBase64ImageBig($moImage)
-	{
-		return $this->_resizeBase64Image($moImage, 827, 1063);
-	}
-
-	/**
-	 * If $moimage width/height is greater than given width/height, crop image, otherwise encode it.
-	 * @param string $moImage
-	 * @param int $maxWidth
-	 * @param int $maxHeight
-	 * @return string possibly cropped, base64 encoded image
-	 */
-	private function _resizeBase64Image($moImage, $maxWidth, $maxHeight)
-	{
-		$fhcImage = null;
-
-		//groesse begrenzen
-		$width = $maxWidth;
-		$height = $maxHeight;
-		$image = imagecreatefromstring(base64_decode(base64_encode($moImage)));
-
-		if ($image)
-		{
-			$uri = 'data://application/octet-stream;base64,' . base64_encode($moImage);
-			list($width_orig, $height_orig) = getimagesize($uri);
-
-			$ratio_orig = $width_orig/$height_orig;
-
-			if ($width_orig > $width || $height_orig > $height)
-			{
-				//keep proportions
-				if ($width/$height > $ratio_orig)
-				{
-					$width = $height*$ratio_orig;
-				}
-				else
-				{
-					$height = $width/$ratio_orig;
-				}
-
-				$bg = imagecreatetruecolor($width, $height);
-				imagecopyresampled($bg, $image, 0, 0, 0, 0, $width, $height, $width_orig, $height_orig);
-
-				ob_start();
-				imagejpeg($bg);
-				$contents =  ob_get_contents();
-				ob_end_clean();
-
-				$fhcImage = base64_encode($contents);
-			}
-			else
-				$fhcImage = base64_encode($moImage);
-			imagedestroy($image);
-		}
-
-		return $fhcImage;
-	}
-
-	/**
 	 * Add text output to show as syncoutput.
 	 * @param string $type
 	 * @param string $text
@@ -1074,18 +906,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$outputObj->type = $type;
 		$outputObj->text = $text;
 		$this->output[] = $outputObj;
-	}
-
-	/**
-	 * Checks if given date exists and is valid.
-	 * @param $date
-	 * @param string $format
-	 * @return bool
-	 */
-	private function _validateDate($date, $format = 'Y-m-d')
-	{
-		$d = DateTime::createFromFormat($format, $date);
-		return $d && $d->format($format) === $date;
 	}
 
 	/**

@@ -38,6 +38,8 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moappidzuordnung_model', 'MoappidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobilityonlinefhc_model', 'MoFhcModel');
+
+		$this->ci->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/FromMobilityOnlineDataConversionLib');
 	}
 
 	/**
@@ -165,7 +167,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$currAddress = $this->ci->MoGetAppModel->getCurrentAddress($appId);
 
 			$lichtbild = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASSFOTO');
-
+			$lichtbild = null;
 
 			// transform MobilityOnline application to FHC incoming
 			$fhcobj = $this->mapMoAppToIncoming($application, $address, $currAddress, $lichtbild);
@@ -309,12 +311,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		// get all semesters from MO Semesterfield
 		$allSemesters = array($fhcObj['prestudentstatus']['studiensemester_kurzbz']);
-		$moStudjahr = $this->mapSemesterToMoStudienjahr($fhcObj['prestudentstatus']['studiensemester_kurzbz']);
+		$moStudjahr = $this->ci->tomobilityonlinedataconversionlib->mapSemesterToMoStudienjahr($fhcObj['prestudentstatus']['studiensemester_kurzbz']);
 
 		// WS and SS if Studienjahr given in MO
 		if ($moAppElementsExtracted->{$prestudentstatusMappings['studiensemester_kurzbz']} === $moStudjahr)
 		{
-			$allSemesters = array_unique(array_merge($allSemesters, $this->mapMoStudienjahrToSemester($moStudjahr)));
+			$allSemesters = array_unique(array_merge($allSemesters, $this->ci->frommobilityonlinedataconversionlib->mapMoStudienjahrToSemester($moStudjahr)));
 		}
 
 		// add Studiensemester for each semester in the stay time span of von - bis date

@@ -178,8 +178,8 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 
 			if (hasData($zuordnungen))
 			{
-				$moSemester = $this->mapSemesterToMo($studiensemester);
-				$moStudienjahr = $this->mapStudienjahrToMo($studienjahrRes->retval[0]->studienjahr_kurzbz);
+				$moSemester = $this->ci->tomobilityonlinedataconversionlib->mapSemesterToMo($studiensemester);
+				$moStudienjahr = $this->ci->tomobilityonlinedataconversionlib->mapStudienjahrToMo($studienjahrRes->retval[0]->studienjahr_kurzbz);
 
 				if ($this->ci->MoSetMaModel->removeCoursesPerSemesterBySearchParameters($moSemester, $moStudienjahr))
 				{

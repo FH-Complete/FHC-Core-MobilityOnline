@@ -13,6 +13,7 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 		$this->moObjectType = 'incomingcourse';
 
+		// load models
 		$this->ci->load->model('crm/prestudentstatus_model', 'PrestudentstatusModel');
 		$this->ci->load->model('education/lehrveranstaltung_model', 'LehrveranstaltungModel');
 		$this->ci->load->model('education/lehreinheit_model', 'LehreinheitModel');
@@ -22,6 +23,9 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetmasterdata_model', 'MoGetMaModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Molvidzuordnung_model', 'MolvidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moappidzuordnung_model', 'MoappidzuordnungModel');
+
+		// load libraries
+		$this->ci->load->library('extensions/FHC-Core-MobilityOnline/tomobilityonline/ToMobilityOnlineDataConversionLib');
 	}
 
 	/**
@@ -34,7 +38,7 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function mapMoIncomingCourseToLv($course, $studiensemester, $uid)
 	{
-		$studiensemestermo = $this->mapSemesterToMo($studiensemester);
+		$studiensemestermo = $this->ci->tomobilityonlinedataconversionlib->mapSemesterToMo($studiensemester);
 
 		$searchparams = array('semesterDescription' => $studiensemestermo, 'applicationType' => 'IN', 'courseNumber' => $course->hostCourseNumber);
 
