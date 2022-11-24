@@ -100,8 +100,8 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 			$appId = $application->applicationID;
 
 			// TODO: take course from transcript or learning agreement?
-			$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplicationTranscript($appId);
-			//$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplication($appId);
+			//$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplicationTranscript($appId);
+			$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplication($appId);
 
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appId;
@@ -261,11 +261,13 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 			{
 				// unset id for update
 				unset($mo_outgoing_lv['mo_lvid']);
+				$this->stamp('update', $mo_outgoing_lv);
 				return $this->ci->MoOutgoingLvModel->update(array('mo_lvid' => $mo_lvid), $mo_outgoing_lv);
 			}
 			else
 			{
 				// otherwise insert
+				$this->stamp('insert', $mo_outgoing_lv);
 				return $this->ci->MoOutgoingLvModel->insert($mo_outgoing_lv);
 			}
 		}

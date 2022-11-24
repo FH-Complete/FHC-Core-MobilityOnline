@@ -241,7 +241,7 @@ var MobilityOnlineOutgoingCourses = {
 				$("#applications").append(
 					"<tr class='courseRow courserow_" + mo_lvid + inactive+"'"+tooltip+">" +
 						"<td class='text-center'>" + chkbxString + "</td>" +
-						"<td class='text-center'>" + person.vorname + person.nachname + "</td>" +
+						"<td class='text-center'>" + person.vorname + ' ' + person.nachname + "</td>" +
 						"<td class='text-center'>" + kontaktmail.kontakt + "</td>" +
 						"<td class='text-center'>" + mo_outgoing_lv.lv_bez_gast + "</td>" +
 						"<td class='text-center'>" + mo_outgoing_lv.ects_punkte_gast + "</td>" +
