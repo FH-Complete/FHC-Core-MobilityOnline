@@ -35,7 +35,7 @@ CREATE OR REPLACE FUNCTION extension_mobilityonline_create_table () RETURNS TEXT
 	GRANT SELECT, UPDATE ON extension.seq_mo_outgoing_lv_outgoing_lehrveranstaltung_id TO vilesci;
 	GRANT SELECT, UPDATE ON extension.seq_mo_outgoing_lv_outgoing_lehrveranstaltung_id TO web;
 
-	COMMENT ON TABLE extension.tbl_mo_outgoing_lv IS 'MobilityOnline Lehrveranstaltungen';
+	COMMENT ON TABLE extension.tbl_mo_outgoing_lv IS 'MobilityOnline Outgoing Lehrveranstaltungen';
 
 	SELECT 'Table added'::text;
 $$
