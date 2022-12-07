@@ -100,8 +100,8 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 			$appId = $application->applicationID;
 
 			// TODO: take course from transcript or learning agreement?
-			//$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplicationTranscript($appId);
-			$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplication($appId);
+			//$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplication($appId);
+			$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplicationTranscript($appId);
 
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appId;
