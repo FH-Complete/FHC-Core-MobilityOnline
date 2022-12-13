@@ -363,8 +363,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$valuemappings = $this->valuemappings['frommo'];
 		$fhcValue = $moValue;
 		//if exists in valuemappings - take value
-		if (!empty($valuemappings[$fhcField])
-			&& isset($valuemappings[$fhcField][$fhcValue])
+		if (!empty($valuemappings[$fhcField]) && isset($valuemappings[$fhcField][$fhcValue])
 		)
 		{
 			$fhcValue = $valuemappings[$fhcField][$fhcValue];
@@ -458,6 +457,99 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	protected function addSuccessOutput($text)
 	{
 		$this->_setOutput(self::SUCCESS_TYPE, $text);
+	}
+
+	/**
+	 * Gets application data by search parameters
+	 * @param $studiensemester string
+	 * @param $applicationType string type of application, e.g. IN for Incoming
+	 * @param $studiengang_kz int type fhc studiengang Kennzahl. If omitted, applications are returned unrestricted by Studiengang.
+	 * @return object success or error
+	 */
+	protected function getApplicationBySearchParams($studiensemester, $applicationType, $studiengang_kz = null)
+	{
+		$studiensemesterMo = $this->mapSemesterToMo($studiensemester);
+		$semestersForSearch = array($studiensemesterMo);
+		$searchArrays = array();
+		$apps = array();
+
+		$stgValuemappings = $this->valuemappings['frommo']['studiengang_kz'];
+		$moStgName = $this->conffieldmappings['application']['prestudent']['studiengang_kz'];
+
+		// searchobject to search outgoings
+		$searchArray = array(
+			'applicationType' => $applicationType,
+			'personType' => 'S',
+			'furtherSearchRestrictions' => array()
+		);
+
+		// keep at least one search paremeter here - or remove the whole data search array, otherwise not all apps are loaded
+		$applicationDataSearchFlags = array(
+			//'bit_freifeld24' => false, // double degree shouldn't be synced
+			'is_storniert' => false // stornierte shouldn't be synced
+		);
+
+		$furtherSearchRestrictionsBase = array();
+		foreach ($applicationDataSearchFlags as $flagName => $flagValue)
+		{
+			$flagObj = new stdClass();
+			$flagObj->elementName = $flagName;
+			$flagObj->elementValueBoolean = $flagValue;
+			$flagObj->elementType = 'boolean';
+			$furtherSearchRestrictionsBase[] = $flagObj;
+		}
+
+		// Also search for Outgoings who have entered Studienjahr as their Semester
+		$studienjahrSemesterMo = $this->mapSemesterToMoStudienjahr($studiensemester);
+		if (isset($studienjahrSemesterMo))
+			$semestersForSearch[] = $studienjahrSemesterMo;
+
+		// for each semester searched
+		foreach ($semestersForSearch as $semesterForSearch)
+		{
+			// add semester for filtering
+			$searchArray['semesterDescription'] = $semesterForSearch;
+			$searchArray['furtherSearchRestrictions'] = $furtherSearchRestrictionsBase;
+
+			// add Studiengang for filtering
+
+			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
+			{
+				foreach ($stgValuemappings as $moid => $stg_kz)
+				{
+					if ($stg_kz === (int)$studiengang_kz)
+					{
+						// add Studiengang search parameters to existing "base" search parameters
+						$stgFurtherSearchRestrictions = $furtherSearchRestrictionsBase;
+						$studyFieldObj = new stdClass();
+						$studyFieldObj->elementName = $moStgName;
+						$studyFieldObj->elementValue = $moid;
+						$studyFieldObj->elementType = 'integer';
+						$stgFurtherSearchRestrictions[] = $studyFieldObj;
+						$searchArray['furtherSearchRestrictions'] = $stgFurtherSearchRestrictions;
+						break;
+					}
+				}
+			}
+
+			$searchArrays[] = $searchArray;
+		}
+
+		foreach ($searchArrays as $sarr)
+		{
+			// get search object for objecttype, with searchparams ($arr) and returning only specified fields (by default)
+			$searchObj = $this->getSearchObj(
+				$this->moObjectType,
+				$sarr
+			);
+
+			$semApps = $this->ci->MoGetAppModel->getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions($searchObj);
+
+			if (!isEmptyArray($semApps))
+				$apps = array_merge($apps, $semApps);
+		}
+
+		return $apps;
 	}
 
 	/**
