@@ -19,9 +19,6 @@ $config['miscvalues']['documentstosync'] = array(
 	'outgoing' => array(
 		'GRANT_AGREE_SIGNED_FH' => array(
 			'autoaccept' => true,
-		),
-		'CO_ATTENDANCE' => array(
-			'autoaccept' => true,
 		)
 	)
 );
