@@ -29,7 +29,8 @@ class Mobilityonlineapi_model extends CI_Model
 	{
 		try
 		{
-			$this->_soapClient = new SoapClient($this->_mobilityonline_config['wsdlurl'].'/'.
+			$this->_soapClient = new SoapClient(
+				$this->_mobilityonline_config['wsdlurl'].'/'.
 				$this->_mobilityonline_config['services'][$this->name]['service'].'?'.self::WSDL,
 				array(
 					'soap_version' => $this->_mobilityonline_config['soapversion'],
@@ -42,11 +43,11 @@ class Mobilityonlineapi_model extends CI_Model
 							// type namespaces have to match those declared in the WSDL
 							'type_ns' => self::DATETIME_NAMESPACE,
 							'type_name' => 'DateTime',
-							'from_xml' => array($this, 'datetime_from_xml') // callback for transformation of date to string
+							'from_xml' => array($this, 'datetimeFromXml') // callback for transformation of date to string
 						),
     				),
-					'features' => SOAP_SINGLE_ELEMENT_ARRAYS/*,
-					'default_socket_timeout' => $this->_mobilityonline_config['default_socket_timeout']*/
+					'features' => SOAP_SINGLE_ELEMENT_ARRAYS // elements appearning once are placed in array, so access is consistent
+					/*'default_socket_timeout' => $this->_mobilityonline_config['default_socket_timeout']*/
 				)
 			);
 		}
@@ -82,7 +83,8 @@ class Mobilityonlineapi_model extends CI_Model
 	 * @param string $xml the xml date element string
 	 * @return string|null the date
 	 */
-	public function datetime_from_xml($xml) {
+	public function datetimeFromXml($xml)
+	{
 		$dateTimeXmlObj = simplexml_load_string($xml);
 
 		// first element is date string, or false if null

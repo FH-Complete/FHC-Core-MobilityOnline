@@ -73,7 +73,7 @@ class MobilityOnlineOutgoing extends Auth_Controller
 		$outgoings = $this->input->post('outgoings');
 
 		$outgoings = json_decode($outgoings, true);
-		$syncOutput = $this->syncoutgoingsfrommolib->startOutgoingSync($studiensemester, $outgoings);
+		$syncOutput = $this->syncoutgoingsfrommolib->startOutgoingSync($outgoings);
 
 		$this->outputJsonSuccess($syncOutput);
 	}

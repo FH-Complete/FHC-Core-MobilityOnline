@@ -11,11 +11,11 @@ require_once('include/tw/generateZahlungsreferenz.inc.php');
  */
 class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 {
-	const MOOBJECTTYPE = 'application';
-
 	public function __construct()
 	{
 		parent::__construct();
+
+		$this->moObjectType = 'application';
 
 		$this->ci->load->model('person/person_model', 'PersonModel');
 		$this->ci->load->model('person/benutzer_model', 'BenutzerModel');
@@ -108,7 +108,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 					if (isset($prestudent_id) && is_numeric($prestudent_id))
 					{
 						$result = $this->ci->MoappidzuordnungModel->insert(
-							array('mo_applicationid' => $appId, 'prestudent_id' => $prestudent_id, 'studiensemester_kurzbz' => $studiensemester, 'insertamum' => 'NOW()')
+							array(
+								'mo_applicationid' => $appId,
+								'prestudent_id' => $prestudent_id,
+								'studiensemester_kurzbz' => $studiensemester,
+								'insertamum' => 'NOW()'
+							)
 						);
 
 						if (hasData($result))
@@ -139,6 +144,58 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
+	 * Gets MobilityOnline incomings for a fhcomplete studiensemester, optionally from a Studiengang.
+	 * @param string $studiensemester
+	 * @param int $studiengang_kz as in fhc db
+	 * @return array with applications
+	 */
+	public function getIncoming($studiensemester, $studiengang_kz = null)
+	{
+		$incomings = array();
+
+		// get application data of Incomings for semester (and Studiengang)
+		$apps = $this->getApplicationBySearchParams($studiensemester, 'IN', $studiengang_kz);
+
+		foreach ($apps as $application)
+		{
+			$appId = $application->applicationID;
+
+			// get additional data from Mobility Online for each application
+			$address = $this->ci->MoGetAppModel->getPermanentAddress($appId);
+			$currAddress = $this->ci->MoGetAppModel->getCurrentAddress($appId);
+
+			$lichtbild = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASSFOTO');
+
+
+			// transform MobilityOnline application to FHC incoming
+			$fhcobj = $this->mapMoAppToIncoming($application, $address, $currAddress, $lichtbild);
+
+			$fhcobj_extended = new StdClass();
+			$fhcobj_extended->moid = $appId;
+			$fhcobj_extended->infhc = false;
+
+			// check if the fhc object has errors
+			$errors = $this->fhcObjHasError($fhcobj, $this->moObjectType);
+			$fhcobj_extended->error = $errors->error;
+			$fhcobj_extended->errorMessages = $errors->errorMessages;
+
+			$found_prestudent_id = $this->checkMoIdInFhc($appId);
+
+			// mark as already in fhcomplete if prestudent is in mapping table
+			if (isset($found_prestudent_id) && is_numeric($found_prestudent_id))
+			{
+				$fhcobj_extended->infhc = true;
+				$fhcobj_extended->prestudent_id = $found_prestudent_id;
+			}
+
+			$fhcobj_extended->data = $fhcobj;
+			$incomings[] = $fhcobj_extended;
+		}
+
+		return $incomings;
+	}
+
+	/**
 	 * Converts MobilityOnline application to fhcomplete array (with person, prestudent...)
 	 * @param object $moApp MobilityOnline application
 	 * @param object $moAddr MobilityOnline adress of application
@@ -147,7 +204,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 */
 	public function mapMoAppToIncoming($moApp, $moAddr = null, $currAddr = null, $photo = null)
 	{
-		$fieldMappings = $this->conffieldmappings[self::MOOBJECTTYPE];
+		$fieldMappings = $this->conffieldmappings[$this->moObjectType];
 		$personMappings = $fieldMappings['person'];
 		$prestudentMappings = $fieldMappings['prestudent'];
 		$prestudentstatusMappings = $fieldMappings['prestudentstatus'];
@@ -160,7 +217,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			// applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
 			'comboboxFirstValue' => array(
 				$personMappings['staatsbuergerschaft'], $personMappings['sprache'], $prestudentstatusMappings['studiensemester_kurzbz'],
-				$prestudentMappings['studiengang_kz'], $prestudentMappings['zgvnation'], $prestudentMappings['zgvmanation'],
+				$prestudentMappings['zgvnation'], $prestudentMappings['zgvmanation'],
 				$bisioMappings['nation_code'], $bisioMappings['herkunftsland_code']
 			)
 		);
@@ -197,8 +254,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$moAddrNation = isset($moAddr) ? $moAddr->{$adresseMappings['nation']['name']}->description : null;
 		$currAddrNation = isset($currAddr) ? $currAddr->{$adresseMappings['nation']['name']}->description : null;
 
-		$moZgvNation = isset($prestudentMappings['zgvnation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvnation']}) ? $moAppElementsExtracted->{$prestudentMappings['zgvnation']} : null;
-		$mozgvMaNation = isset($prestudentMappings['zgvmanation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvmanation']}) ? $moAppElementsExtracted->{$prestudentMappings['zgvmanation']} : null;
+		$moZgvNation = isset($prestudentMappings['zgvnation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvnation']})
+							? $moAppElementsExtracted->{$prestudentMappings['zgvnation']}
+							: null;
+		$mozgvMaNation = isset($prestudentMappings['zgvmanation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvmanation']})
+							? $moAppElementsExtracted->{$prestudentMappings['zgvmanation']}
+							: null;
 
 		$moNations = array(
 			$personMappings['staatsbuergerschaft'] => $moNation,
@@ -242,7 +303,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$moAppElementsExtracted->{$lichtbildMappings['inhalt']} = $photo[0]->{$lichtbildMappings['inhalt']};
 		}
 
-		$fhcObj = $this->convertToFhcFormat($moAppElementsExtracted, self::MOOBJECTTYPE);
+		$fhcObj = $this->convertToFhcFormat($moAppElementsExtracted, $this->moObjectType);
 
 		// add all Studiensemester for Prestudentstatus
 
@@ -336,7 +397,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	public function saveIncoming($incoming, $prestudent_id = null)
 	{
 		//error check for missing data etc.
-		$errors = $this->fhcObjHasError($incoming, self::MOOBJECTTYPE);
+		$errors = $this->fhcObjHasError($incoming, $this->moObjectType);
 
 		if ($errors->error)
 		{
@@ -485,72 +546,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Gets MobilityOnline incomings for a fhcomplete studiensemester, optionally from a Studiengang.
-	 * @param string $studiensemester
-	 * @param int $studiengang_kz as in fhc db
-	 * @return array with applications
-	 */
-	public function getIncoming($studiensemester, $studiengang_kz = null)
-	{
-		$studiensemesterMo = $this->mapSemesterToMo($studiensemester);
-		$semestersForSearch = array($studiensemesterMo);
-		$searchArrays = array();
-		$apps = array();
-
-		$stgValuemappings = $this->valuemappings['frommo']['studiengang_kz'];
-		$moStgName = $this->conffieldmappings['incomingcourse']['mostudiengang']['bezeichnung'];
-
-		// searchobject to search incomings
-		$searchArray = array(
-			'applicationType' => 'IN',
-			'personType' => 'S',
-			'furtherSearchRestrictions' => array('is_storniert' => false)
-		);
-
-		// Also search for Incomings who have entered Studienjahr as their Semester
-		$studienjahrSemesterMo = $this->mapSemesterToMoStudienjahr($studiensemester);
-		if (isset($studienjahrSemesterMo))
-			$semestersForSearch[] = $studienjahrSemesterMo;
-
-		foreach ($semestersForSearch as $semesterForSearch)
-		{
-			$searchArray['semesterDescription'] = $semesterForSearch;
-
-			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
-			{
-				foreach ($stgValuemappings as $mobez => $stg_kz)
-				{
-					if ($stg_kz === (int)$studiengang_kz)
-					{
-						$searchArray[$moStgName] = $mobez;
-						$searchArrays[] = $searchArray;
-					}
-				}
-			}
-			else
-			{
-				$searchArrays[] = $searchArray;
-			}
-		}
-
-		foreach ($searchArrays as $sarr)
-		{
-			// get search object for objecttype, with searchparams ($arr) and returning only specified fields (by default)
-			$searchObj = $this->getSearchObj(
-				self::MOOBJECTTYPE,
-				$sarr
-			);
-
-			$semApps = $this->ci->MoGetAppModel->getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions($searchObj);
-
-			if (!isEmptyArray($semApps))
-				$apps = array_merge($apps, $semApps);
-		}
-
-		return $this->_getIncomingExtended($apps);
-	}
-
-	/**
 	 * Checks for a mobility online application id whether the application is saved in FH-Complete
 	 * returns prestudent_id if in FHC, null otherwise
 	 * @param int $moId
@@ -577,52 +572,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			return null;
 		}
-	}
-
-	/**
-	 * Gets incomings (applications) by application ids
-	 * also checks if incomings already are in fhcomplete
-	 * (prestudent_id in tbl_mo_appidzuordnung table and tbl_prestudent)
-	 * @param array $apps
-	 * @return array with applications
-	 */
-	private function _getIncomingExtended($apps)
-	{
-		$incomings = array();
-
-		foreach ($apps as $application)
-		{
-			$appId = $application->applicationID;
-
-			$address = $this->ci->MoGetAppModel->getPermanentAddress($appId);
-			$currAddress = $this->ci->MoGetAppModel->getCurrentAddress($appId);
-
-			$lichtbild = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASSFOTO');
-
-			$fhcobj = $this->mapMoAppToIncoming($application, $address, $currAddress, $lichtbild);
-
-			$fhcobj_extended = new StdClass();
-			$fhcobj_extended->moid = $appId;
-			$fhcobj_extended->infhc = false;
-
-			$errors = $this->fhcObjHasError($fhcobj, self::MOOBJECTTYPE);
-			$fhcobj_extended->error = $errors->error;
-			$fhcobj_extended->errorMessages = $errors->errorMessages;
-
-			$found_prestudent_id = $this->checkMoIdInFhc($appId);
-
-			// mark as already in fhcomplete if prestudent is in mapping table
-			if (isset($found_prestudent_id) && is_numeric($found_prestudent_id))
-			{
-				$fhcobj_extended->infhc = true;
-				$fhcobj_extended->prestudent_id = $found_prestudent_id;
-			}
-
-			$fhcobj_extended->data = $fhcobj;
-			$incomings[] = $fhcobj_extended;
-		}
-
-		return $incomings;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -955,13 +904,24 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			foreach ($studiensemarr as $semester)
 			{
 				$studentlehrverband['studiensemester_kurzbz'] = $semester;
-				$studenlehrverbandCheckResp = $this->ci->StudentlehrverbandModel->load(array('student_uid' => $studentlehrverband['student_uid'], 'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']));
+				$studenlehrverbandCheckResp = $this->ci->StudentlehrverbandModel->load(
+					array(
+						'student_uid' => $studentlehrverband['student_uid'],
+						'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']
+					)
+				);
 				if (isSuccess($studenlehrverbandCheckResp))
 				{
 					if (hasData($studenlehrverbandCheckResp))
 					{
 						$this->stamp('update', $studentlehrverband);
-						$studentlehrverbandResponse = $this->ci->StudentlehrverbandModel->update(array('student_uid' => $studentlehrverband['student_uid'], 'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']), $studentlehrverband);
+						$studentlehrverbandResponse = $this->ci->StudentlehrverbandModel->update(
+							array(
+								'student_uid' => $studentlehrverband['student_uid'],
+								'studiensemester_kurzbz' => $studentlehrverband['studiensemester_kurzbz']
+							),
+							$studentlehrverband
+						);
 						$this->log('update', $studentlehrverbandResponse, 'studentlehrverband');
 					}
 					else

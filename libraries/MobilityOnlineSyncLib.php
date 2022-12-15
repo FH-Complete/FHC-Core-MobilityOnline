@@ -11,6 +11,7 @@ class MobilityOnlineSyncLib
 	const WINTERSEMESTER_PREFIX = 'WS';
 	const SOMMERSEMESTER_PREFIX = 'SS';
 
+	protected $moObjectType = ''; // type of Mobility Online object to sync
 	protected $mobilityonline_config;
 	protected $debugmode = false;
 
