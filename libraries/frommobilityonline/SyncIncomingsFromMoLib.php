@@ -308,8 +308,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// add all Studiensemester for Prestudentstatus
 
 		// get all semesters from MO Semesterfield
-		$allSemesters = array($fhcObj['prestudentstatus']['studiensemester_kurzbz']);
-		$moStudjahr = $this->mapSemesterToMoStudienjahr($fhcObj['prestudentstatus']['studiensemester_kurzbz']);
+		$studiensemester_start = $fhcObj['prestudentstatus']['studiensemester_kurzbz'];
+		$allSemesters = array($studiensemester_start);
+		$moStudjahr = $this->mapSemesterToMoStudienjahr($studiensemester_start);
 
 		// WS and SS if Studienjahr given in MO
 		if ($moAppElementsExtracted->{$prestudentstatusMappings['studiensemester_kurzbz']} === $moStudjahr)
@@ -317,8 +318,18 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$allSemesters = array_unique(array_merge($allSemesters, $this->mapMoStudienjahrToSemester($moStudjahr)));
 		}
 
-		// add Studiensemester for each semester in the stay time span of von - bis date
-		$studiensemesterRes = $this->ci->StudiensemesterModel->getByDate($fhcObj['bisio']['von'], $fhcObj['bisio']['bis']);
+		// get start of Studiensemester for getting semester by date
+		$this->ci->StudiensemesterModel->addSelect('start');
+		$semStart = $fhcObj['bisio']['von'];
+		$semStartRes = $this->ci->StudiensemesterModel->loadWhere(array('studiensemester_kurzbz' => $studiensemester_start));
+
+		if (hasData($semStartRes))
+		{
+			$semStart = getData($semStartRes)[0]->start;
+		}
+
+		// add Studiensemester for each semester in the span of first semester start - stay end date
+		$studiensemesterRes = $this->ci->StudiensemesterModel->getByDate($semStart, $fhcObj['bisio']['bis']);
 
 		if (hasData($studiensemesterRes))
 		{
