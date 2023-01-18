@@ -53,13 +53,19 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 		$fhccourse = $this->convertToFhcFormat($course, $this->moObjectType);
 
-		if (is_array($mocourses))
+		if (hasData($mocourses))
 		{
-			foreach ($mocourses as $mocourse)
+			$mocoursesData = getData($mocourses);
+			foreach ($mocoursesData as $mocourse)
 			{
 				$mocourseid = $mocourse->courseID;
 
-				$lvidzuordnung = $this->ci->MolvidzuordnungModel->loadWhere(array('studiensemester_kurzbz' => $studiensemester, 'mo_lvid' => $mocourseid));
+				$lvidzuordnung = $this->ci->MolvidzuordnungModel->loadWhere(
+					array(
+						'studiensemester_kurzbz' => $studiensemester,
+						'mo_lvid' => $mocourseid
+					)
+				);
 
 				if (hasData($lvidzuordnung))
 				{
@@ -157,7 +163,11 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 			if (isset($fhcCourse['lehrveranstaltung']['lehrveranstaltung_id']) &&
 				is_numeric($fhcCourse['lehrveranstaltung']['lehrveranstaltung_id']))
 			{
-				$fhcCourse['lehreinheiten'] = $this->ci->LehreinheitModel->getLesForLv($fhcCourse['lehrveranstaltung']['lehrveranstaltung_id'], $studiensemester_kurzbz, false);
+				$fhcCourse['lehreinheiten'] = $this->ci->LehreinheitModel->getLesForLv(
+					$fhcCourse['lehrveranstaltung']['lehrveranstaltung_id'],
+					$studiensemester_kurzbz
+					//false
+				);
 
 				$anz_incomings = 0;
 
@@ -252,9 +262,10 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 					$prestudentObj->lvs = array();
 					$prestudentObj->nonMoLvs = array();
 
-					if (isset($courses) && is_array($courses))
+					if (hasData($courses))
 					{
-						foreach ($courses as $course)
+						$coursesData = getData($courses);
+						foreach ($coursesData as $course)
 						{
 							$fhcLv = $this->mapMoIncomingCourseToLv($course, $studiensemester, $prestudentObj->uid);
 

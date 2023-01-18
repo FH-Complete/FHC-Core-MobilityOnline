@@ -50,6 +50,7 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 				$course = $this->mapLvToMoLv($lv);
 				$lvid = $lv->lehrveranstaltung_id;
 
+				$this->ci->MolvidzuordnungModel->addOrder('insertamum', 'DESC');
 				$zuordnung = $this->ci->MolvidzuordnungModel->loadWhere(
 					array(
 						'lehrveranstaltung_id' => $lvid,
@@ -65,11 +66,13 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 				{
 					$results['syncoutput'] .= "<p>lv $lvid - ".$course[$courseName]." existiert bereits in Mobility Online - aktualisieren";
 
-					$zuordnung = $zuordnung->retval[0];
+					$zuordnung = getData($zuordnung)[0];
 
 					$course['courseID'] = $zuordnung->mo_lvid;
 
-					if ($this->ci->MoSetMaModel->updateCoursePerSemester($course))
+					$updateCourseRes = $this->ci->MoSetMaModel->updateCoursePerSemester($course);
+
+					if (hasData($updateCourseRes))
 					{
 						$result = $this->ci->MolvidzuordnungModel->update(
 							array(
@@ -87,16 +90,23 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 					}
 					else
 					{
-						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> Fehler beim Aktualisieren von Lv $lvid - ".$course[$courseName]."</span></p>";
+						$errorText = '';
+						if (isError($updateCourseRes))
+						{
+							$errorData = getError($updateCourseRes);
+							if (is_string($errorData)) $errorText = ': '.$errorData;
+						}
+						$results['syncoutput'] .= "<br /><span class='text-danger'><i class='fa fa-times'></i> Fehler beim Aktualisieren von Lv $lvid - ".$course[$courseName].$errorText."</span></p>";
 						$results['errors']++;
 					}
 				}
 				else
 				{
-					$moid = $this->ci->MoSetMaModel->addCoursePerSemester($course);
+					$addCourseRes = $this->ci->MoSetMaModel->addCoursePerSemester($course);
 
-					if (is_numeric($moid))
+					if (hasData($addCourseRes) && is_numeric(getData($addCourseRes)))
 					{
+						$moid = getData($addCourseRes);
 						$result = $this->ci->MolvidzuordnungModel->insert(
 							array(
 								'lehrveranstaltung_id' => $lvid,
@@ -116,7 +126,14 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 					}
 					else
 					{
-						$results['syncoutput'] .= "<p><span class='text-danger'><i class='fa fa-times text-danger'></i> Fehler beim Hinzufügen der lv $lvid - ".$course[$courseName]."</span></p>";
+						$errorText = '';
+						if (isError($addCourseRes))
+						{
+							$errorData = getError($addCourseRes);
+							if (is_string($errorData)) $errorText = ': '.$errorData;
+						}
+
+						$results['syncoutput'] .= "<p><span class='text-danger'><i class='fa fa-times text-danger'></i> Fehler beim Hinzufügen der lv $lvid - ".$course[$courseName].$errorText."</span></p>";
 						$results['errors']++;
 					}
 				}

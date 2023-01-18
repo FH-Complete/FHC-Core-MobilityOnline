@@ -24,11 +24,11 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 	 */
 	public function addCoursePerSemester($data)
 	{
-		$id = $this->performCall('addCoursePerSemester', array('course' => $data));
-		if (isset($id->return) && is_numeric($id->return))
-			return $id->return;
-		else
-			return null;
+		return $this->performCall('addCoursePerSemester', array('course' => $data));
+		//~ if (isset($id->return) && is_numeric($id->return))
+			//~ return $id->return;
+		//~ else
+			//~ return null;
 	}
 
 	/**
@@ -38,11 +38,11 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 	 */
 	public function updateCoursePerSemester($data)
 	{
-		$success = $this->performCall('updateCoursePerSemester', array('course' => $data));
-		if (isset($success->return))
-			return $success->return;
-		else
-			return false;
+		return $this->performCall('updateCoursePerSemester', array('course' => $data));
+		//~ if (isset($success->return))
+			//~ return $success->return;
+		//~ else
+			//~ return false;
 	}
 
 	/**
@@ -52,11 +52,11 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 	 */
 	public function removeCoursePerSemesterByCourseID($courseId)
 	{
-		$success = $this->performCall('removeCoursePerSemesterByCourseID', array('courseID' => $courseId));
-		if (isset($success->return))
-			return $success->return;
-		else
-			return false;
+		return $this->performCall('removeCoursePerSemesterByCourseID', array('courseID' => $courseId));
+		//~ if (isset($success->return))
+			//~ return $success->return;
+		//~ else
+			//~ return false;
 	}
 
 	/**
@@ -68,13 +68,13 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 	 */
 	public function removeCoursesPerSemesterBySearchParameters($semester, $academicYear)
 	{
-		$success = $this->performCall(
+		return $this->performCall(
 			'removeCoursesPerSemesterBySearchParameters',
 			array('semester' => $semester, 'academicYear' => array('description' => $academicYear))
 		);
-		if (isset($success->return))
-			return $success->return;
-		else
-			return false;
+		//~ if (isset($success->return))
+			//~ return $success->return;
+		//~ else
+			//~ return false;
 	}
 }

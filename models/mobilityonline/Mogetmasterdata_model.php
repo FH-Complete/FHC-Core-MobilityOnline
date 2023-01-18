@@ -24,17 +24,17 @@ class Mogetmasterdata_model extends Mobilityonlineapi_model
 	 */
 	public function getCoursesOfSemesterBySearchParameters($parameters)
 	{
-		$success = $this->performCall('getCoursesOfSemesterBySearchParameters', $parameters);
+		return $this->performCall('getCoursesOfSemesterBySearchParameters', $parameters);
 
-		if (isset($success->return))
-		{
-			if (is_array($success->return) || !is_object($success->return))
-				return $success->return;
-			else
-				return array($success->return);
-		}
-		else
-			return null;
+		//~ if (isset($success->return))
+		//~ {
+			//~ if (is_array($success->return) || !is_object($success->return))
+				//~ return $success->return;
+			//~ else
+				//~ return array($success->return);
+		//~ }
+		//~ else
+			//~ return null;
 	}
 
 	/**
@@ -47,17 +47,17 @@ class Mogetmasterdata_model extends Mobilityonlineapi_model
 		if (!is_array($institutionid))
 			$institutionid = array('institutionID' => $institutionid);
 
-		$success = $this->performCall('getStudyFieldsOfInstitution', $institutionid);
+		return $this->performCall('getStudyFieldsOfInstitution', $institutionid);
 
-		if (isset($success->return))
-		{
-			if (is_array($success->return) || !is_object($success->return))
-				return $success->return;
-			else
-				return array($success->return);
-		}
-		else
-			return null;
+		//~ if (isset($success->return))
+		//~ {
+			//~ if (is_array($success->return) || !is_object($success->return))
+				//~ return $success->return;
+			//~ else
+				//~ return array($success->return);
+		//~ }
+		//~ else
+			//~ return null;
 	}
 
 	/**
@@ -70,16 +70,16 @@ class Mogetmasterdata_model extends Mobilityonlineapi_model
 		if (!is_array($institutionid))
 			$institutionid = array('institutionID' => $institutionid);
 
-		$success = $this->performCall('getAddressesOfInstitution', $institutionid);
+		return $this->performCall('getAddressesOfInstitution', $institutionid);
 
-		if (isset($success->return))
-		{
-			if (is_array($success->return) || !is_object($success->return))
-				return $success->return;
-			else
-				return array($success->return);
-		}
-		else
-			return null;
+		//~ if (isset($success->return))
+		//~ {
+			//~ if (is_array($success->return) || !is_object($success->return))
+				//~ return $success->return;
+			//~ else
+				//~ return array($success->return);
+		//~ }
+		//~ else
+			//~ return null;
 	}
 }

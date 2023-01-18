@@ -122,13 +122,12 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$moValue = $fhcValue;
 
-		//if exists in valuemappings - take value
-		if (!empty($valuemappings[$fhcIndex]) && array_key_exists($moValue, $valuemappings[$fhcIndex])
-		)
+		// if exists in valuemappings - take value
+		if (!empty($valuemappings[$fhcIndex]) && array_key_exists($moValue, $valuemappings[$fhcIndex]))
 		{
 			$moValue = $valuemappings[$fhcIndex][$moValue];
 		}
-		else//otherwise look in replacements array
+		else// otherwise look in replacements array
 		{
 			if (isset($this->_replacementsarrToMo[$fhcIndex]))
 			{

@@ -552,8 +552,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 			$semApps = $this->ci->MoGetAppModel->getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions($searchObj);
 
-			if (!isEmptyArray($semApps))
-				$apps = array_merge($apps, $semApps);
+			if (hasData($semApps))
+				$apps = array_merge($apps, getData($semApps));
 		}
 
 		return $apps;
@@ -577,9 +577,12 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			{
 				$idDocuments = $this->ci->MoGetAppModel->getFilesOfApplication($appId, $uploadSettingNumber);
 
-				if (!isEmptyArray($idDocuments))
+				if (isError($idDocuments)) return $idDocuments;
+
+				if (hasData($idDocuments))
 				{
-					foreach ($idDocuments as $document)
+					$idDocumentsData = getData($idDocuments);
+					foreach ($idDocumentsData as $document)
 					{
 						$fhcFile = $this->convertToFhcFormat($document, 'file');
 						$documents[] = $fhcFile;
@@ -588,7 +591,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			}
 		}
 
-		return $documents;
+		return success($documents);
 	}
 
 	/**

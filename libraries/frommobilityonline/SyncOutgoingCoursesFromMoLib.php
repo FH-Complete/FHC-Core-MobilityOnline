@@ -99,12 +99,19 @@ class SyncOutgoingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			$appId = $application->applicationID;
 
-			// TODO: take course from transcript or learning agreement?
-			$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplicationTranscript($appId);
-			//$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplication($appId);
-
 			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appId;
+
+			// TODO: take course from transcript or learning agreement?
+			//$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplication($appId);
+			$coursesData = $this->ci->MoGetAppModel->getCoursesOfApplicationTranscript($appId);
+
+			if (isError($coursesData))
+			{
+				$fhcobj_extended->error = true;
+				$fhcobj_extended->errorMessages[] = 'Fehler beim Holen der Kursdaten';
+			}
+			$coursesData = getData($coursesData);
 
 			// check if bisio already in fhc
 			$found_bisio_id = $this->ci->syncoutgoingsfrommolib->checkBisioInFhc($appId);

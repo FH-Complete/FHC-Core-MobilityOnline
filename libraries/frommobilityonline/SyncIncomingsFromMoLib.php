@@ -68,9 +68,18 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				$documentTypes = array_keys($this->confmiscvalues['documentstosync']['incoming']);
 				$files = $this->getFiles($appId, $documentTypes);
 
-				if (!isEmptyArray($files))
+				if (isError($files))
 				{
-					$incomingData['akten'] = $files;
+					$errorText = getError($files);
+					$errorText = is_string($errorText) ? ', ' . $errorText : '';
+					$results['errors']++;
+					$this->addErrorOutput("Fehler beim Holen der Files des Studierden mit applicationid $appId - " .
+						$incomingData['person']['vorname'] . " " . $incomingData['person']['nachname'] . $errorText);
+				}
+
+				if (hasData($files))
+				{
+					$incomingData['akten'] = getData($files);
 				}
 
 				$infhccheck_prestudent_id = $this->checkMoIdInFhc($appId);
@@ -94,6 +103,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 							$results['updated']++;
 							$this->addSuccessOutput("student for applicationid $appId - ".
 								$incomingData['person']['vorname']." ".$incomingData['person']['nachname']." erfolgreich aktualisiert");
+						}
+						else
+						{
+							$results['errors']++;
+							$this->addErrorOutput("Fehler beim Aktualisieren der Zuordnung des Studierenden mit applicationid $appId - "
+								.$incomingData['person']['vorname']." ".$incomingData['person']['nachname']);
 						}
 					}
 					else
@@ -160,26 +175,72 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		foreach ($apps as $application)
 		{
+			$fhcobj_extended = new StdClass();
+			$fhcobj_extended->error = false;
+			$fhcobj_extended->errorMessages = array();
+
 			$appId = $application->applicationID;
 
 			// get additional data from Mobility Online for each application
-			$address = $this->ci->MoGetAppModel->getPermanentAddress($appId);
-			$currAddress = $this->ci->MoGetAppModel->getCurrentAddress($appId);
+			$addressData = $this->ci->MoGetAppModel->getPermanentAddress($appId);
+			if (isError($addressData))
+			{
+				$fhcobj_extended->error = true;
+				$fhcobj_extended->errorMessages[] = getError($addressData);
+			};
+			$addressData = getData($addressData);
 
-			$lichtbild = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASSFOTO');
-			$lichtbild = null;
+			$currAddressData = $this->ci->MoGetAppModel->getCurrentAddress($appId);
+			if (isError($currAddressData))
+			{
+				$fhcobj_extended->error = true;
+				$fhcobj_extended->errorMessages[] = getError($currAddressData);
+			};
+			$currAddressData = getData($currAddressData);
+
+			$lichtbildData = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASSFOTO');
+			if (isError($lichtbildData))
+			{
+				$fhcobj_extended->error = true;
+				$fhcobj_extended->errorMessages[] = getError($lichtbildData);
+			}
+			$lichtbildData = getData($lichtbildData);
 
 			// transform MobilityOnline application to FHC incoming
-			$fhcobj = $this->mapMoAppToIncoming($application, $address, $currAddress, $lichtbild);
+			$fhcObj = $this->mapMoAppToIncoming($application, $addressData, $currAddressData, $lichtbildData);
 
-			$fhcobj_extended = new StdClass();
+			// courses
+			$fhcObj['mocourses'] = array();
+			$courses = $this->ci->MoGetAppModel->getCoursesOfApplication($appId);
+
+			if (isError($courses))
+			{
+				$fhcobj_extended->error = true;
+				$fhcobj_extended->errorMessages[] = getError($courses);
+			};
+
+			if (hasData($courses))
+			{
+				$coursesData = getData($courses);
+				foreach ($coursesData as $course)
+				{
+					if (!$course->deleted)
+					{
+						$courseData = new stdClass();
+						$courseData->number = $course->hostCourseNumber;
+						$courseData->name = $course->hostCourseName;
+						$fhcObj['mocourses'][] = $courseData;
+					}
+				}
+			}
+
 			$fhcobj_extended->moid = $appId;
 			$fhcobj_extended->infhc = false;
 
 			// check if the fhc object has errors
-			$errors = $this->fhcObjHasError($fhcobj, $this->moObjectType);
-			$fhcobj_extended->error = $errors->error;
-			$fhcobj_extended->errorMessages = $errors->errorMessages;
+			$errors = $this->fhcObjHasError($fhcObj, $this->moObjectType);
+			$fhcobj_extended->error = $fhcobj_extended->error || $errors->error;
+			$fhcobj_extended->errorMessages = array_merge($fhcobj_extended->errorMessages, $errors->errorMessages);
 
 			$found_prestudent_id = $this->checkMoIdInFhc($appId);
 
@@ -190,7 +251,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				$fhcobj_extended->prestudent_id = $found_prestudent_id;
 			}
 
-			$fhcobj_extended->data = $fhcobj;
+			$fhcobj_extended->data = $fhcObj;
 			$incomings[] = $fhcobj_extended;
 		}
 
@@ -369,23 +430,23 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		$fhcObj = array_merge($fhcObj, $fhcLichtbild, $fhcAddr, $fhcCurrAddr);
 
-		// courses
-		$fhcObj['mocourses'] = array();
-		$courses = $this->ci->MoGetAppModel->getCoursesOfApplication($moAppElementsExtracted->applicationID);
+		//~ // courses
+		//~ $fhcObj['mocourses'] = array();
+		//~ $courses = $this->ci->MoGetAppModel->getCoursesOfApplication($moAppElementsExtracted->applicationID);
 
-		if (is_array($courses))
-		{
-			foreach ($courses as $course)
-			{
-				if (!$course->deleted)
-				{
-					$courseData = new stdClass();
-					$courseData->number = $course->hostCourseNumber;
-					$courseData->name = $course->hostCourseName;
-					$fhcObj['mocourses'][] = $courseData;
-				}
-			}
-		}
+		//~ if (hasData($courses))
+		//~ {
+			//~ foreach ($courses as $course)
+			//~ {
+				//~ if (!$course->deleted)
+				//~ {
+					//~ $courseData = new stdClass();
+					//~ $courseData->number = $course->hostCourseNumber;
+					//~ $courseData->name = $course->hostCourseName;
+					//~ $fhcObj['mocourses'][] = $courseData;
+				//~ }
+			//~ }
+		//~ }
 
 		return $fhcObj;
 	}
