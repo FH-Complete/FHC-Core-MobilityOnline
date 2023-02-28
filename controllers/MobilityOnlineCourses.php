@@ -39,24 +39,31 @@ class MobilityOnlineCourses extends Auth_Controller
 		$studiensemesterData = $this->StudiensemesterModel->load();
 
 		if (isError($studiensemesterData))
-			show_error($studiensemesterData->retval);
+			show_error(getError($studiensemesterData));
 
 		$currSemData = $this->StudiensemesterModel->getAktOrNextSemester();
 
 		if (isError($currSemData))
-			show_error($currSemData->retval);
+			show_error(getError($currSemData));
 
-		$lvData = $this->LehrveranstaltungModel->getLvsWithIncomingPlaces($currSemData->retval[0]->studiensemester_kurzbz);
+		$currSemData = '';
+		$lvData = array();
+		if (hasData($currSemData))
+		{
+			$currSem = getData($currSemData)[0]->studiensemester_kurzbz;
+			$lvData = getData($this->LehrveranstaltungModel->getLvsWithIncomingPlaces($currSem));
+		}
+
 
 		if (isError($lvData))
-			show_error($lvData->retval);
+			show_error(getError($lvData));
 
 		$this->load->view(
 			'extensions/FHC-Core-MobilityOnline/mobilityOnlineCourses',
 			array(
-				'semester' => $studiensemesterData->retval,
-				'currsemester' => $currSemData->retval,
-				'lvs' => $lvData->retval
+				'semester' => getData($studiensemesterData),
+				'currsemester' => $currSem,
+				'lvs' => $lvData
 			)
 		);
 	}
