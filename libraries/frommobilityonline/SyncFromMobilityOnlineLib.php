@@ -680,7 +680,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 						{
 							foreach ($documentTypeArr as $moDocumentType => $options)
 							{
-								$fhcDocumentType = $this->valuemappings['frommo']['dokument_kurzbz'][$moDocumentType];
+								$fhcDocumentType = $this->valuemappings['frommo']['file']['akte']['dokument_kurzbz'][$moDocumentType];
 								if ($dokument_kurzbz === $fhcDocumentType && $options['autoaccept'] === true)
 								{
 									$this->_saveDokumentPrestudent($dokument_kurzbz, $prestudent_id);
