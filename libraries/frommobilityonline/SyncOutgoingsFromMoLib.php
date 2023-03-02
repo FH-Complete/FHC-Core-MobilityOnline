@@ -152,13 +152,12 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appId);
 
-			//var_dump($nominationData);
+			if (isError($nominationData))
+			{
+				$fhcobj_extended->error = true;
+				$fhcobj_extended->errorMessages[] = 'Fehler beim Holen der Zahlungen: '.getError($nominationData);
+			}
 
-			//~ if (isError($nominationData))
-			//~ {
-				//~ $fhcobj_extended->error = true;
-				//~ $fhcobj_extended->errorMessages[] = getError($nominationData);
-			//~ }
 			$nominationData = getData($nominationData);
 
 			$institutionAddressesData = array();
@@ -374,6 +373,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		// payments
 		$payments = array();
 		$paymentObjectName = 'payment';
+
 		if (isset($nominationData->project->payments))
 		{
 			// payment can be object is single or array if multiple

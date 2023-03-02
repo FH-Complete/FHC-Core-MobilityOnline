@@ -335,7 +335,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 						}
 
 						// convert extracted value to fhc value
-						$fhcValue = $this->getFHCValue($objType, $fhcIndex, $moValue);
+						$fhcValue = $this->getFHCValue($fhcTable, $fhcIndex, $objType, $moValue);
 
 						$fhcObj[$fhcTable][$fhcIndex] = $fhcValue;
 					}
@@ -364,15 +364,14 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 * @param mixed $moValue MobilityOnline value
 	 * @return string
 	 */
-	protected function getFHCValue($moObjName, $fhcField, $moValue)
+	protected function getFHCValue($fhcObjName, $fhcField, $moObjName, $moValue)
 	{
 		$valuemappings = $this->valuemappings['frommo'];
 		$fhcValue = $moValue;
 		//if exists in valuemappings - take value
-		if (!empty($valuemappings[$fhcField]) && isset($valuemappings[$fhcField][$fhcValue])
-		)
+		if (!empty($valuemappings[$moObjName][$fhcObjName][$fhcField]) && isset($valuemappings[$moObjName][$fhcObjName][$fhcField][$fhcValue]))
 		{
-			$fhcValue = $valuemappings[$fhcField][$fhcValue];
+			$fhcValue = $valuemappings[$moObjName][$fhcObjName][$fhcField][$fhcValue];
 		}
 		else//otherwise look in replacements array
 		{
@@ -480,7 +479,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$apps = array();
 		$moObjectType = isset($moObjectType) ? $moObjectType : $this->moObjectType;
 
-		$stgValuemappings = $this->valuemappings['frommo']['studiengang_kz'];
+		$stgValuemappings = $this->valuemappings['frommo']['application']['prestudent']['studiengang_kz'];
 		$moStgName = $this->conffieldmappings['application']['prestudent']['studiengang_kz'];
 
 		// searchobject to search outgoings
