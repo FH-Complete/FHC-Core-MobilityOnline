@@ -41,29 +41,29 @@ class MobilityOnlineCourses extends Auth_Controller
 		if (isError($studiensemesterData))
 			show_error(getError($studiensemesterData));
 
+		$currSem = '';
+		$lvs = array();
+
 		$currSemData = $this->StudiensemesterModel->getAktOrNextSemester();
 
 		if (isError($currSemData))
 			show_error(getError($currSemData));
 
-		$currSemData = '';
-		$lvData = array();
 		if (hasData($currSemData))
 		{
 			$currSem = getData($currSemData)[0]->studiensemester_kurzbz;
-			$lvData = getData($this->LehrveranstaltungModel->getLvsWithIncomingPlaces($currSem));
+			$lvData = $this->LehrveranstaltungModel->getLvsWithIncomingPlaces($currSem);
+			if (isError($lvData))
+				show_error(getError($lvData));
+			$lvs = getData($lvData);
 		}
-
-
-		if (isError($lvData))
-			show_error(getError($lvData));
 
 		$this->load->view(
 			'extensions/FHC-Core-MobilityOnline/mobilityOnlineCourses',
 			array(
 				'semester' => getData($studiensemesterData),
 				'currsemester' => $currSem,
-				'lvs' => $lvData
+				'lvs' => $lvs
 			)
 		);
 	}
@@ -100,7 +100,7 @@ class MobilityOnlineCourses extends Auth_Controller
 		$lvData = $this->LehrveranstaltungModel->getLvsWithIncomingPlaces($studiensemester);
 
 		if (isSuccess($lvData))
-			$this->outputJsonSuccess($lvData->retval);
+			$this->outputJsonSuccess(getData($lvData));
 		else
 			$this->outputJsonError("Fehler beim Holen der Kurse");
 	}

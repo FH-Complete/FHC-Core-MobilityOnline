@@ -35,7 +35,7 @@
 						<select class="form-control" name="studiensemester" id="studiensemester">
 							<?php
 							foreach ($semester as $sem):
-								$selected = $sem->studiensemester_kurzbz === $currsemester[0]->studiensemester_kurzbz ? ' selected=""' : '';
+								$selected = $sem->studiensemester_kurzbz === $currsemester ? ' selected=""' : '';
 								?>
 								<option value="<?php echo $sem->studiensemester_kurzbz ?>"<?php echo $selected ?>>
 									<?php echo $sem->studiensemester_kurzbz ?>
