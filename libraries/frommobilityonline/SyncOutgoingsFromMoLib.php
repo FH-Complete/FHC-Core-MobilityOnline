@@ -152,11 +152,13 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appId);
 
-			if (isError($nominationData))
-			{
-				$fhcobj_extended->error = true;
-				$fhcobj_extended->errorMessages[] = 'Fehler beim Holen der Zahlungen: '.getError($nominationData);
-			}
+			// do not include payment errors for now, as error if retrned when there are empty payments
+
+			//~ if (isError($nominationData))
+			//~ {
+				//~ $fhcobj_extended->error = true;
+				//~ $fhcobj_extended->errorMessages[] = 'Fehler beim Holen der Zahlungen: '.getError($nominationData);
+			//~ }
 
 			$nominationData = getData($nominationData);
 
