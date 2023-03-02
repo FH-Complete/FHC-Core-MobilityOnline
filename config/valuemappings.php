@@ -31,6 +31,7 @@ $nations = array(
 	'Nicaragua' => 'NIC',
 	'Russian Federation' => 'RSF',
 	'Saudiarabien' => 'SA',
+	'Südkorea' => 'ROK',
 	'Taiwan' => 'RC',
 	'Tansania' => 'EAT',
 	'Tschechische Republik' => 'TCH',
