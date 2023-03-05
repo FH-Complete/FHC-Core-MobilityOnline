@@ -152,7 +152,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appId);
 
-			// do not include payment errors for now, as error if retrned when there are empty payments
+			// do not include payment errors for now, as error is returned when there are empty payments
 
 			//~ if (isError($nominationData))
 			//~ {
