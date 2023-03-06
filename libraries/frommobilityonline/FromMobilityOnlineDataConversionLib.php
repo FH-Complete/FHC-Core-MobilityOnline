@@ -49,8 +49,8 @@ class FromMobilityOnlineDataConversionLib
 	}
 
 	/**
-	 *
-	 * @param
+	 * Converts MobilityOnline Studiensemester to fhc semester.
+	 * @param string $moSemester
 	 * @return object success or error
 	 */
 	public function mapStudiensemesterToFhc($moSemester)
@@ -59,8 +59,8 @@ class FromMobilityOnlineDataConversionLib
 	}
 
 	/**
-	 *
-	 * @param
+	 * Converts MobilityOnline Studienjahr to fhc Studienjahr.
+	 * @param string $moYear
 	 * @return object success or error
 	 */
 	public function mapStudienjahrToFhc($moYear)

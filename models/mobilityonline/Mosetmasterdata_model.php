@@ -25,10 +25,6 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 	public function addCoursePerSemester($data)
 	{
 		return $this->performCall('addCoursePerSemester', array('course' => $data));
-		//~ if (isset($id->return) && is_numeric($id->return))
-			//~ return $id->return;
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -39,10 +35,6 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 	public function updateCoursePerSemester($data)
 	{
 		return $this->performCall('updateCoursePerSemester', array('course' => $data));
-		//~ if (isset($success->return))
-			//~ return $success->return;
-		//~ else
-			//~ return false;
 	}
 
 	/**
@@ -53,10 +45,6 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 	public function removeCoursePerSemesterByCourseID($courseId)
 	{
 		return $this->performCall('removeCoursePerSemesterByCourseID', array('courseID' => $courseId));
-		//~ if (isset($success->return))
-			//~ return $success->return;
-		//~ else
-			//~ return false;
 	}
 
 	/**
@@ -72,9 +60,5 @@ class Mosetmasterdata_model extends Mobilityonlineapi_model
 			'removeCoursesPerSemesterBySearchParameters',
 			array('semester' => $semester, 'academicYear' => array('description' => $academicYear))
 		);
-		//~ if (isset($success->return))
-			//~ return $success->return;
-		//~ else
-			//~ return false;
 	}
 }

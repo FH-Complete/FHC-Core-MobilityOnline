@@ -25,16 +25,6 @@ class Mogetmasterdata_model extends Mobilityonlineapi_model
 	public function getCoursesOfSemesterBySearchParameters($parameters)
 	{
 		return $this->performCall('getCoursesOfSemesterBySearchParameters', $parameters);
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ if (is_array($success->return) || !is_object($success->return))
-				//~ return $success->return;
-			//~ else
-				//~ return array($success->return);
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -48,16 +38,6 @@ class Mogetmasterdata_model extends Mobilityonlineapi_model
 			$institutionid = array('institutionID' => $institutionid);
 
 		return $this->performCall('getStudyFieldsOfInstitution', $institutionid);
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ if (is_array($success->return) || !is_object($success->return))
-				//~ return $success->return;
-			//~ else
-				//~ return array($success->return);
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -71,15 +51,5 @@ class Mogetmasterdata_model extends Mobilityonlineapi_model
 			$institutionid = array('institutionID' => $institutionid);
 
 		return $this->performCall('getAddressesOfInstitution', $institutionid);
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ if (is_array($success->return) || !is_object($success->return))
-				//~ return $success->return;
-			//~ else
-				//~ return array($success->return);
-		//~ }
-		//~ else
-			//~ return null;
 	}
 }

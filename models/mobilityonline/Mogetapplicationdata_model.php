@@ -52,16 +52,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	public function getApplicationIdsWithFurtherSearchRestrictions($data)
 	{
 		return $this->performCall('getApplicationIdsBySearchParametersWithFurtherSearchRestrictions', $data);
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ if (is_array($success->return) || (!is_object($success->return) && !is_integer($success->return)))
-				//~ return $success->return;
-			//~ else
-				//~ return array($success->return);
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -73,16 +63,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	public function getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions($data)
 	{
 		return $this->performCall('getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions', $data);
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ if (is_array($success->return) || (!is_object($success->return) && !is_integer($success->return)))
-				//~ return $success->return;
-			//~ else
-				//~ return array($success->return);
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -110,13 +90,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 		$test->return->email = '';
 		$test->return->firstName= '';
 		$test->return->lastName= '';*/
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ return $success->return;
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -127,16 +100,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	public function getApplicationIds($data)
 	{
 		return $this->performCall('getApplicationIdsBySearchParameters', $data);
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ if (is_array($success->return) || !is_numeric($success->return))
-				//~ return $success->return;
-			//~ else
-				//~ return array($success->return);
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -147,13 +110,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	public function getPermanentAddress($appId)
 	{
 		return $this->performCall('getPermanentAddress', array('applicationID' => $appId));
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ return $success->return;
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -164,13 +120,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	public function getCurrentAddress($appId)
 	{
 		return $this->performCall('getCurrentAddress', array('applicationID' => $appId));
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ return $success->return;
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -181,13 +130,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	public function getBankAccountDetails($appId)
 	{
 		return $this->performCall('getBankAccountDetails', array('applicationID' => $appId));
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ return $success->return;
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -198,16 +140,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	public function getCoursesOfApplication($appId)
 	{
 		return $this->performCall('getCoursesOfLearningAgreement', array('applicationID' => $appId));
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ if (is_array($success->return) || !is_object($success->return))
-				//~ return $success->return;
-			//~ else
-				//~ return array($success->return);
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 		/**
@@ -218,16 +150,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	public function getCoursesOfApplicationTranscript($appId)
 	{
 		return $this->performCall('getCoursesOfTranscript', array('applicationID' => $appId));
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ if (is_array($success->return) || !is_object($success->return))
-				//~ return $success->return;
-			//~ else
-				//~ return array($success->return);
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 
@@ -246,16 +168,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 				'uploadSettingNumber' => $uploadSettingNumber
 			)
 		);
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ if (is_array($success->return) || !is_object($success->return))
-				//~ return $success->return;
-			//~ else
-				//~ return array($success->return);
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -266,16 +178,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	public function getAllFilesOfApplication($appId)
 	{
 		return $this->performCall('getAllFilesOfApplication', array('applicationID' => $appId));
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ if (is_array($success->return) || !is_object($success->return))
-				//~ return $success->return;
-			//~ else
-				//~ return array($success->return);
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -286,13 +188,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	public function getProjectDetailsByApplicationID($appId)
 	{
 		return $this->performCall('getProjectDetailsByApplicationID', array('applicationID' => $appId));
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ return $success->return;
-		//~ }
-		//~ else
-			//~ return null;
 	}
 
 	/**
@@ -309,12 +204,5 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 				'withProjectData' => true
 			)
 		);
-
-		//~ if (isset($success->return))
-		//~ {
-			//~ return $success->return;
-		//~ }
-		//~ else
-			//~ return null;
 	}
 }
