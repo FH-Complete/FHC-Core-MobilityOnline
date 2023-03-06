@@ -12,6 +12,7 @@ class Mobilityonlineapi_model extends CI_Model
 
 	const WSDL = 'wsdl';
 	const DATETIME_NAMESPACE = 'http://xsd.types.databinding.axis2.apache.org/xsd';
+	const ERROR_STR = '%s: %s'; // Error message format
 
 	/**
 	 * Constructor
@@ -67,14 +68,28 @@ class Mobilityonlineapi_model extends CI_Model
 	{
 		$args = array_merge(array('authority' => $this->_mobilityonline_config['authority']), $data);
 
+		if (!isset($this->_soapClient)) return error('SOAP client not initialized');
+
+		if (isEmptyString($function)) return error('No function name passed');
+
 		try
 		{
-			return $this->_soapClient->$function($args);
+			$soapRes = $this->_soapClient->{$function}($args);
+
+			if (property_exists($soapRes, 'return'))
+				return success($soapRes->return);
+			else
+				return error('Invalid return data');
 		}
-		catch (SoapFault $e)
+		catch (SoapFault $sf)
 		{
 			//error_log($e->getMessage());
-			return null;
+			return error('SOAP error '.sprintf(self::ERROR_STR, $sf->getCode(), $sf->getMessage()));
+		}
+		catch (Exception $e)
+		{
+			//error_log($e->getMessage());
+			return error('Error '.sprintf(self::ERROR_STR, $e->getCode(), $e->getMessage()));
 		}
 	}
 

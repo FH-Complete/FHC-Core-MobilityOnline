@@ -42,23 +42,23 @@ class MobilityOnlineOutgoing extends Auth_Controller
 		$studiensemesterData = $this->StudiensemesterModel->load();
 
 		if (isError($studiensemesterData))
-			show_error($studiensemesterData->retval);
+			show_error(getError($studiensemesterData));
 
 		$currSemData = $this->StudiensemesterModel->getAktOrNextSemester();
 
 		if (isError($currSemData))
-			show_error($currSemData->retval);
+			show_error(getError($currSemData));
 
 		$studiengaenge = $this->MoFhcModel->getStudiengaenge();
 
 		if (isError($studiengaenge))
-			show_error($studiengaenge->retval);
+			show_error(getError($studiengaenge));
 
 		$this->load->view('extensions/FHC-Core-MobilityOnline/mobilityOnlineOutgoing',
 			array(
-				'semester' => $studiensemesterData->retval,
-				'currsemester' => $currSemData->retval,
-				'studiengaenge' => $studiengaenge->retval
+				'semester' => getData($studiensemesterData),
+				'currsemester' => getData($currSemData),
+				'studiengaenge' => getData($studiengaenge)
 			)
 		);
 	}
@@ -91,6 +91,9 @@ class MobilityOnlineOutgoing extends Auth_Controller
 		$this->outputJsonSuccess($outgoingData);
 	}
 
+	/**
+	 * Links a FHC Mobilität (bisio) with a Mobility Online application.
+	 */
 	public function linkBisio()
 	{
 		$moid = $this->input->post('moid');

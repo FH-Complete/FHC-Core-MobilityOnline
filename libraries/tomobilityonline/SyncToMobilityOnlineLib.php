@@ -12,18 +12,9 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 
 	// mo string replacements for fhc values. Numeric indices mean callback function names used for replacements.
 	private $_replacementsarrToMo = array(
-		'studiensemester_kurzbz' => array(
-			0 => 'mapSemesterToMo'
-		),
-		'studienjahr_kurzbz' => array(
-			0 => 'mapStudienjahrToMo'
-		),
-		'lehrform_kurzbz' => array(
-			'^ILV.*$' => 'LV',
-			'^SE.*$' => 'SE',
-			'^VO.*$' => 'VO',
-			'^(?!(ILV|SE|VO)).*$' => 'LV'
-		)
+		'studiensemester_kurzbz' => 'mapSemesterToMo',
+		'studienjahr_kurzbz' => 'mapStudienjahrToMo',
+		'lehrform_kurzbz' => 'mapLehrformToMo'
 	);
 
 	/**
@@ -34,6 +25,8 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 		parent::__construct();
 
 		$this->_confmodefaults = $this->ci->config->item('modefaults');
+
+		$this->ci->load->library('extensions/FHC-Core-MobilityOnline/tomobilityonline/ToMobilityOnlineDataConversionLib');
 	}
 
 	/**
@@ -129,30 +122,19 @@ class SyncToMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$moValue = $fhcValue;
 
-		//if exists in valuemappings - take value
-		if (!empty($valuemappings[$fhcIndex])
-			&& array_key_exists($moValue, $valuemappings[$fhcIndex])
-		)
+		// if exists in valuemappings - take value
+		if (!empty($valuemappings[$fhcIndex]) && array_key_exists($moValue, $valuemappings[$fhcIndex]))
 		{
 			$moValue = $valuemappings[$fhcIndex][$moValue];
 		}
-		else//otherwise look in replacements array
+		else// otherwise look in replacements array
 		{
 			if (isset($this->_replacementsarrToMo[$fhcIndex]))
 			{
-				foreach ($this->_replacementsarrToMo[$fhcIndex] as $pattern => $replacement)
-				{
-					//if numeric index, execute callback
-					if (is_integer($pattern))
-						$moValue = $this->$replacement($moValue);
-					//otherwise replace with regex
-					elseif (is_string($replacement))
-					{
-						//add slashes for regex
-						$pattern = '/' . str_replace('/', '\/', $pattern) . '/';
-						$moValue = preg_replace($pattern, $replacement, $moValue);
-					}
-				}
+				$replacementFunc = $this->_replacementsarrToMo[$fhcIndex];
+				// call replacement function
+				if (is_string($replacementFunc) && is_callable(array($this->ci->tomobilityonlinedataconversionlib, $replacementFunc)))
+					$moValue = $this->ci->tomobilityonlinedataconversionlib->{$replacementFunc}($fhcValue);
 			}
 		}
 

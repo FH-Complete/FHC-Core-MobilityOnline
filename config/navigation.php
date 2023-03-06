@@ -34,5 +34,5 @@ $config['navigation_menu']['extensions/FHC-Core-MobilityOnline/*'] = array(
 		'link' => site_url('extensions/FHC-Core-MobilityOnline/MobilityOnlineOutgoing'),
 		'description' => 'Outgoings',
 		'icon' => 'group'
-	),
+	)
 );
