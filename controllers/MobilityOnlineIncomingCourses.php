@@ -39,23 +39,23 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 		$studiensemesterdata = $this->StudiensemesterModel->load();
 
 		if (isError($studiensemesterdata))
-			show_error($studiensemesterdata->retval);
+			show_error(getError($studiensemesterdata));
 
 		$currsemdata = $this->StudiensemesterModel->getAktOrNextSemester();
 
 		if (isError($currsemdata))
-			show_error($currsemdata->retval);
+			show_error(getError($currsemdata));
 
 		$studiengaenge = $this->MoFhcModel->getStudiengaenge();
 
 		if (isError($studiengaenge))
-			show_error($studiengaenge->retval);
+			show_error(getError($studiengaenge));
 
 		$this->load->view('extensions/FHC-Core-MobilityOnline/mobilityOnlineIncomingCourses',
 			array(
-				'semester' => $studiensemesterdata->retval,
-				'currsemester' => $currsemdata->retval,
-				'studiengaenge' => $studiengaenge->retval
+				'semester' => getData($studiensemesterdata),
+				'currsemester' => getData($currsemdata),
+				'studiengaenge' => getData($studiengaenge)
 			)
 		);
 	}
@@ -106,7 +106,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 							$hasError = true;
 							if (!isEmptyString($errors))
 								$errors .= '; ';
-							$errors .= $direktUserAddResult->retval;
+							$errors .= getError($direktUserAddResult);
 						}
 					}
 				}
@@ -121,7 +121,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 							$hasError = true;
 							if (!isEmptyString($errors))
 								$errors .= '; ';
-							$errors .= $direktUserDeleteResult->retval;
+							$errors .= getError($direktUserDeleteResult);
 						}
 					}
 				}
@@ -132,7 +132,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 			$this->outputJsonSuccess('Keine Lehreinheitszuweisungen geändert');
 		elseif (isSuccess($json) && !$hasError)
 		{
-			$this->outputJsonSuccess($json->retval);
+			$this->outputJsonSuccess(getData($json));
 		}
 		else
 		{

@@ -53,9 +53,18 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				$documentTypes = array_keys($this->confmiscvalues['documentstosync']['outgoing']);
 				$files = $this->getFiles($appId, $documentTypes);
 
-				if (!isEmptyArray($files))
+				if (isError($files))
 				{
-					$outgoingData['akten'] = $files;
+					$errorText = getError($files);
+					$errorText = is_string($errorText) ? ', ' . $errorText : '';
+					$results['errors']++;
+					$this->addErrorOutput("Fehler beim Holen der Files des Studierden mit applicationid $appId - " .
+						$outgoingData['person']['vorname'] . " " . $outgoingData['person']['nachname'] . $errorText);
+				}
+
+				if (hasData($files))
+				{
+					$outgoingData['akten'] = getData($files);
 				}
 
 				$ist_double_degree = $outgoingData['bisio_info']['ist_double_degree'];
@@ -124,11 +133,34 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		foreach ($apps as $application)
 		{
+			$fhcobj_extended = new StdClass();
+			$fhcobj_extended->error = false;
+			$fhcobj_extended->errorMessages = array();
 			$appId = $application->applicationID;
 
 			// get additional data from Mobility Online for each application
+
+			// get bank account data
 			$bankData = $this->ci->MoGetAppModel->getBankAccountDetails($appId);
+
+			if (isError($bankData))
+			{
+				$fhcobj_extended->error = true;
+				$fhcobj_extended->errorMessages[] = getError($bankData);
+			}
+			$bankData = getData($bankData);
+
 			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appId);
+
+			// do not include payment errors for now, as error is returned when there are empty payments
+
+			//~ if (isError($nominationData))
+			//~ {
+				//~ $fhcobj_extended->error = true;
+				//~ $fhcobj_extended->errorMessages[] = 'Fehler beim Holen der Zahlungen: '.getError($nominationData);
+			//~ }
+
+			$nominationData = getData($nominationData);
 
 			$institutionAddressesData = array();
 			// get gast intitution for adress
@@ -136,18 +168,24 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			if (isset($institution_id))
 			{
 				$institutionAddressesData = $this->ci->MoGetMasterDataModel->getAddressesOfInstitution($institution_id);
+
+				if (isError($institutionAddressesData))
+				{
+					$fhcobj_extended->error = true;
+					$fhcobj_extended->errorMessages[] = 'Fehler beim Holen der Institutionsadresse: '.getError($institutionAddressesData);
+				}
+				$institutionAddressesData = getData($institutionAddressesData);
 			}
 
 			// transform MobilityOnline application to FHC outgoing
 			$fhcobj = $this->mapMoAppToOutgoing($application, $institutionAddressesData, $bankData, $nominationData);
 
-			$fhcobj_extended = new StdClass();
 			$fhcobj_extended->moid = $appId;
 
 			// check if the fhc object has errors
 			$errors = $this->_outgoingObjHasError($fhcobj);
-			$fhcobj_extended->error = $errors->error;
-			$fhcobj_extended->errorMessages = $errors->errorMessages;
+			$fhcobj_extended->error = $fhcobj_extended->error || $errors->error;
+			$fhcobj_extended->errorMessages = array_merge($fhcobj_extended->errorMessages, $errors->errorMessages);
 
 			$ist_double_degree = isset($fhcobj['bisio_info']['ist_double_degree']) && $fhcobj['bisio_info']['ist_double_degree'];
 
@@ -337,6 +375,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		// payments
 		$payments = array();
 		$paymentObjectName = 'payment';
+
 		if (isset($nominationData->project->payments))
 		{
 			// payment can be object is single or array if multiple

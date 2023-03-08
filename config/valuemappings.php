@@ -31,7 +31,9 @@ $nations = array(
 	'Nicaragua' => 'NIC',
 	'Russian Federation' => 'RSF',
 	'Saudiarabien' => 'SA',
+	'Südkorea' => 'ROK',
 	'Taiwan' => 'RC',
+	'Tansania' => 'EAT',
 	'Tschechische Republik' => 'TCH',
 	'United States of America' => 'USA',
 	'Vereinigte Arabische Emirate' => 'VE',
@@ -39,32 +41,7 @@ $nations = array(
 	'andere' => 'XXX'
 );
 
-$config['valuemappings']['frommo']['nation_code'] = $nations;
-
-$config['valuemappings']['frommo']['nation'] = $nations;
-
-$config['valuemappings']['frommo']['staatsbuergerschaft'] = $nations;
-
-$config['valuemappings']['frommo']['herkunftsland_code'] = $nations;
-
-$config['valuemappings']['frommo']['sprache'] = array(
-	'Englisch' => 'English',
-	'Deutsch' => 'German'
-);
-
-$config['valuemappings']['frommo']['geschlecht'] = array(
-	'M' => 'm',
-	'W' => 'w'
-);
-
-$config['valuemappings']['frommo']['anrede'] = array(
-	'M' => 'Herr',
-	'W' => 'Frau',
-	'm' => 'Herr',
-	'w' => 'Frau'
-);
-
-$config['valuemappings']['frommo']['studiengang_kz'] = array(
+$studiengaenge = array(
 	'13996' => 585, // AI Engineering
 	'7068' => 227, // Biomedical Engineering
 	'6712' => 10006, // Campus International
@@ -78,6 +55,7 @@ $config['valuemappings']['frommo']['studiengang_kz'] = array(
 	'7041' => 327, // Human Factors and Sports Engineering
 	'7033' => 257, // Informatik/Computer Science
 	'7034' => 258, // Informations- und Kommunikationssysteme
+	'13995' => 298, // Internet of Things und intelligente Systeme
 	'7040' => 303, // IT-Security
 	'7039' => 301, // Innovations- und Technologiemanagement
 	'7046' => 334, // Integrative Stadtentwicklung-Smart City
@@ -92,32 +70,14 @@ $config['valuemappings']['frommo']['studiengang_kz'] = array(
 	'7037' => 299, // Software Engineering
 	'7369' => 328, // Sports Technology Master
 	'7044' => 332, // Technisches Umweltmanagement und Ökotoxikologie
-	'7036' => 298, // Telekommunikation und Internettechnologien
+	'7036' => 298, // Telekommunikation und Internettechnologien (alt)
 	'7051' => 692, // Tissue Engineering and Regenerative Medicine
 	'7048' => 476, // Urbane Erneuerbare Energietechnologien
 	'7032' => 256, // Wirtschaftsinformatik
 	'7371' => 302 // Wirtschaftsinformatik Master
 );
 
-$config['valuemappings']['frommo']['zgvnation'] = $nations;
-
-$config['valuemappings']['frommo']['zgvmas_code'] = array(
-	'929710' => 1, // FH-Bachelor (I)
-	'929711' => 2, // FH-Bachelor (A)
-	'929712' => 3, // postsek.Inland
-	'929713' => 4, // postsek.Ausland
-	'929714' => 5, // Uni-Bachelor (I)
-	'929715' => 6, // Uni-Bachelor (A)
-	'929716' => 7, // FH (I)
-	'929717' => 8, // FH (A)
-	'929718' => 9, // Uni (I)
-	'929719' => 10, // Uni (A)
-	'929720' => 11 // Sonstige
-);
-
-$config['valuemappings']['frommo']['zgvmanation'] = $nations;
-
-$config['valuemappings']['frommo']['mobilitaetsprogramm_code'] = array(
+$mobilitaetsprogramme = array(
 	'681' => 7, // Erasmus (Mundus)
 	'682' => 202, // Free Mover - selbst
 	'685' => 7, // Erasmus (Praktikum)
@@ -132,7 +92,61 @@ $config['valuemappings']['frommo']['mobilitaetsprogramm_code'] = array(
 	//'Erasmus (Studies)' => 7,
 );
 
-$config['valuemappings']['frommo']['buchungstyp_kurzbz'] = array(
+$config['valuemappings']['frommo']['application']['bisio']['nation_code'] = $nations;
+$config['valuemappings']['frommo']['applicationout']['bisio']['nation_code'] = $nations;
+
+$config['valuemappings']['frommo']['address']['adresse']['nation'] = $nations;
+$config['valuemappings']['frommo']['curraddress']['studienadresse']['nation'] = $nations;
+$config['valuemappings']['frommo']['instaddress']['institution_adresse']['nation'] = $nations;
+
+$config['valuemappings']['frommo']['application']['person']['staatsbuergerschaft'] = $nations;
+
+$config['valuemappings']['frommo']['application']['bisio']['herkunftsland_code'] = $nations;
+$config['valuemappings']['frommo']['applicationout']['bisio']['herkunftsland_code'] = $nations;
+
+$config['valuemappings']['frommo']['application']['person']['sprache'] = array(
+	'Englisch' => 'English',
+	'Deutsch' => 'German'
+);
+
+$config['valuemappings']['frommo']['application']['person']['geschlecht'] = array(
+	'M' => 'm',
+	'W' => 'w'
+);
+
+$config['valuemappings']['frommo']['application']['person']['anrede'] = array(
+	'M' => 'Herr',
+	'W' => 'Frau',
+	'm' => 'Herr',
+	'w' => 'Frau'
+);
+
+$config['valuemappings']['frommo']['application']['prestudent']['studiengang_kz'] = $studiengaenge;
+$config['valuemappings']['frommo']['applicationout']['prestudent']['studiengang_kz'] = $studiengaenge;
+$config['valuemappings']['frommo']['application']['konto']['studiengang_kz'] = $studiengaenge;
+
+$config['valuemappings']['frommo']['application']['prestudent']['zgvnation'] = $nations;
+
+$config['valuemappings']['frommo']['application']['prestudent']['zgvmas_code'] = array(
+	'929710' => 1, // FH-Bachelor (I)
+	'929711' => 2, // FH-Bachelor (A)
+	'929712' => 3, // postsek.Inland
+	'929713' => 4, // postsek.Ausland
+	'929714' => 5, // Uni-Bachelor (I)
+	'929715' => 6, // Uni-Bachelor (A)
+	'929716' => 7, // FH (I)
+	'929717' => 8, // FH (A)
+	'929718' => 9, // Uni (I)
+	'929719' => 10, // Uni (A)
+	'929720' => 11 // Sonstige
+);
+
+$config['valuemappings']['frommo']['application']['prestudent']['zgvmanation'] = $nations;
+
+$config['valuemappings']['frommo']['application']['bisio']['mobilitaetsprogramm_code'] = $mobilitaetsprogramme;
+$config['valuemappings']['frommo']['applicationout']['bisio']['mobilitaetsprogramm_code'] = $mobilitaetsprogramme;
+
+$config['valuemappings']['frommo']['application']['konto']['buchungstyp_kurzbz'] = array(
 	'681' => array('OEH', 'Studiengebuehr'), // Buchungstyp depends on mobilitaetsprogramm_code
 	'682' => array('OEH', 'Studiengebuehr'),
 	'685' => array('OEH', 'Studiengebuehr'),
@@ -142,7 +156,7 @@ $config['valuemappings']['frommo']['buchungstyp_kurzbz'] = array(
 );
 
 // if Betrag is not set here, default from tbl_buchungstyp is used
-$config['valuemappings']['frommo']['betrag'] = array(
+$config['valuemappings']['frommo']['application']['konto']['betrag'] = array(
 	'681' => array('Studiengebuehr' => 0.00),// Betrag depends on mobilitaetsprogramm_code
 	'682' => array('Studiengebuehr' => 0.00),
 	'685' => array('Studiengebuehr' => 0.00),
@@ -151,7 +165,7 @@ $config['valuemappings']['frommo']['betrag'] = array(
 	'946' => array('Studiengebuehr' => 0.00)
 );
 
-$config['valuemappings']['frommo']['aufenthaltfoerderung_code'] = array(
+$config['valuemappings']['frommo']['applicationout']['bisio_aufenthaltfoerderung']['aufenthaltfoerderung_code'] = array(
 	'1100668' => 1, // EU-Förderung
 	'1100669' => 2, // Beihilfe von Bund, Land, Gemeinde
 	'1100670' => 3, // Förderung durch Universität/Hochschule
@@ -159,7 +173,7 @@ $config['valuemappings']['frommo']['aufenthaltfoerderung_code'] = array(
 	'1100672' => 5 // keine Förderung
 );
 
-$config['valuemappings']['frommo']['zweck_code'] = array(
+$config['valuemappings']['frommo']['applicationout']['bisio_zweck']['zweck_code'] = array(
 	'1114418' => '1', // Studium
 	'1114419' => '2', // Praktikum
 	'1114420' => '3', // Studium und Praktikum
@@ -177,7 +191,7 @@ $config['valuemappings']['frommo']['zweck_code'] = array(
 );
 
 $defaultbuchungen = array('OEH' => 'ÖH-Beitrag STG Semester', 'Studiengebuehr' => 'Studienbeitrag_Incoming');
-$config['valuemappings']['frommo']['buchungstext'] = array(
+$config['valuemappings']['frommo']['application']['konto']['buchungstext'] = array(
 	'681' => $defaultbuchungen,
 	'682' => $defaultbuchungen,
 	'685' => $defaultbuchungen,
@@ -189,12 +203,12 @@ $config['valuemappings']['frommo']['buchungstext'] = array(
 						'Unkostenbeitrag' => 'Unkostenbeitrag STG Semester')**/
 );
 
-$config['valuemappings']['frommo']['dokument_kurzbz'] = array(
+$config['valuemappings']['frommo']['file']['akte']['dokument_kurzbz'] = array(
 	'PASS_COPY' => 'identity',
 	'GRANT_AGREE_SIGNED_FH' => 'GrantAgr'
 );
 
-$config['valuemappings']['frommo']['dokument_bezeichnung'] = array(
+$config['valuemappings']['frommo']['file']['akte']['dokument_bezeichnung'] = array(
 	'PASS_COPY' => 'Identitätsnachweis',
 	'GRANT_AGREE_SIGNED_FH' => 'Grant Agreement'
 );

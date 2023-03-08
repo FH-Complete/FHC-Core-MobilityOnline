@@ -41,17 +41,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 		$data["login"]=NULL;
 		*/
 
-		$success = $this->performCall('getApplicationDataBySearchParameters', $data);
-
-		if (isset($success->return))
-		{
-			if (is_array($success->return) || !is_object($success->return))
-				return $success->return;
-			else
-				return array($success->return);
-		}
-		else
-			return null;
+		return $this->performCall('getApplicationDataBySearchParameters', $data);
 	}
 
 	/**
@@ -61,17 +51,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getApplicationIdsWithFurtherSearchRestrictions($data)
 	{
-		$success = $this->performCall('getApplicationIdsBySearchParametersWithFurtherSearchRestrictions', $data);
-
-		if (isset($success->return))
-		{
-			if (is_array($success->return) || (!is_object($success->return) && !is_integer($success->return)))
-				return $success->return;
-			else
-				return array($success->return);
-		}
-		else
-			return null;
+		return $this->performCall('getApplicationIdsBySearchParametersWithFurtherSearchRestrictions', $data);
 	}
 
 	/**
@@ -82,17 +62,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions($data)
 	{
-		$success = $this->performCall('getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions', $data);
-
-		if (isset($success->return))
-		{
-			if (is_array($success->return) || (!is_object($success->return) && !is_integer($success->return)))
-				return $success->return;
-			else
-				return array($success->return);
-		}
-		else
-			return null;
+		return $this->performCall('getSpecifiedApplicationDataBySearchParametersWithFurtherSearchRestrictions', $data);
 	}
 
 	/**
@@ -102,7 +72,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getApplicationById($appId)
 	{
-		$success = $this->performCall('getApplicationDataByID', array('applicationID' => $appId));
+		return $this->performCall('getApplicationDataByID', array('applicationID' => $appId));
 
 		/*
 		structure of application object:
@@ -120,13 +90,6 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 		$test->return->email = '';
 		$test->return->firstName= '';
 		$test->return->lastName= '';*/
-
-		if (isset($success->return))
-		{
-			return $success->return;
-		}
-		else
-			return null;
 	}
 
 	/**
@@ -136,17 +99,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getApplicationIds($data)
 	{
-		$success = $this->performCall('getApplicationIdsBySearchParameters', $data);
-
-		if (isset($success->return))
-		{
-			if (is_array($success->return) || !is_numeric($success->return))
-				return $success->return;
-			else
-				return array($success->return);
-		}
-		else
-			return null;
+		return $this->performCall('getApplicationIdsBySearchParameters', $data);
 	}
 
 	/**
@@ -156,14 +109,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getPermanentAddress($appId)
 	{
-		$success = $this->performCall('getPermanentAddress', array('applicationID' => $appId));
-
-		if (isset($success->return))
-		{
-			return $success->return;
-		}
-		else
-			return null;
+		return $this->performCall('getPermanentAddress', array('applicationID' => $appId));
 	}
 
 	/**
@@ -173,14 +119,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getCurrentAddress($appId)
 	{
-		$success = $this->performCall('getCurrentAddress', array('applicationID' => $appId));
-
-		if (isset($success->return))
-		{
-			return $success->return;
-		}
-		else
-			return null;
+		return $this->performCall('getCurrentAddress', array('applicationID' => $appId));
 	}
 
 	/**
@@ -190,14 +129,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getBankAccountDetails($appId)
 	{
-		$success = $this->performCall('getBankAccountDetails', array('applicationID' => $appId));
-
-		if (isset($success->return))
-		{
-			return $success->return;
-		}
-		else
-			return null;
+		return $this->performCall('getBankAccountDetails', array('applicationID' => $appId));
 	}
 
 	/**
@@ -207,19 +139,9 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getCoursesOfApplication($appId)
 	{
-		$success = $this->performCall('getCoursesOfLearningAgreement', array('applicationID' => $appId));
-
-		if (isset($success->return))
-		{
-			if (is_array($success->return) || !is_object($success->return))
-				return $success->return;
-			else
-				return array($success->return);
-		}
-		else
-			return null;
+		return $this->performCall('getCoursesOfLearningAgreement', array('applicationID' => $appId));
 	}
-	
+
 		/**
 	 * Get Courses an applicant has assigned for
 	 * @param int $appId
@@ -227,17 +149,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getCoursesOfApplicationTranscript($appId)
 	{
-		$success = $this->performCall('getCoursesOfTranscript', array('applicationID' => $appId));
-
-		if (isset($success->return))
-		{
-			if (is_array($success->return) || !is_object($success->return))
-				return $success->return;
-			else
-				return array($success->return);
-		}
-		else
-			return null;
+		return $this->performCall('getCoursesOfTranscript', array('applicationID' => $appId));
 	}
 
 
@@ -249,23 +161,13 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getFilesOfApplication($appId, $uploadSettingNumber)
 	{
-		$success = $this->performCall(
+		return $this->performCall(
 			'getFilesOfApplication',
 			array(
 				'applicationID' => $appId,
 				'uploadSettingNumber' => $uploadSettingNumber
 			)
 		);
-
-		if (isset($success->return))
-		{
-			if (is_array($success->return) || !is_object($success->return))
-				return $success->return;
-			else
-				return array($success->return);
-		}
-		else
-			return null;
 	}
 
 	/**
@@ -275,17 +177,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getAllFilesOfApplication($appId)
 	{
-		$success = $this->performCall('getAllFilesOfApplication', array('applicationID' => $appId));
-
-		if (isset($success->return))
-		{
-			if (is_array($success->return) || !is_object($success->return))
-				return $success->return;
-			else
-				return array($success->return);
-		}
-		else
-			return null;
+		return $this->performCall('getAllFilesOfApplication', array('applicationID' => $appId));
 	}
 
 	/**
@@ -295,14 +187,7 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getProjectDetailsByApplicationID($appId)
 	{
-		$success = $this->performCall('getProjectDetailsByApplicationID', array('applicationID' => $appId));
-
-		if (isset($success->return))
-		{
-			return $success->return;
-		}
-		else
-			return null;
+		return $this->performCall('getProjectDetailsByApplicationID', array('applicationID' => $appId));
 	}
 
 	/**
@@ -312,19 +197,12 @@ class Mogetapplicationdata_model extends Mobilityonlineapi_model
 	 */
 	public function getNominationDataByApplicationID($appId)
 	{
-		$success = $this->performCall(
+		return $this->performCall(
 			'getNominationDataByApplicationID',
 			array(
 				'applicationID' => $appId,
 				'withProjectData' => true
 			)
 		);
-
-		if (isset($success->return))
-		{
-			return $success->return;
-		}
-		else
-			return null;
 	}
 }
