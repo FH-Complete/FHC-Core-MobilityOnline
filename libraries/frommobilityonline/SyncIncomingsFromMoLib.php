@@ -1027,9 +1027,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			if (hasData($bisiocheckResp))
 			{
-				$this->stamp('update', $bisio);
-				$bisioResult = $this->ci->BisioModel->update($bisiocheckResp->retval[0]->bisio_id, $bisio);
-				$this->log('update', $bisioResult, 'bisio');
+				if (count($bisiocheckResp) == 1)
+				{
+					$this->stamp('update', $bisio);
+					$bisioResult = $this->ci->BisioModel->update($bisiocheckResp->retval[0]->bisio_id, $bisio);
+					$this->log('update', $bisioResult, 'bisio');
+				}
 			}
 			else
 			{
