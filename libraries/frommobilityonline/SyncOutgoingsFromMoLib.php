@@ -22,7 +22,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('crm/konto_model', 'KontoModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetmasterdata_model', 'MoGetMasterDataModel');
-		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobisioidzuordnung_model', 'MobisioidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mozahlungidzuordnung_model', 'MozahlungidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobankverbindungidzuordnung_model', 'MobankverbindungidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobilityonlinefhc_model', 'MoFhcModel');
@@ -427,7 +426,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * Saves an outgoing.
 	 * @param int $appId
 	 * @param array $outgoing
-	 * @param int $bisio_id_existing if bisio id if bisio already exists
+	 * @param int $bisio_id_existing bisio id if bisio already exists
 	 * @return string prestudent_id of saved prestudent
 	 */
 	public function saveOutgoing($appId, $outgoing, $bisio_id_existing)
@@ -808,28 +807,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		return $buchungsnr;
-	}
-
-	/**
-	 * Check if bisio is already in fhcomplete by checking sync table.
-	 * @param int $appId
-	 * @return object error or success with found id if in fhcomplete, success with null if not in fhcomplete
-	 */
-	public function checkBisioInFhc($appId)
-	{
-		$infhccheck_bisio_id = null;
-		$this->ci->MobisioidzuordnungModel->addSelect('bisio_id');
-		$bisioIdRes = $this->ci->MobisioidzuordnungModel->loadWhere(array('mo_applicationid' => $appId));
-
-		if (isError($bisioIdRes))
-			return $bisioIdRes;
-
-		if (hasData($bisioIdRes))
-		{
-			$infhccheck_bisio_id = getData($bisioIdRes)[0]->bisio_id;
-		}
-
-		return success($infhccheck_bisio_id);
 	}
 
 	/**

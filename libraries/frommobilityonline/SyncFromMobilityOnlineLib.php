@@ -75,6 +75,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moakteidzuordnung_model', 'MoakteidzuordnungModel');
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobisioidzuordnung_model', 'MobisioidzuordnungModel');
 
 		$this->ci->load->library('AkteLib', array('who' => self::IMPORTUSER));
 		$this->ci->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/FromMobilityOnlineDataConversionLib');
@@ -716,6 +717,28 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			return $writtenTemp;
 
 		return $this->ci->TempFSModel->openRead($filename);
+	}
+
+	/**
+	 * Check if bisio is already in fhcomplete by checking sync table.
+	 * @param int $appId
+	 * @return object error or success with found id if in fhcomplete, success with null if not in fhcomplete
+	 */
+	public function checkBisioInFhc($appId)
+	{
+		$infhccheck_bisio_id = null;
+		$this->ci->MobisioidzuordnungModel->addSelect('bisio_id');
+		$bisioIdRes = $this->ci->MobisioidzuordnungModel->loadWhere(array('mo_applicationid' => $appId));
+
+		if (isError($bisioIdRes))
+			return $bisioIdRes;
+
+		if (hasData($bisioIdRes))
+		{
+			$infhccheck_bisio_id = getData($bisioIdRes)[0]->bisio_id;
+		}
+
+		return success($infhccheck_bisio_id);
 	}
 
 	/** ---------------------------------------------- Private methods -----------------------------------------------*/
