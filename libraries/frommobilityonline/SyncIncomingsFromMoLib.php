@@ -89,7 +89,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 					$this->addInfoOutput("Student für applicationid $appId ".$incomingData['person']['vorname'].
 						" ".$incomingData['person']['nachname']." existiert bereits in fhcomplete - aktualisieren");
 
-					$prestudent_id = $this->saveIncoming($incomingData, $infhccheck_prestudent_id);
+					$prestudent_id = $this->saveIncoming($incomingData, $appId, $infhccheck_prestudent_id);
 
 					if (isset($prestudent_id) && is_numeric($prestudent_id))
 					{
@@ -120,7 +120,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				}
 				else
 				{
-					$prestudent_id = $this->saveIncoming($incomingData);
+					$prestudent_id = $this->saveIncoming($incomingData, $appId);
 
 					if (isset($prestudent_id) && is_numeric($prestudent_id))
 					{
@@ -465,10 +465,11 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	/**
 	 * Saves an incoming (pre-)student, i.e. adds him or updates it if prestudent_id is set
 	 * @param array $incoming
+	 * @param int $appId MobilityOnline application Id
 	 * @param int $prestudent_id
 	 * @return string prestudent_id of saved prestudent
 	 */
-	public function saveIncoming($incoming, $prestudent_id = null)
+	public function saveIncoming($incoming, $appId, $prestudent_id = null)
 	{
 		//error check for missing data etc.
 		$errors = $this->fhcObjHasError($incoming, $this->moObjectType);
@@ -574,7 +575,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 						// bisio
 						$bisio['student_uid'] = $benutzerrespuid;
-						$bisio_id = $this->_saveBisio($bisio);
+						$bisio_id = $this->_saveBisio($appId, $bisio);
 						$bisio_zweck['bisio_id'] = $bisio_id;
 						$bisio_zweckresult = $this->ci->MoFhcModel->saveBisioZweck($bisio_zweck);
 						if (hasData($bisio_zweckresult))
@@ -1014,23 +1015,41 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts bisio for a student or updates an existing one.
+	 * @param int appId MobilityOnline appliation Id
 	 * @param array $bisio
 	 * @return int|null bisio_id of inserted or updated bisio if successful, null otherwise.
 	 */
-	private function _saveBisio($bisio)
+	private function _saveBisio($appId, $bisio)
 	{
 		$bisioRespId = null;
 
+		// get stay for the student
+		$this->ci->BisioModel->addOrder('von', 'DESC');
+		$this->ci->BisioModel->addOrder('insertamum', 'DESC');
 		$bisiocheckResp = $this->ci->BisioModel->loadWhere(array('student_uid' => $bisio['student_uid']));
 
 		if (isSuccess($bisiocheckResp))
 		{
+			// if there are bisios for the student id
 			if (hasData($bisiocheckResp))
 			{
-				if (count($bisiocheckResp) == 1)
+				$bisio_id = null;
+				// if there is a linked bisio, update it
+				$bisioIdRes = $this->checkBisioInFhc($appId);
+
+				if (hasData($bisioIdRes))
+				{
+					$bisio_id = getData($bisioIdRes);
+				}
+				elseif (count($bisiocheckResp) == 1) // otherwise update if only one entry
+				{
+					$bisio_id = getData($bisiocheckResp)[0]->bisio_id;
+				}
+
+				if (is_numeric($bisio_id))
 				{
 					$this->stamp('update', $bisio);
-					$bisioResult = $this->ci->BisioModel->update($bisiocheckResp->retval[0]->bisio_id, $bisio);
+					$bisioResult = $this->ci->BisioModel->update($bisio_id, $bisio);
 					$this->log('update', $bisioResult, 'bisio');
 				}
 			}
@@ -1039,9 +1058,17 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				$this->stamp('insert', $bisio);
 				$bisioResult = $this->ci->BisioModel->insert($bisio);
 				$this->log('insert', $bisioResult, 'bisio');
+
+				if (hasData($bisioResult))
+				{
+					$bisio_id = getData($bisioResult);
+
+					// link new bisio to mo bisio
+					$this->ci->MobisioidzuordnungModel->insert(array('bisio_id' => $bisio_id, 'mo_applicationid' => $appId));
+				}
 			}
 
-			$bisioRespId = $bisioResult->retval;
+			if (isset($bisioResult)) $bisioRespId = getData($bisioResult);
 		}
 
 		return $bisioRespId;
