@@ -423,21 +423,24 @@ var MobilityOnlineOutgoing = {
 
 					for (let prestudent_id in prestudentsToSelect)
 					{
+						let prestudent = prestudentsToSelect[prestudent_id];
+
 						// prestudent panel
 						bisiosHtml += "<div class='panel panel-default'>"
 										+ "<div class='panel-heading'>"
-										+ "Prestudent Id "+prestudent_id
+										+ "Prestudent Id: "+prestudent_id
+										+", letzter Status: "+prestudent.status_kurzbz[0]+" "+prestudent.studiensemester_kurzbz[0]
 										+ "</div>"
 										+ "<div class='panel-body'>";
 
 						// radio button for adding new mobility
-						bisiosHtml += "<div class='radio'>" +
-							"<label><input type='radio' name='bisiocheck' class='addNewBisio' data-selectedPrestudent='"+prestudent_id+"' value='null'>&nbsp;Neue Mobilität hinzufügen</label>" +
-							"</div>";
+						bisiosHtml += "<div class='radio'>"
+							+"<label>"
+							+"<input type='radio' name='bisiocheck' class='addNewBisio' data-selectedPrestudent='"+prestudent_id+"' value='null'>"
+							+"&nbsp;Neue Mobilität hinzufügen"
+							+"</label>"
+							+"</div>";
 
-						//bisiosHtml += "<input type='hidden' value='"+prestudent_id+"' id='selectedPrestudent'>";
-
-						let prestudent = prestudentsToSelect[prestudent_id];
 						for (let idx in prestudent.existingBisios)
 						{
 							let bisio = prestudent.existingBisios[idx];
@@ -500,9 +503,7 @@ var MobilityOnlineOutgoing = {
 							+person.nachname+' auswählen</h4>'
 					)
 
-					$("#applicationsyncoutputtext").html(
-						bisiosHtml
-					)
+					$("#applicationsyncoutputtext").html(bisiosHtml);
 
 					if (!checkedFound)
 						$(".addNewBisio").first().prop("checked", true);

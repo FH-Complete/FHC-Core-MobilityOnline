@@ -272,6 +272,9 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 						// save all Studiensemester of student
 						$prestudentsToSelect[$prestudent_id]['studiensemester_kurzbz'][] = $prestudent->studiensemester_kurzbz;
 
+						// save all status of student
+						$prestudentsToSelect[$prestudent_id]['status_kurzbz'][] = $prestudent->status_kurzbz;
+
 						// check if has not mapped bisios in fhcomplete
 						$existingBisiosRes = $this->ci->MoFhcModel->getBisio($prestudent_id);
 
@@ -538,14 +541,10 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		// get person_id
 		$personRes = $this->ci->PersonModel->getByUid($uid);
-		// get prestudent_id
-		//~ $this->ci->StudentModel->addSelect('prestudent_id');
-		//~ $prestudentsRes = $this->ci->StudentModel->loadWhere(array('student_uid' => $bisio['student_uid']));
 
 		if (hasData($personRes))
 		{
 			$person_id = getData($personRes)[0]->person_id;
-			//$prestudent_id = getData($prestudentRes)[0]->prestudent_id;
 			$bisio_id = null;
 			$ist_double_degree = (isset($bisio_info['ist_double_degree']) && $bisio_info['ist_double_degree'] === true);
 
@@ -634,8 +633,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			// if bisio is set or is double degree student
 			if (isset($bisio_id) || $ist_double_degree)
 			{
-
-
 				// Bankverbindung
 				if (isset($outgoing['bankverbindung']['iban']) && !isEmptyString($outgoing['bankverbindung']['iban']))
 				{
@@ -663,11 +660,14 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				{
 					$prestudent_id = getData($prestudentRes)[0]->prestudent_id;
 
-					// Documents
-					// save documents
-					foreach ($akten as $akte)
+					if (is_numeric($prestudent_id))
 					{
-						$this->saveAkte($person_id, $akte['akte'], $prestudent_id);
+						// Documents
+						// save documents
+						foreach ($akten as $akte)
+						{
+							$this->saveAkte($person_id, $akte['akte'], $prestudent_id);
+						}
 					}
 				}
 			}

@@ -49,7 +49,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		'inhalt' => 'resizeBase64ImageBig',
 		'file_content' => 'encodeToBase64',
 		'erstelltam' => 'mapIsoDateToFhc',
-		//'student_uid' => 'replaceEmptyByNull',
+		'student_uid' => 'replaceEmptyByNull',
 		'aufenthaltfoerderung_code' => 'replaceEmptyByNull',
 		'zweck_code' => 'replaceEmptyByNull',
 		'ects_erworben' => 'mapEctsToFhc',

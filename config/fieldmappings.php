@@ -137,8 +137,6 @@ $config['fieldmappings']['applicationout']['benutzer'] = array(
 
 // bisio outgoing
 $config['fieldmappings']['applicationout']['bisio'] = $bisiomappings;
-//$config['fieldmappings']['applicationout']['bisio']['student_uid'] = 'bew_ber_matr_nr';
-//$config['fieldmappings']['applicationout']['bisio']['prestudent_id'] = 'bew_ber_matr_nr';
 $config['fieldmappings']['applicationout']['bisio']['universitaet'] = 'inst_id_gast';
 $config['fieldmappings']['applicationout']['bisio']['ects_erworben'] = 'bew_anz_ects2';
 $config['fieldmappings']['applicationout']['bisio']['ects_angerechnet'] = 'bew_anz_ects';

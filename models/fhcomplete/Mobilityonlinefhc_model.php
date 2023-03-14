@@ -37,7 +37,6 @@ class Mobilityonlinefhc_model extends DB_Model
 		$this->PrestudentModel->addJoin('public.tbl_person', 'person_id');
 		$this->PrestudentModel->addJoin('public.tbl_benutzer', 'person_id');
 		$this->PrestudentModel->addJoin('public.tbl_studiengang', 'studiengang_kz');
-		//$this->PrestudentModel->addJoin('bis.tbl_bisio', 'prestudent_id');
 
 		$whereParams = array('tbl_prestudent.prestudent_id' => $prestudent_id);
 
@@ -122,23 +121,30 @@ class Mobilityonlinefhc_model extends DB_Model
 	 * Gets prestudents by uid, Studiengang, and Studiensemester.
 	 * @param string uid
 	 * @param string studiengang_kz
-	 * @param string studiensemester_kurzbz
 	 * @return object success or error
 	 */
-	public function getPrestudents($uid, $studiengang_kz, $studiensemester_kurzbz)
+	public function getPrestudents($uid, $studiengang_kz)
 	{
 		$qry = "SELECT
-					DISTINCT prestudent_id, studiensemester_kurzbz
+					prestudent_id, studiensemester_kurzbz, status_kurzbz
 				FROM
 					public.tbl_prestudent ps
 					JOIN public.tbl_person USING (person_id)
 					JOIN public.tbl_benutzer ben USING (person_id)
 					JOIN public.tbl_prestudentstatus pss USING (prestudent_id)
-					JOIN public.tbl_studiensemester USING (studiensemester_kurzbz)
+					JOIN public.tbl_studiensemester sem USING (studiensemester_kurzbz)
 				WHERE
 					ben.uid = ?
 					AND ps.studiengang_kz = ?
-					AND pss.status_kurzbz IN ('Student', 'Diplomand')";
+					AND EXISTS (
+						SELECT 1
+						FROM
+							public.tbl_prestudentstatus
+						WHERE
+							prestudent_id = ps.prestudent_id
+							AND status_kurzbz IN ('Student', 'Diplomand')
+					)
+					ORDER BY prestudent_id DESC, sem.start DESC, pss.datum DESC, pss.insertamum DESC";
 
 		return $this->execQuery($qry, array($uid, $studiengang_kz));
 	}
