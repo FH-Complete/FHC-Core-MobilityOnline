@@ -236,7 +236,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				$studiensemester_kurzbz = $fhcobj['prestudent']['studiensemester_kurzbz'];
 
 				// check if there are multiple prestudents for the same uid, Studiensemester, and Studiengang (should rarely be the case...)
-				$prestudentsRes = $this->ci->MoFhcModel->getIOPrestudents($uid, $studiengang_kz, $studiensemester);
+				$prestudentsRes = $this->ci->MoFhcModel->getPrestudents($uid, $studiengang_kz, $studiensemester);
 
 				if (isError($prestudentsRes))
 				{
@@ -271,11 +271,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 
 						// save all Studiensemester of student
 						$prestudentsToSelect[$prestudent_id]['studiensemester_kurzbz'][] = $prestudent->studiensemester_kurzbz;
-						// save all prestudent Ids
-						//~ if (!in_array($prestudent->prestudent_id, $prestudent_ids))
-
-							//~ $prestudent_ids[] = $prestudent->prestudent_id;
-						//~ }
 
 						// check if has not mapped bisios in fhcomplete
 						$existingBisiosRes = $this->ci->MoFhcModel->getBisio($prestudent_id);
@@ -294,10 +289,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 							// save existing bisios to pass for selection
 							$existingBisios = getData($existingBisiosRes);
 							$prestudentsToSelect[$prestudent_id]['existingBisios'] = $existingBisios;
-
-							//$fhcobj_extended->prestudentsToSelect = $existingBisios;
-							//~ $fhcobj_extended->error = true;
-							//~ $fhcobj_extended->errorMessages[] = 'Mobilität existiert bereits in fhcomplete, zum Verlinken bitte auf Tabellenzeile klicken.';
 						}
 					}
 
@@ -308,30 +299,11 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 					}
 					else // otherwise let the user decide which bisio should be saved for which prestudent
 					{
-						//var_dump($prestudentsToSelect);
 						$fhcobj_extended->prestudentsToSelect = $prestudentsToSelect;
 						$fhcobj_extended->error = true;
 						$fhcobj_extended->errorMessages[] =
 							'Keine eindeutige Übereinstimmung mit Studierendendatensatz, zum Auswählen bitte auf Tabellenzeile klicken.';
 					}
-
-					//~ // check if has not mapped bisios in fhcomplete
-					//~ $existingBisiosRes = $this->ci->MoFhcModel->getBisio($prestudent_ids);
-
-					//~ if (isError($existingBisiosRes))
-					//~ {
-						//~ $fhcobj_extended->error = true;
-						//~ $fhcobj_extended->errorMessages[] = 'Fehler beim Prüfen der existierenden Mobilitäten in fhcomplete';
-					//~ }
-
-					//~ if (hasData($existingBisiosRes)) // manually select correct bisio if a bisio already exists
-					//~ {
-						//~ $existingBisios = getData($existingBisiosRes);
-
-						//~ $fhcobj_extended->existingBisios = $existingBisios;
-						//~ $fhcobj_extended->error = true;
-						//~ $fhcobj_extended->errorMessages[] = 'Mobilität existiert bereits in fhcomplete, zum Verlinken bitte auf Tabellenzeile klicken.';
-					//~ }
 				}
 			}
 

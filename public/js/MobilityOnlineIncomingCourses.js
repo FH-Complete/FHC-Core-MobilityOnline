@@ -319,10 +319,18 @@ var MobilityOnlineIncomingCourses = {
 			"<tr><td class='prestudentfieldname'>E-Mail</td><td class='prestudentfieldvalue'>"+moApplication.email+"</td>" +
 			"<td class='prestudentfieldname'>Telefon</td><td class='prestudentfieldvalue'>"+moApplication.phonenumber+"</td></tr>" +
 			"<tr><td class='prestudentfieldname'>Studiengang</td><td class='prestudentfieldvalue'>"+moApplication.studiengang+"</td>" +
-			"<td class='prestudentfieldname'>Aufenthalt</td><td class='prestudentfieldvalue'>"+MobilityOnlineIncomingCourses._formatDateGerman(moApplication.stayfrom) +
-			" - " + MobilityOnlineIncomingCourses._formatDateGerman(moApplication.stayto) +
-			"</td>" +
-			"</tr>";
+			"<td class='prestudentfieldname'>Aufenthalt</td><td class='prestudentfieldvalue'>";
+
+		let first = true;
+		for (let stay in moApplication.stays)
+		{
+			if (!first) prestudentDataHtml+= ', ';
+			stayObj = moApplication.stays[stay];
+			prestudentDataHtml += MobilityOnlineIncomingCourses._formatDateGerman(stayObj.von)
+				+" - " + MobilityOnlineIncomingCourses._formatDateGerman(stayObj.bis);
+			first = false;
+		}
+		prestudentDataHtml += "</td></tr>";
 
 		$("#lvsprestudentdata").html(prestudentDataHtml);
 

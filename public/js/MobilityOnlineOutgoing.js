@@ -266,14 +266,11 @@ var MobilityOnlineOutgoing = {
 	},
 	linkBisio: function(moid, new_prestudent_id, bisio_id)
 	{
-		console.log(new_prestudent_id);
 		let initOutgoingSync = function(moid)
 		{
 			MobilityOnlineOutgoing._blackInApplicationRow(moid);
 
 			let outgoingToSync = MobilityOnlineOutgoing._findOutgoingByMoid(moid);
-			console.log(new_prestudent_id);
-			console.log(outgoingToSync);
 			if (new_prestudent_id != null) outgoingToSync[0].data.bisio.prestudent_id = new_prestudent_id;
 			MobilityOnlineOutgoing.syncOutgoings(outgoingToSync, $("#studiensemester").val());
 		}
@@ -405,8 +402,6 @@ var MobilityOnlineOutgoing = {
 	},
 	_setSelectBisiosEvents: function(outgoingobj)
 	{
-		//console.log(outgoingobj);
-
 		// handle linking of existing bisios
 		if (outgoingobj.prestudentsToSelect)
 		{
@@ -443,7 +438,6 @@ var MobilityOnlineOutgoing = {
 						//bisiosHtml += "<input type='hidden' value='"+prestudent_id+"' id='selectedPrestudent'>";
 
 						let prestudent = prestudentsToSelect[prestudent_id];
-						//console.log(prestudent.existingBisios);
 						for (let idx in prestudent.existingBisios)
 						{
 							let bisio = prestudent.existingBisios[idx];
@@ -530,7 +524,6 @@ var MobilityOnlineOutgoing = {
 							}
 
 							// if null, outgoing should be newly added, no existing outgoing in fhc is selected
-							//console.log(selected_prestudent_id);
 							MobilityOnlineOutgoing.linkBisio(outgoingobj.moid, selected_prestudent_id, bisio_id);
 						}
 					)

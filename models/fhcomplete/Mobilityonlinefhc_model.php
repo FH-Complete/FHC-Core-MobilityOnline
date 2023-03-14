@@ -14,6 +14,7 @@ class Mobilityonlinefhc_model extends DB_Model
 		parent::__construct();
 		$this->load->model('crm/prestudent_model', 'PrestudentModel');
 		$this->load->model('person/Kontakt_model', 'KontaktModel');
+		$this->load->model('codex/bisio_model', 'BisioModel');
 		$this->load->model('codex/bisiozweck_model', 'BisioZweckModel');
 		$this->load->model('codex/bisioaufenthaltfoerderung_model', 'BisioAufenthaltfoerderungModel');
 	}
@@ -31,14 +32,14 @@ class Mobilityonlinefhc_model extends DB_Model
 		$telefonbez = $valuedefaults['address']['kontakttel']['kontakttyp'];
 
 		$this->PrestudentModel->addSelect(
-			'prestudent_id, person_id, vorname, nachname, uid, tbl_studiengang.bezeichnung, tbl_studiengang.english, tbl_bisio.von, tbl_bisio.bis'
+			'tbl_prestudent.prestudent_id, person_id, vorname, nachname, uid, tbl_studiengang.bezeichnung, tbl_studiengang.english'
 		);
 		$this->PrestudentModel->addJoin('public.tbl_person', 'person_id');
 		$this->PrestudentModel->addJoin('public.tbl_benutzer', 'person_id');
 		$this->PrestudentModel->addJoin('public.tbl_studiengang', 'studiengang_kz');
-		$this->PrestudentModel->addJoin('bis.tbl_bisio', 'uid = student_uid');
+		//$this->PrestudentModel->addJoin('bis.tbl_bisio', 'prestudent_id');
 
-		$whereParams = array('prestudent_id' => $prestudent_id);
+		$whereParams = array('tbl_prestudent.prestudent_id' => $prestudent_id);
 
 		if (isset($studiengang_kz) && is_numeric($studiengang_kz))
 			$whereParams['studiengang_kz'] = $studiengang_kz;
@@ -49,7 +50,7 @@ class Mobilityonlinefhc_model extends DB_Model
 
 		if (hasData($prestudent))
 		{
-			$prestudent = $prestudent->retval[0];
+			$prestudent = getData($prestudent)[0];
 
 			$this->KontaktModel->addLimit(1);
 			$mailkontakt = $this->KontaktModel->loadWhere(
@@ -59,18 +60,28 @@ class Mobilityonlinefhc_model extends DB_Model
 				'zustellung' => true)
 			);
 
+			// get phone number
+			$phonenumber = '';
 			if (hasData($mailkontakt))
 			{
 				$phonekontakt = $this->KontaktModel->loadWhere(
 					array(
 						'person_id' => $prestudent->person_id,
-						'kontakttyp' => $telefonbez)
+						'kontakttyp' => $telefonbez
+					)
 				);
+				if (hasData($phonekontakt)) $phonenumber = getData($phonekontakt)[0]->kontakt;
+			}
 
-				$phonenumber = hasData($phonekontakt) ? $phonekontakt->retval[0]->kontakt : '';
+			// get bisio(s)
+			$this->BisioModel->addSelect('von, bis');
+			$bisioRes = $this->BisioModel->loadWhere(array('prestudent_id' => $prestudent_id));
+
+			if (hasData($bisioRes))
+			{
+				$bisios = getData($bisioRes);
 
 				$prestudentObj = new StdClass();
-
 				$prestudentObj->prestudent_id = $prestudent->prestudent_id;
 				$prestudentObj->vorname = $prestudent->vorname;
 				$prestudentObj->nachname = $prestudent->nachname;
@@ -78,8 +89,7 @@ class Mobilityonlinefhc_model extends DB_Model
 				$prestudentObj->email = $mailkontakt->retval[0]->kontakt;
 				$prestudentObj->phonenumber = $phonenumber;
 				$prestudentObj->studiengang = $prestudent->bezeichnung;
-				$prestudentObj->stayfrom = $prestudent->von;
-				$prestudentObj->stayto = $prestudent->bis;
+				$prestudentObj->stays = $bisios;
 
 				$return = success($prestudentObj);
 			}
@@ -109,33 +119,14 @@ class Mobilityonlinefhc_model extends DB_Model
 	}
 
 	/**
-	 *
-	 * @param
+	 * Gets prestudents by uid, Studiengang, and Studiensemester.
+	 * @param string uid
+	 * @param string studiengang_kz
+	 * @param string studiensemester_kurzbz
 	 * @return object success or error
 	 */
-	public function getIOPrestudents($uid, $studiengang_kz, $studiensemester_kurzbz)
+	public function getPrestudents($uid, $studiengang_kz, $studiensemester_kurzbz)
 	{
-		//~ $qry = "SELECT
-					//~ prestudent_id
-				//~ FROM
-					//~ public.tbl_prestudent ps
-					//~ JOIN public.tbl_person USING (person_id)
-					//~ JOIN public.tbl_benutzer ben USING (person_id)
-				//~ WHERE
-					//~ ben.uid = ?
-					//~ AND studiengang_kz = ?
-					//~ AND EXISTS (
-						//~ SELECT 1
-						//~ FROM
-							//~ public.tbl_prestudentstatus
-						//~ JOIN
-							//~ public.tbl_studiensemester sem USING (studiensemester_kurzbz)
-						//~ WHERE
-							//~ prestudent_id = ps.prestudent_id
-							//~ AND status_kurzbz IN ('Student', 'Diplomand')
-							//~ AND sem.start >= (SELECT start FROM public.tbl_studiensemester WHERE studiensemester_kurzbz = ?)
-					//~ )";
-
 		$qry = "SELECT
 					DISTINCT prestudent_id, studiensemester_kurzbz
 				FROM

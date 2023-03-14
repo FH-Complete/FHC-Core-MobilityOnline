@@ -819,7 +819,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$this->stamp('update', $prestudent);
 			$prestudentResponse = $this->ci->PrestudentModel->update($prestudent_id, $prestudent);
 			$this->log('update', $prestudentResponse, 'prestudent');
-		}>
+		}
 		else
 		{
 			$this->stamp('insert', $prestudent);
@@ -1026,7 +1026,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// get stay for the student
 		$this->ci->BisioModel->addOrder('von', 'DESC');
 		$this->ci->BisioModel->addOrder('insertamum', 'DESC');
-		$bisiocheckResp = $this->ci->BisioModel->loadWhere(array('student_uid' => $bisio['student_uid']));
+		$bisiocheckResp = $this->ci->BisioModel->loadWhere(array('prestudent_id' => $bisio['prestudent_id']));
 
 		if (isSuccess($bisiocheckResp))
 		{
