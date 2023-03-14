@@ -85,9 +85,9 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 						$infhccheck_bisio_id = getData($bisioIdRes);
 					}
 
-					$student_uid = $this->saveOutgoing($appId, $outgoingData, $infhccheck_bisio_id);
+					$bisio_id = $this->saveOutgoing($appId, $outgoingData, $infhccheck_bisio_id);
 
-					if (isset($student_uid))
+					if (isset($bisio_id))
 					{
 						if (isset($infhccheck_bisio_id) || $ist_double_degree) // double degree: only bankverbindung and payments are aktualisiert
 						{
@@ -229,24 +229,109 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			{
 				$fhcobj_extended->infhc = true;
 			}
-			elseif ($fhcobj_extended->error === false && !$bisio_found && !$ist_double_degree) // bisios not synced for double degrees
-			{
-				// check if has not mapped bisios in fhcomplete
-				$existingBisiosRes = $this->ci->MoFhcModel->getBisio($fhcobj['bisio']['student_uid']);
+			elseif ($fhcobj_extended->error === false && !$bisio_found && !$ist_double_degree)
+			{// not in fhcomplete and no double degree - create new prestudent entry
+				$uid = $fhcobj['benutzer']['uid'];
+				$studiengang_kz = $fhcobj['prestudent']['studiengang_kz'];
+				$studiensemester_kurzbz = $fhcobj['prestudent']['studiensemester_kurzbz'];
 
-				if (isError($existingBisiosRes))
+				// check if there are multiple prestudents for the same uid, Studiensemester, and Studiengang (should rarely be the case...)
+				$prestudentsRes = $this->ci->MoFhcModel->getIOPrestudents($uid, $studiengang_kz, $studiensemester);
+
+				if (isError($prestudentsRes))
 				{
 					$fhcobj_extended->error = true;
-					$fhcobj_extended->errorMessages[] = 'Fehler beim Prüfen der existierenden Mobilitäten in fhcomplete';
+					$fhcobj_extended->errorMessages[] = 'Fehler beim Holen der Prestudenten in fhcomplete';
 				}
 
-				if (hasData($existingBisiosRes)) // manually select correct bisio if a bisio already exists
+				if (hasData($prestudentsRes))
 				{
-					$existingBisios = getData($existingBisiosRes);
+					$prestudents = getData($prestudentsRes);
+					$prestudent_ids = array();
+					$prestudentsToSelect = array();
 
-					$fhcobj_extended->existingBisios = $existingBisios;
-					$fhcobj_extended->error = true;
-					$fhcobj_extended->errorMessages[] = 'Mobilität existiert bereits in fhcomplete, zum Verlinken bitte auf Tabellenzeile klicken.';
+					$studiensemesterMatches = false;
+					$bisioExists = false;
+
+					foreach ($prestudents as $prestudent)
+					{
+						$prestudent_id = $prestudent->prestudent_id;
+
+						// check if studiensemester matches
+						if ($prestudent->studiensemester_kurzbz == $studiensemester_kurzbz) $studiensemesterMatches = true;
+
+						// create array with prestudent data
+						if (!isset($prestudentsToSelect[$prestudent_id]))
+						{
+							$prestudentsToSelect[$prestudent_id] = array(
+								'studiensemester_kurzbz' => array(),
+								'existingBisios' => array()
+							);
+						}
+
+						// save all Studiensemester of student
+						$prestudentsToSelect[$prestudent_id]['studiensemester_kurzbz'][] = $prestudent->studiensemester_kurzbz;
+						// save all prestudent Ids
+						//~ if (!in_array($prestudent->prestudent_id, $prestudent_ids))
+
+							//~ $prestudent_ids[] = $prestudent->prestudent_id;
+						//~ }
+
+						// check if has not mapped bisios in fhcomplete
+						$existingBisiosRes = $this->ci->MoFhcModel->getBisio($prestudent_id);
+
+						if (isError($existingBisiosRes))
+						{
+							$fhcobj_extended->error = true;
+							$fhcobj_extended->errorMessages[] = 'Fehler beim Prüfen der existierenden Mobilitäten in fhcomplete';
+						}
+
+						if (hasData($existingBisiosRes)) // manually select correct bisio if a bisio already exists
+						{
+							// mark that bisio already exist
+							$bisioExists = true;
+
+							// save existing bisios to pass for selection
+							$existingBisios = getData($existingBisiosRes);
+							$prestudentsToSelect[$prestudent_id]['existingBisios'] = $existingBisios;
+
+							//$fhcobj_extended->prestudentsToSelect = $existingBisios;
+							//~ $fhcobj_extended->error = true;
+							//~ $fhcobj_extended->errorMessages[] = 'Mobilität existiert bereits in fhcomplete, zum Verlinken bitte auf Tabellenzeile klicken.';
+						}
+					}
+
+					// if only one prestudent and semester matches (most cases), and no bisio already exist, create new bisio for the one student
+					if (count($prestudentsToSelect) == 1 && $studiensemesterMatches && !$bisioExists)
+					{
+						$fhcobj['bisio']['prestudent_id'] = array_keys($prestudentsToSelect)[0];
+					}
+					else // otherwise let the user decide which bisio should be saved for which prestudent
+					{
+						//var_dump($prestudentsToSelect);
+						$fhcobj_extended->prestudentsToSelect = $prestudentsToSelect;
+						$fhcobj_extended->error = true;
+						$fhcobj_extended->errorMessages[] =
+							'Keine eindeutige Übereinstimmung mit Studierendendatensatz, zum Auswählen bitte auf Tabellenzeile klicken.';
+					}
+
+					//~ // check if has not mapped bisios in fhcomplete
+					//~ $existingBisiosRes = $this->ci->MoFhcModel->getBisio($prestudent_ids);
+
+					//~ if (isError($existingBisiosRes))
+					//~ {
+						//~ $fhcobj_extended->error = true;
+						//~ $fhcobj_extended->errorMessages[] = 'Fehler beim Prüfen der existierenden Mobilitäten in fhcomplete';
+					//~ }
+
+					//~ if (hasData($existingBisiosRes)) // manually select correct bisio if a bisio already exists
+					//~ {
+						//~ $existingBisios = getData($existingBisiosRes);
+
+						//~ $fhcobj_extended->existingBisios = $existingBisios;
+						//~ $fhcobj_extended->error = true;
+						//~ $fhcobj_extended->errorMessages[] = 'Mobilität existiert bereits in fhcomplete, zum Verlinken bitte auf Tabellenzeile klicken.';
+					//~ }
 				}
 			}
 
@@ -400,7 +485,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 				$this->ci->BenutzerModel->addSelect('person_id');
 				$personIdRes = $this->ci->BenutzerModel->loadWhere(
 					array(
-						'uid' => $fhcObj['bisio']['student_uid']
+						'uid' => $fhcObj['benutzer']['uid']
 					)
 				);
 
@@ -455,6 +540,8 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$bisio_zweck = $outgoing['bisio_zweck'];
 		$bisio_aufenthaltfoerderung = $outgoing['bisio_aufenthaltfoerderung'];
 
+		$uid = $outgoing['benutzer']['uid'];
+
 		// optional fields
 
 		if (isset($outgoing['institution_adresse'])) // instituion adress is optional
@@ -478,15 +565,16 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->db->trans_begin();
 
 		// get person_id
-		$personRes = $this->ci->PersonModel->getByUid($bisio['student_uid']);
+		$personRes = $this->ci->PersonModel->getByUid($uid);
 		// get prestudent_id
-		$this->ci->StudentModel->addSelect('prestudent_id');
-		$prestudentRes = $this->ci->StudentModel->loadWhere(array('student_uid' => $bisio['student_uid']));
+		//~ $this->ci->StudentModel->addSelect('prestudent_id');
+		//~ $prestudentsRes = $this->ci->StudentModel->loadWhere(array('student_uid' => $bisio['student_uid']));
 
-		if (hasData($personRes) && hasData($prestudentRes))
+		if (hasData($personRes))
 		{
 			$person_id = getData($personRes)[0]->person_id;
-			$prestudent_id = getData($prestudentRes)[0]->prestudent_id;
+			//$prestudent_id = getData($prestudentRes)[0]->prestudent_id;
+			$bisio_id = null;
 			$ist_double_degree = (isset($bisio_info['ist_double_degree']) && $bisio_info['ist_double_degree'] === true);
 
 			if (!$ist_double_degree) // for double degree students, only payments are transferred, no bisio
@@ -574,6 +662,8 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			// if bisio is set or is double degree student
 			if (isset($bisio_id) || $ist_double_degree)
 			{
+
+
 				// Bankverbindung
 				if (isset($outgoing['bankverbindung']['iban']) && !isEmptyString($outgoing['bankverbindung']['iban']))
 				{
@@ -593,11 +683,20 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 					$this->_saveZahlung($zahlung, $person_id/*, $prestudent['studiensemester_kurzbz']*/);
 				}
 
-				// Documents
-				// save documents
-				foreach ($akten as $akte)
+				// get prestudent_id
+				$this->ci->BisioModel->addSelect('prestudent_id');
+				$prestudentRes = $this->ci->BisioModel->loadWhere(array('bisio_id' => $bisio_id));
+
+				if (hasData($prestudentRes))
 				{
-					$this->saveAkte($person_id, $akte['akte'], $prestudent_id);
+					$prestudent_id = getData($prestudentRes)[0]->prestudent_id;
+
+					// Documents
+					// save documents
+					foreach ($akten as $akte)
+					{
+						$this->saveAkte($person_id, $akte['akte'], $prestudent_id);
+					}
 				}
 			}
 		}
@@ -615,7 +714,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		else
 		{
 			$this->ci->db->trans_commit();
-			return $bisio['student_uid'];
+			return $bisio_id;
 		}
 	}
 

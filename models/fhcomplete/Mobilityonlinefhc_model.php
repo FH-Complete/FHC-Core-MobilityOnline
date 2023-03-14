@@ -98,14 +98,58 @@ class Mobilityonlinefhc_model extends DB_Model
 		$valuesconfig = $this->config->item('miscvalues');
 
 		$qry = "SELECT studiengang_kz, tbl_studiengang.bezeichnung, tbl_studiengang.typ, tbl_studiengangstyp.bezeichnung AS typbezeichnung,
-       			UPPER(tbl_studiengang.typ::varchar(1) || tbl_studiengang.kurzbz) as kuerzel
+				UPPER(tbl_studiengang.typ::varchar(1) || tbl_studiengang.kurzbz) as kuerzel
 				FROM public.tbl_studiengang
 				JOIN public.tbl_studiengangstyp USING (typ)
 				WHERE aktiv
 				AND (typ IN ? OR studiengang_kz IN ?)
-			  	ORDER BY kuerzel, tbl_studiengang.bezeichnung, studiengang_kz";
+				ORDER BY kuerzel, tbl_studiengang.bezeichnung, studiengang_kz";
 
 		return $this->execQuery($qry, array($valuesconfig['studiengangtypentosync'], $valuesconfig['studiengaengetosync']));
+	}
+
+	/**
+	 *
+	 * @param
+	 * @return object success or error
+	 */
+	public function getIOPrestudents($uid, $studiengang_kz, $studiensemester_kurzbz)
+	{
+		//~ $qry = "SELECT
+					//~ prestudent_id
+				//~ FROM
+					//~ public.tbl_prestudent ps
+					//~ JOIN public.tbl_person USING (person_id)
+					//~ JOIN public.tbl_benutzer ben USING (person_id)
+				//~ WHERE
+					//~ ben.uid = ?
+					//~ AND studiengang_kz = ?
+					//~ AND EXISTS (
+						//~ SELECT 1
+						//~ FROM
+							//~ public.tbl_prestudentstatus
+						//~ JOIN
+							//~ public.tbl_studiensemester sem USING (studiensemester_kurzbz)
+						//~ WHERE
+							//~ prestudent_id = ps.prestudent_id
+							//~ AND status_kurzbz IN ('Student', 'Diplomand')
+							//~ AND sem.start >= (SELECT start FROM public.tbl_studiensemester WHERE studiensemester_kurzbz = ?)
+					//~ )";
+
+		$qry = "SELECT
+					DISTINCT prestudent_id, studiensemester_kurzbz
+				FROM
+					public.tbl_prestudent ps
+					JOIN public.tbl_person USING (person_id)
+					JOIN public.tbl_benutzer ben USING (person_id)
+					JOIN public.tbl_prestudentstatus pss USING (prestudent_id)
+					JOIN public.tbl_studiensemester USING (studiensemester_kurzbz)
+				WHERE
+					ben.uid = ?
+					AND ps.studiengang_kz = ?
+					AND pss.status_kurzbz IN ('Student', 'Diplomand')";
+
+		return $this->execQuery($qry, array($uid, $studiengang_kz));
 	}
 
 	/**
@@ -151,24 +195,29 @@ class Mobilityonlinefhc_model extends DB_Model
 
 	/**
 	 * Gets bisiodata, including concatenated Zweck.
-	 * @param string $student_uid
+	 * @param string $prestudent_id
 	 * @return object
 	 */
-	public function getBisio($student_uid)
+	public function getBisio($prestudent_id)
 	{
-		$bisioqry = "SELECT tbl_bisio.bisio_id, tbl_bisio.von, tbl_bisio.bis, universitaet, 
-					tbl_mobilitaetsprogramm.beschreibung as mobilitaetsprogramm, ort, tbl_nation.langtext as nation,
-       				string_agg(tbl_zweck.bezeichnung, ', ') AS zweck
-					FROM bis.tbl_bisio
-					LEFT JOIN bis.tbl_mobilitaetsprogramm USING(mobilitaetsprogramm_code)
-					LEFT JOIN bis.tbl_nation USING (nation_code)
-					LEFT JOIN bis.tbl_bisio_zweck USING (bisio_id)
-					LEFT JOIN bis.tbl_zweck ON tbl_bisio_zweck.zweck_code = tbl_zweck.zweck_code
-					WHERE tbl_bisio.student_uid = ?
-					GROUP BY tbl_bisio.bisio_id, tbl_mobilitaetsprogramm.beschreibung, tbl_nation.langtext
-					ORDER BY tbl_bisio.von, tbl_bisio.updateamum, tbl_bisio.insertamum";
+		$bisioqry = "SELECT
+						tbl_bisio.bisio_id, tbl_bisio.von, tbl_bisio.bis, tbl_bisio.prestudent_id, universitaet,
+						tbl_mobilitaetsprogramm.beschreibung as mobilitaetsprogramm, ort, tbl_nation.langtext as nation,
+						string_agg(tbl_zweck.bezeichnung, ', ') AS zweck
+					FROM
+						bis.tbl_bisio
+						LEFT JOIN bis.tbl_mobilitaetsprogramm USING(mobilitaetsprogramm_code)
+						LEFT JOIN bis.tbl_nation USING (nation_code)
+						LEFT JOIN bis.tbl_bisio_zweck USING (bisio_id)
+						LEFT JOIN bis.tbl_zweck ON tbl_bisio_zweck.zweck_code = tbl_zweck.zweck_code
+					WHERE
+						tbl_bisio.prestudent_id = ?
+					GROUP BY
+						tbl_bisio.bisio_id, tbl_mobilitaetsprogramm.beschreibung, tbl_nation.langtext
+					ORDER BY
+						tbl_bisio.von, tbl_bisio.updateamum, tbl_bisio.insertamum";
 
-		return  $this->execQuery($bisioqry, array($student_uid));
+		return  $this->execQuery($bisioqry, array($prestudent_id));
 	}
 
 	/**

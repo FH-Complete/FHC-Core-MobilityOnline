@@ -574,7 +574,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 						$this->_saveStudentlehrverband($studiensemarr, $studentlehrverband);
 
 						// bisio
-						$bisio['student_uid'] = $benutzerrespuid;
+						$bisio['prestudent_id'] = $prestudent_id_res;
 						$bisio_id = $this->_saveBisio($appId, $bisio);
 						$bisio_zweck['bisio_id'] = $bisio_id;
 						$bisio_zweckresult = $this->ci->MoFhcModel->saveBisioZweck($bisio_zweck);
@@ -819,7 +819,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$this->stamp('update', $prestudent);
 			$prestudentResponse = $this->ci->PrestudentModel->update($prestudent_id, $prestudent);
 			$this->log('update', $prestudentResponse, 'prestudent');
-		}
+		}>
 		else
 		{
 			$this->stamp('insert', $prestudent);

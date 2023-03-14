@@ -89,7 +89,7 @@ var MobilityOnlineOutgoing = {
 							let chkbxString, stgNotSetTxt, errorClass, newIcon;
 							chkbxString = stgNotSetTxt = errorClass = "";
 							let moId = outgoingObj.moid;
-							let student_uid = outgoingData.bisio.student_uid;
+							let uid = outgoingData.benutzer.uid;
 							let vorname = person.vorname;
 							let nachname = person.nachname;
 							let gerdateVon = MobilityOnlineOutgoing._formatDateGerman(outgoingData.bisio.von);
@@ -134,7 +134,7 @@ var MobilityOnlineOutgoing = {
 								"<tr id='applicationsrow_"+moId+"'" + errorClass + ">" +
 								"<td class='text-center' id='checkboxcell_"+moId+"'>" + chkbxString + "</td>" +
 								"<td>" + nachname + ", " + vorname + "</td>" +
-								"<td>" + student_uid + "</td>" +
+								"<td>" + uid + "</td>" +
 								"<td>" + outgoingData.kontaktmail.kontakt + "</td>" +
 								"<td class='text-center'>" + gerdateVon + "</td>" +
 								"<td class='text-center'>" + gerdateBis + "</td>" +
@@ -170,7 +170,7 @@ var MobilityOnlineOutgoing = {
 							);
 
 							// show existing bisios in left box
-							MobilityOnlineOutgoing._setExistingBisiosEvents(outgoingObj);
+							MobilityOnlineOutgoing._setSelectBisiosEvents(outgoingObj);
 
 							// number of applications selected via checkboxes
 							$("#applications input[type=checkbox][name='applications[]']").change(
@@ -264,13 +264,17 @@ var MobilityOnlineOutgoing = {
 			}
 		);
 	},
-	linkBisio: function(moid, bisio_id)
+	linkBisio: function(moid, new_prestudent_id, bisio_id)
 	{
+		console.log(new_prestudent_id);
 		let initOutgoingSync = function(moid)
 		{
 			MobilityOnlineOutgoing._blackInApplicationRow(moid);
 
 			let outgoingToSync = MobilityOnlineOutgoing._findOutgoingByMoid(moid);
+			console.log(new_prestudent_id);
+			console.log(outgoingToSync);
+			if (new_prestudent_id != null) outgoingToSync[0].data.bisio.prestudent_id = new_prestudent_id;
 			MobilityOnlineOutgoing.syncOutgoings(outgoingToSync, $("#studiensemester").val());
 		}
 
@@ -281,6 +285,7 @@ var MobilityOnlineOutgoing = {
 		}
 		else
 		{
+			// call for linking the bisio
 			FHC_AjaxClient.ajaxCallPost(
 				FHC_JS_DATA_STORAGE_OBJECT.called_path + '/linkBisio',
 				{
@@ -297,6 +302,7 @@ var MobilityOnlineOutgoing = {
 							$("#applicationsyncoutputtext").html(
 								MobilityOnlineApplicationsHelper.getMessageHtml("Applicationid " + insertedMoid + " erfolgreich verlinkt", "success")
 							);
+							// initiate sync after linking
 							initOutgoingSync(insertedMoid);
 						}
 					},
@@ -397,12 +403,14 @@ var MobilityOnlineOutgoing = {
 			}
 		}
 	},
-	_setExistingBisiosEvents: function(outgoingobj)
+	_setSelectBisiosEvents: function(outgoingobj)
 	{
+		//console.log(outgoingobj);
+
 		// handle linking of existing bisios
-		if (outgoingobj.existingBisios && outgoingobj.existingBisios.length > 0)
+		if (outgoingobj.prestudentsToSelect)
 		{
-			let existingBisios = outgoingobj.existingBisios;
+			let prestudentsToSelect = outgoingobj.prestudentsToSelect;
 			let applicationsrowEl = $("#applicationsrow_"+outgoingobj.moid);
 			let moDateVon = outgoingobj.data.bisio.von;
 			let moDateBis = outgoingobj.data.bisio.bis;
@@ -418,53 +426,72 @@ var MobilityOnlineOutgoing = {
 						"<i class='fa fa-link'></i>&nbsp;Verlinken</button></div>";
 					bisiosHtml += linkBtnHtml+"<br />";
 
-					bisiosHtml += "<div class='radio'>" +
-						"<label><input type='radio' name='bisiocheck' id='addNewBisio' value='null'>&nbsp;Neue Mobilität hinzufügen</label>" +
-						"</div>";
-
-					for (let idx in existingBisios)
+					for (let prestudent_id in prestudentsToSelect)
 					{
-						let bisio = existingBisios[idx];
+						// prestudent panel
+						bisiosHtml += "<div class='panel panel-default'>"
+										+ "<div class='panel-heading'>"
+										+ "Prestudent Id "+prestudent_id
+										+ "</div>"
+										+ "<div class='panel-body'>";
 
-						let checked = '';
-						if (!checkedFound && bisio.von === moDateVon && bisio.bis === moDateBis)
+						// radio button for adding new mobility
+						bisiosHtml += "<div class='radio'>" +
+							"<label><input type='radio' name='bisiocheck' class='addNewBisio' data-selectedPrestudent='"+prestudent_id+"' value='null'>&nbsp;Neue Mobilität hinzufügen</label>" +
+							"</div>";
+
+						//bisiosHtml += "<input type='hidden' value='"+prestudent_id+"' id='selectedPrestudent'>";
+
+						let prestudent = prestudentsToSelect[prestudent_id];
+						//console.log(prestudent.existingBisios);
+						for (let idx in prestudent.existingBisios)
 						{
-							checked = ' checked';
-							checkedFound = true;
+							let bisio = prestudent.existingBisios[idx];
+
+							let checked = '';
+							if (!checkedFound && bisio.von === moDateVon && bisio.bis === moDateBis)
+							{
+								checked = ' checked';
+								checkedFound = true;
+							}
+
+							// existing mobility
+							bisiosHtml += "<table class='table-bordered table-condensed table-bisiolink'>";
+							bisiosHtml += "<tr>";
+							bisiosHtml += "<td colspan='2'>";
+							bisiosHtml += "<input type='radio' name='bisiocheck' value='fhcbisio_"+bisio.bisio_id+"'"+(checked ? ' checked' : '')+">";
+							bisiosHtml += "</td>";
+							bisiosHtml += "</tr>";
+							bisiosHtml += "<tr>";
+							bisiosHtml += "<td>Von</td>";
+							bisiosHtml += "<td>" + MobilityOnlineOutgoing._formatDateGerman(bisio.von) + "</td>";
+							bisiosHtml += "</tr>";
+							bisiosHtml += "<tr>";
+							bisiosHtml += "<td>Bis</td>";
+							bisiosHtml += "<td>" + MobilityOnlineOutgoing._formatDateGerman(bisio.bis) + "</td>";
+							bisiosHtml += "</tr>";
+							bisiosHtml += "<tr>";
+							bisiosHtml += "<td>Mobilit&auml;tsprogramm</td>";
+							bisiosHtml += "<td>" + (bisio.mobilitaetsprogramm != null ? bisio.mobilitaetsprogramm : "") + "</td>";
+							bisiosHtml += "</tr>"
+							bisiosHtml += "<tr>";
+							bisiosHtml += "<td>Zweck</td>";
+							bisiosHtml += "<td>" + (bisio.zweck != null ? bisio.zweck : "") + "</td>";
+							bisiosHtml += "</tr>"
+							bisiosHtml += "<tr>";
+							bisiosHtml += "<td>Nation</td>";
+							bisiosHtml += "<td>" + (bisio.nation != null ? bisio.nation : "") + "</td>";
+							bisiosHtml += "</tr>"
+							bisiosHtml += "<tr>";
+							bisiosHtml += "<td>Universit&auml;t</td>";
+							bisiosHtml += "<td>" + (bisio.nation != null ? bisio.universitaet : "") + "</td>";
+							bisiosHtml += "</tr>";
+							bisiosHtml += "</table>";
+							bisiosHtml += "<br />"
 						}
 
-						bisiosHtml += "<table class='table-bordered table-condensed table-bisiolink'>";
-						bisiosHtml += "<tr>";
-						bisiosHtml += "<td colspan='2'>";
-						bisiosHtml += "<input type='radio' name='bisiocheck' value='fhcbisio_"+bisio.bisio_id+"'"+(checked ? ' checked' : '')+">";
-						bisiosHtml += "</td>";
-						bisiosHtml += "</tr>";
-						bisiosHtml += "<tr>";
-						bisiosHtml += "<td>Von</td>";
-						bisiosHtml += "<td>" + MobilityOnlineOutgoing._formatDateGerman(bisio.von) + "</td>";
-						bisiosHtml += "</tr>";
-						bisiosHtml += "<tr>";
-						bisiosHtml += "<td>Bis</td>";
-						bisiosHtml += "<td>" + MobilityOnlineOutgoing._formatDateGerman(bisio.bis) + "</td>";
-						bisiosHtml += "</tr>";
-						bisiosHtml += "<tr>";
-						bisiosHtml += "<td>Mobilit&auml;tsprogramm</td>";
-						bisiosHtml += "<td>" + (bisio.mobilitaetsprogramm != null ? bisio.mobilitaetsprogramm : "") + "</td>";
-						bisiosHtml += "</tr>"
-						bisiosHtml += "<tr>";
-						bisiosHtml += "<td>Zweck</td>";
-						bisiosHtml += "<td>" + (bisio.zweck != null ? bisio.zweck : "") + "</td>";
-						bisiosHtml += "</tr>"
-						bisiosHtml += "<tr>";
-						bisiosHtml += "<td>Nation</td>";
-						bisiosHtml += "<td>" + (bisio.nation != null ? bisio.nation : "") + "</td>";
-						bisiosHtml += "</tr>"
-						bisiosHtml += "<tr>";
-						bisiosHtml += "<td>Universit&auml;t</td>";
-						bisiosHtml += "<td>" + (bisio.nation != null ? bisio.universitaet : "") + "</td>";
-						bisiosHtml += "</tr>";
-						bisiosHtml += "</table>";
-						bisiosHtml += "<br />"
+						bisiosHtml += 		"</div>" // panel body
+										+ "</div>" // panel
 					}
 
 					bisiosHtml += linkBtnHtml;
@@ -475,7 +502,7 @@ var MobilityOnlineOutgoing = {
 					$("#applicationsrow_"+outgoingobj.moid+" td").css("background-color", "#f5f5f5"); // color should stay after click
 
 					$("#applicationsyncoutputheading").html(
-						'<h4>Richtige fhcomplete Mobilität zum Verlinken für '+outgoingobj.data.bisio.student_uid+', '+person.vorname+' '
+						'<h4>Richtige fhcomplete Mobilität zum Verlinken für '+outgoingobj.data.benutzer.uid+', '+person.vorname+' '
 							+person.nachname+' auswählen</h4>'
 					)
 
@@ -484,16 +511,27 @@ var MobilityOnlineOutgoing = {
 					)
 
 					if (!checkedFound)
-						$("#addNewBisio").prop("checked", true);
+						$(".addNewBisio").first().prop("checked", true);
 
 					$(".linkBisioBtn").click(
 						function()
 						{
 							let bisio_id_with_prefix = $('input[name=bisiocheck]:checked').val();
+							let selected_prestudent_id = null;
+							let bisio_id = null;
+
+							if (bisio_id_with_prefix === 'null')
+							{
+								selected_prestudent_id = $('input[name=bisiocheck]:checked').attr('data-selectedPrestudent');
+							}
+							else
+							{
+								bisio_id = bisio_id_with_prefix.substr(bisio_id_with_prefix.indexOf('_') + 1);
+							}
 
 							// if null, outgoing should be newly added, no existing outgoing in fhc is selected
-							let bisio_id = bisio_id_with_prefix === 'null' ? null : bisio_id_with_prefix.substr(bisio_id_with_prefix.indexOf('_') + 1);
-							MobilityOnlineOutgoing.linkBisio(outgoingobj.moid, bisio_id);
+							//console.log(selected_prestudent_id);
+							MobilityOnlineOutgoing.linkBisio(outgoingobj.moid, selected_prestudent_id, bisio_id);
 						}
 					)
 				}

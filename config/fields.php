@@ -92,8 +92,11 @@ $config['fhcfields']['applicationout']['required'] = array(
 		'studiengang_kz' => array('required' => true, 'name' => 'Studiengang', 'type' => 'integer', 'ref' => 'public.tbl_studiengang'),
 		'studiensemester_kurzbz' => array('required' => true, 'name' => 'Studiensemester', 'ref' => 'public.tbl_studiensemester')
 	),
+	'benutzer' => array(
+		'uid' => array('required' => true, 'name' => 'Uid')
+	),
 	'bisio' => array(
-		'student_uid' => array('required' => true, 'name' => 'Uid', 'ref' => 'public.tbl_student'),
+		//'prestudent_id' => array('required' => true, 'name' => 'Prestudent Id', 'ref' => 'public.tbl_prestudent', 'reffield' => 'prestudent_id'),
 		'von' => array('required' => true, 'name' => 'Aufenthalt von', 'type' => 'date'),
 		'bis' => array('required' => true, 'name' => 'Aufenthalt bis', 'type' => 'date'),
 		'nation_code' => array('required' => true, 'name' => 'Nation', 'ref' => 'bis.tbl_nation'),
