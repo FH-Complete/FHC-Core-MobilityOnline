@@ -429,7 +429,7 @@ var MobilityOnlineOutgoing = {
 						bisiosHtml += "<div class='panel panel-default'>"
 										+ "<div class='panel-heading'>"
 										+ "Prestudent Id: "+prestudent_id
-										+", letzter Status: "+prestudent.status_kurzbz[0]+" "+prestudent.studiensemester_kurzbz[0]
+										+"<br>letzter Status: "+prestudent.status_kurzbz[0]+" "+prestudent.studiensemester_kurzbz[0]
 										+ "</div>"
 										+ "<div class='panel-body'>";
 

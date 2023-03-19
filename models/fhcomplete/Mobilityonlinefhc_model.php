@@ -118,7 +118,7 @@ class Mobilityonlinefhc_model extends DB_Model
 	}
 
 	/**
-	 * Gets prestudents by uid, Studiengang, and Studiensemester.
+	 * Gets prestudents by uid and Studiengang.
 	 * @param string uid
 	 * @param string studiengang_kz
 	 * @return object success or error
