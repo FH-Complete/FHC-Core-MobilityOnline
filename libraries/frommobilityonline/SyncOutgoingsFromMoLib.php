@@ -35,7 +35,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	public function startOutgoingSync($outgoings)
 	{
 		$results = array('added' => array(), 'updated' => array(), 'errors' => 0, 'syncoutput' => array());
-		$studCount = count($outgoings);
+		$studCount = numberOfElements($outgoings);
 
 		if (empty($outgoings) || !is_array($outgoings) || $studCount <= 0)
 		{
@@ -395,7 +395,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 
 			// check if payments already synced and set flag
-			for ($i = 0; $i < count($payments); $i++)
+			for ($i = 0; $i < numberOfElements($payments); $i++)
 			{
 				$this->ci->BenutzerModel->addSelect('person_id');
 				$personIdRes = $this->ci->BenutzerModel->loadWhere(

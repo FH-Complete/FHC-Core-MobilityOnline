@@ -51,7 +51,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	public function startIncomingSync($studiensemester, $incomings)
 	{
 		$results = array('added' => 0, 'updated' => 0, 'errors' => 0, 'syncoutput' => array());
-		$studCount = count($incomings);
+		$studCount = numberOfElements($incomings);
 
 		if (empty($incomings) || !is_array($incomings) || $studCount <= 0)
 		{
@@ -583,7 +583,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 					}
 
 					// Buchungen
-					if (count($studiensemarr) > 0)
+					if (numberOfElements($studiensemarr) > 0)
 					{
 						$konto['person_id'] = $person_id;
 						$this->stamp('insert', $konto);
@@ -1041,7 +1041,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				{
 					$bisio_id = getData($bisioIdRes);
 				}
-				elseif (count($bisiocheckResp) == 1) // otherwise update if only one entry
+				elseif (numberOfElements($bisiocheckResp) == 1) // otherwise update if only one entry
 				{
 					$bisio_id = getData($bisiocheckResp)[0]->bisio_id;
 				}

@@ -38,7 +38,7 @@ class SyncCoursesToMoLib extends SyncToMobilityOnlineLib
 		}
 		else
 		{
-			$lvcount = count($lvs->retval);
+			$lvcount = numberOfElements($lvs->retval);
 
 			$results['syncoutput'] .= "<div class='text-center'>MOBILITY ONLINE KURSSYNCHRONISIERUNG START. $lvcount Lvs zum Synchronisieren.";
 			$results['syncoutput'] .= '<br/>-----------------------------------------------</div>';

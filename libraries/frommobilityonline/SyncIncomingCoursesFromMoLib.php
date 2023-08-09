@@ -183,7 +183,7 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 					if (isSuccess($students))
 					{
-						$anz_teilnehmer = count($students->retval);
+						$anz_teilnehmer = numberOfElements($students->retval);
 
 						foreach ($students->retval as $student)
 						{

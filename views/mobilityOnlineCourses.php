@@ -55,7 +55,7 @@
 								<h4>
 									<span id="lvhead">
 										<span id="arrowtoggle"><i class="fa fa-chevron-right"></i>&nbsp;</span>
-										<span id="lvcount"><?php echo count($lvs) ?></span>&nbsp;Kurse mit Incomingplätzen
+										<span id="lvcount"><?php echo numberOfElements($lvs) ?></span>&nbsp;Kurse mit Incomingplätzen
 									</span>
 								</h4>
 							</div>
