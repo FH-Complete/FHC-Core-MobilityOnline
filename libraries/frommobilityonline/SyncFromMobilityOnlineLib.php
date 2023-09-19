@@ -32,7 +32,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		'gebdatum' => 'mapDateToFhc',
 		'von' => 'mapDateToFhc',
 		'bis' => 'mapDateToFhc',
-		'studiengangkz' => 'replaceByEmptyString',// empty string if no studiengang found in value mappings
+		'studiengang_kz' => 'replaceByEmptyString',// empty string if no studiengang found in value mappings
 		'anmerkung' => 'replaceEmptyByNull',
 		'zgvnation' => 'replaceEmptyByNull',
 		'zgvdatum' => 'mapDateToFhc',
