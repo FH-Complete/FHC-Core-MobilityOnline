@@ -67,6 +67,9 @@ $config['fieldmappings']['photo']['lichtbild']['inhalt'] = 'file';
 // bisio incoming
 $config['fieldmappings']['application']['bisio'] = $bisiomappings;
 $config['fieldmappings']['application']['bisio']['universitaet'] = 'inst_id_heim_name';
+$config['fieldmappings']['application']['bisio_zweck'] = array(
+	'zweck_code' => 'aust_prog_id'
+);
 
 // address incoming
 $config['fieldmappings']['address']['adresse'] = $adressemapping;

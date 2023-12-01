@@ -93,6 +93,23 @@ $mobilitaetsprogramme = array(
 	//'Erasmus (Studies)' => 7,
 );
 
+$bisioZwecke = array(
+	'1114418' => '1', // Studium
+	'1114419' => '2', // Praktikum
+	'1114420' => '3', // Studium und Praktikum
+	'1114421' => '4', // Diplom-/Masterarbeit bzw. Dissertation
+	// '1114422' => '7', TODO: Kurzzeitmobilität
+
+	// if zweck code is defined by Mobilitaetsprogramm
+	'685' => '2', // Erasmus (Praktikum) - Praktikum
+	'688' => '1', // Erasmus (Semester) - Studium
+	'830' => '1', // Exchange Semester (with Bilateral Agreement) - Studium
+	'946' => '4', // Marshall Plan Scholarship
+	'1037' => '2', // Auslandspraktikum (ohne Zuschuss)
+	'1151' => '1', // Kurzzeitmobilität BIP
+	'1158' => '1' // Kurzzeitmobilität (Sommer-/ Winterschule, Studienreise, Exkursion etc.)
+);
+
 $config['valuemappings']['frommo']['application']['bisio']['nation_code'] = $nations;
 $config['valuemappings']['frommo']['applicationout']['bisio']['nation_code'] = $nations;
 
@@ -147,6 +164,8 @@ $config['valuemappings']['frommo']['application']['prestudent']['zgvmanation'] =
 $config['valuemappings']['frommo']['application']['bisio']['mobilitaetsprogramm_code'] = $mobilitaetsprogramme;
 $config['valuemappings']['frommo']['applicationout']['bisio']['mobilitaetsprogramm_code'] = $mobilitaetsprogramme;
 
+$config['valuemappings']['frommo']['application']['bisio_zweck']['zweck_code'] = $bisioZwecke;
+
 $config['valuemappings']['frommo']['application']['konto']['buchungstyp_kurzbz'] = array(
 	'681' => array('OEH', 'Studiengebuehr'), // Buchungstyp depends on mobilitaetsprogramm_code
 	'682' => array('OEH', 'Studiengebuehr'),
@@ -174,22 +193,7 @@ $config['valuemappings']['frommo']['applicationout']['bisio_aufenthaltfoerderung
 	'1100672' => 5 // keine Förderung
 );
 
-$config['valuemappings']['frommo']['applicationout']['bisio_zweck']['zweck_code'] = array(
-	'1114418' => '1', // Studium
-	'1114419' => '2', // Praktikum
-	'1114420' => '3', // Studium und Praktikum
-	'1114421' => '4', // Diplom-/Masterarbeit bzw. Dissertation
-	// '1114422' => '7', TODO: Kurzzeitmobilität
-
-	// if zweck code is defined by Mobilitaetsprogramm (outgoingsync)
-	'685' => '2', // Erasmus (Praktikum) - Praktikum
-	'688' => '1', // Erasmus (Semester) - Studium
-	'830' => '1', // Exchange Semester (with Bilateral Agreement) - Studium
-	'946' => '4', // Marshall Plan Scholarship
-	'1037' => '2', // Auslandspraktikum (ohne Zuschuss)
-	'1151' => '1', // Kurzzeitmobilität BIP
-	'1158' => '1' // Kurzzeitmobilität (Sommer-/ Winterschule, Studienreise, Exkursion etc.)
-);
+$config['valuemappings']['frommo']['applicationout']['bisio_zweck']['zweck_code'] = $bisioZwecke;
 
 $defaultbuchungen = array('OEH' => 'ÖH-Beitrag STG Semester', 'Studiengebuehr' => 'Studienbeitrag_Incoming');
 $config['valuemappings']['frommo']['application']['konto']['buchungstext'] = array(
