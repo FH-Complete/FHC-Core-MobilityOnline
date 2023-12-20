@@ -101,13 +101,16 @@ $bisioZwecke = array(
 	// '1114422' => '7', TODO: Kurzzeitmobilität
 
 	// if zweck code is defined by Mobilitaetsprogramm
+	'681' => '1', // Erasmus (Mundus) - Studium
+	'682' => '1', // Free Mover - Studium
 	'685' => '2', // Erasmus (Praktikum) - Praktikum
 	'688' => '1', // Erasmus (Semester) - Studium
 	'830' => '1', // Exchange Semester (with Bilateral Agreement) - Studium
 	'946' => '4', // Marshall Plan Scholarship
 	'1037' => '2', // Auslandspraktikum (ohne Zuschuss)
 	'1151' => '1', // Kurzzeitmobilität BIP
-	'1158' => '1' // Kurzzeitmobilität (Sommer-/ Winterschule, Studienreise, Exkursion etc.)
+	'1158' => '1', // Kurzzeitmobilität (Sommer-/ Winterschule, Studienreise, Exkursion etc.)
+	'1224' => '1' // Virtueller Austausch - Studium
 );
 
 $config['valuemappings']['frommo']['application']['bisio']['nation_code'] = $nations;
