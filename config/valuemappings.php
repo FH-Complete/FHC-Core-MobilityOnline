@@ -12,7 +12,7 @@ $config['valuemappings']['tomo']['locale'] = array(
 );
 
 $config['valuemappings']['tomo']['typ'] = array(
-	'b' => 'B',
+	'b' => array('B','M'),
 	'm' => 'M',
 	'e' => array('B', 'M')
 );
