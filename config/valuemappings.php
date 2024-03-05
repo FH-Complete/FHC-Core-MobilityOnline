@@ -78,16 +78,16 @@ $studiengaenge = array(
 );
 
 $mobilitaetsprogramme = array(
-	'681' => 7, // Erasmus (Mundus)
+	'681' => 47, // Erasmus (Mundus)
 	'682' => 202, // Free Mover - selbst
-	'685' => 7, // Erasmus (Praktikum)
-	'688' => 7, // Erasmus (Semester)
+	'685' => 46, // Erasmus (Praktikum)
+	'688' => 45, // Erasmus (Semester)
 	'830' => 201, // Exchange Semester (with Bilateral Agreement) - FH-Mob
 	'946' => 18, // Marshall Plan Scholarship - Marshall
 	'1037' => 14, // Auslandspraktikum (ohne Zuschuss)
-	'1151' => 7, // Erasmus (Kurzzeitmobilität, BIP)
+	'1151' => 45, // Erasmus (Kurzzeitmobilität, BIP)
 	'1158' => 202, // Kurzzeitmobilität (Sommer-/ Winterschule, Studienreise, Exkursion etc.) - selbst
-	'1224' => 7 // virtueller Austausch
+	'1224' => 45 // virtueller Austausch
 	/*	'Erasmus SMS' => 7,
 	'Erasmus SMP' => 7,*/
 	//'Erasmus (Studies)' => 7,
