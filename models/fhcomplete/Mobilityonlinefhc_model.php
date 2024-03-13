@@ -156,7 +156,7 @@ class Mobilityonlinefhc_model extends DB_Model
 	 */
 	public function getBisio($student_uid)
 	{
-		$bisioqry = "SELECT tbl_bisio.bisio_id, tbl_bisio.von, tbl_bisio.bis, universitaet, 
+		$bisioqry = "SELECT tbl_bisio.bisio_id, tbl_bisio.von, tbl_bisio.bis, universitaet,
 					tbl_mobilitaetsprogramm.beschreibung as mobilitaetsprogramm, ort, tbl_nation.langtext as nation,
        				string_agg(tbl_zweck.bezeichnung, ', ') AS zweck
 					FROM bis.tbl_bisio

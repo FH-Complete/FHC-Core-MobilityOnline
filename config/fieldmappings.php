@@ -16,7 +16,8 @@ $bisiomappings = array(
 	'bis' => 'bew_dat_bis',
 	'nation_code' => 'lcd_id_gast',
 	'herkunftsland_code' => 'lcd_id_heim',
-	'mobilitaetsprogramm_code' => 'aust_prog_id'
+	'mobilitaetsprogramm_code' => 'aust_prog_id',
+	'student_uid' => 'bew_ber_matr_nr'
 );
 
 $mailmapping = array('kontakt' => 'email');
@@ -169,7 +170,7 @@ $config['fieldmappings']['bankdetails']['bankverbindung'] = array(
 	'bic' => 'swiftCode'
 );
 
-// Zahlungen (Konto) outgoing
+// Zahlungen (Konto) outgoing/incoming
 $config['fieldmappings']['payment']['konto'] = array(
 	'betrag' => 'paymentAmount',
 	'buchungsdatum' => 'voucherDate'

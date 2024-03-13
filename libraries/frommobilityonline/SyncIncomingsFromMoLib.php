@@ -198,6 +198,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			};
 			$currAddressData = getData($currAddressData);
 
+			// nomination data for payments
+			$nominationData = getData($this->ci->MoGetAppModel->getNominationDataByApplicationID($appId));
+
 			$lichtbildData = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASSFOTO');
 			if (isError($lichtbildData))
 			{
@@ -207,7 +210,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$lichtbildData = getData($lichtbildData);
 
 			// transform MobilityOnline application to FHC incoming
-			$fhcObj = $this->mapMoAppToIncoming($application, $addressData, $currAddressData, $lichtbildData);
+			$fhcObj = $this->mapMoAppToIncoming($application, $addressData, $currAddressData, $nominationData, $lichtbildData);
 
 			// courses
 			$fhcObj['mocourses'] = array();
@@ -265,7 +268,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * @param array $photo of applicant
 	 * @return array with fhcomplete table arrays
 	 */
-	public function mapMoAppToIncoming($moApp, $moAddr = null, $currAddr = null, $photo = null)
+	public function mapMoAppToIncoming($moApp, $moAddr = null, $currAddr = null, $nominationData = null, $photo = null)
 	{
 		$fieldMappings = $this->conffieldmappings[$this->moObjectType];
 		$personMappings = $fieldMappings['person'];
@@ -360,6 +363,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 		}
 
+
 		// small Lichtbild
 		if (!isEmptyArray($photo))
 		{
@@ -367,6 +371,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		$fhcObj = $this->convertToFhcFormat($moAppElementsExtracted, $this->moObjectType);
+
+		// payments
+		$payments = $this->getPaymentsFromNominationData($fhcObj['bisio']['student_uid'], $nominationData);
 
 		// add all Studiensemester for Prestudentstatus
 
@@ -439,7 +446,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$fhcAddr = $this->convertToFhcFormat($moAddr, 'address');
 		$fhcCurrAddr = $this->convertToFhcFormat($currAddr, 'curraddress');
 
-		$fhcObj = array_merge($fhcObj, $fhcLichtbild, $fhcAddr, $fhcCurrAddr);
+		$fhcObj = array_merge($fhcObj, $fhcLichtbild, $fhcAddr, $fhcCurrAddr, array('zahlungen' => $payments));
 
 		//~ // courses
 		//~ $fhcObj['mocourses'] = array();
@@ -472,17 +479,16 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	public function saveIncoming($incoming, $appId, $prestudent_id = null)
 	{
 		//error check for missing data etc.
-		$errors = $this->fhcObjHasError($incoming, $this->moObjectType);
+		$errors = $this->applicationObjHasError($incoming);
 
 		if ($errors->error)
 		{
-			$this->addErrorOutput("Fehler");
 			foreach ($errors->errorMessages as $errorMessage)
 			{
 				$this->addErrorOutput($errorMessage);
 			}
 
-			$this->addErrorOutput("Abbruch bei Speicherung des Incomings");
+			$this->addErrorOutput("Abbruch der Incoming Speicherung");
 			return null;
 		}
 
@@ -498,8 +504,10 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$bisio_zweck = $incoming['bisio_zweck'];
 		$konto = $incoming['konto'];
 
+
 		// optional fields
 		$lichtbild = isset($incoming['lichtbild']) ? $incoming['lichtbild'] : array();
+		$zahlungen = isset($incoming['zahlungen']) ? $incoming['zahlungen'] : array();
 		$akten = isset($incoming['akten']) ? $incoming['akten'] : array();
 		$kontaktnotfall = isset($incoming['kontaktnotfall']) ? $incoming['kontaktnotfall'] : array();
 		$kontakttel = isset($incoming['kontakttel']) ? $incoming['kontakttel'] : array();
@@ -592,6 +600,18 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 							$konto['studiensemester_kurzbz'] = $studiensem;
 							$this->_saveBuchungen($konto);
 						}
+					}
+
+					// Zahlungen
+					foreach ($zahlungen as $zahlung)
+					{
+						$zahlung['konto']['studiengang_kz'] = $prestudent['studiengang_kz'];
+						$zahlung['konto']['studiensemester_kurzbz'] = $prestudentstatus['studiensemester_kurzbz'];
+						$zahlung['konto']['buchungstext'] = $zahlung['buchungsinfo']['mo_zahlungsgrund'];
+
+						// TODO studiensemester auch zur Identifikation der Zahlung
+						// - aber was ist wenn in MO tatsächlich Studiensemester geändert wird? Trotzdem neue Zahlung anlegen?
+						$this->saveZahlung($zahlung, $person_id);
 					}
 				}
 

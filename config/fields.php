@@ -79,6 +79,13 @@ $config['fhcfields']['application']['optional'] = array(
 	),
 	'akte' => array(
 		'file_content' => array('name' => 'Dokument', 'type' => 'base64Document')
+	),
+	'studienadresse' => array(
+		'nation' => array('required' => true, 'ref' => 'bis.tbl_nation', 'reffield' => 'nation_code'),
+		'ort' => array('required' => true),
+		'strasse' => array('required' => true),
+		'plz' => array('name' => 'Postleitzahl'),
+		'gemeinde' => array()
 	)
 );
 
@@ -158,6 +165,11 @@ $config['fhcfields']['outgoingcourse']['required'] = array(
 		'ects_punkte_gast' => array('name' => 'ECTS Punkte Gast', 'type' => 'float'),
 		'note_local_gast' => array('required' => true, 'name' => 'Note Gast')
 	)
+);
+
+// aliases: if certain tables should be checked like another table
+$config['fhcfields_aliases'] = array(
+	'studienadresse' => 'adresse'
 );
 
 /**

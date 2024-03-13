@@ -22,7 +22,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('crm/konto_model', 'KontoModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetmasterdata_model', 'MoGetMasterDataModel');
-		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mozahlungidzuordnung_model', 'MozahlungidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobankverbindungidzuordnung_model', 'MobankverbindungidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobilityonlinefhc_model', 'MoFhcModel');
 	}
@@ -149,6 +148,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 			$bankData = getData($bankData);
 
+			// nomination data for payments
 			$nominationData = $this->ci->MoGetAppModel->getNominationDataByApplicationID($appId);
 
 			// do not include payment errors for now, as error is returned when there are empty payments
@@ -182,7 +182,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$fhcobj_extended->moid = $appId;
 
 			// check if the fhc object has errors
-			$errors = $this->_outgoingObjHasError($fhcobj);
+			$errors = $this->applicationObjHasError($fhcobj);
 			$fhcobj_extended->error = $fhcobj_extended->error || $errors->error;
 			$fhcobj_extended->errorMessages = array_merge($fhcobj_extended->errorMessages, $errors->errorMessages);
 
@@ -372,50 +372,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		$fhcBankData = $this->convertToFhcFormat($bankData, 'bankdetails');
 
 		// payments
-		$payments = array();
-		$paymentObjectName = 'payment';
-
-		if (isset($nominationData->project->payments))
-		{
-			// payment can be object is single or array if multiple
-			if (is_array($nominationData->project->payments))
-			{
-				foreach ($nominationData->project->payments as $payment)
-				{
-					$fhcPayment = $this->convertToFhcFormat($payment, $paymentObjectName);
-					if ($fhcPayment['buchungsinfo']['angewiesen'] === true) // sync only if authorized
-						$payments[] = $fhcPayment;
-				}
-			}
-			else
-			{
-				$fhcPayment = $this->convertToFhcFormat($nominationData->project->payments, $paymentObjectName);
-				if ($fhcPayment['buchungsinfo']['angewiesen'] === true) // sync only if authorized
-					$payments[] = $fhcPayment;
-			}
-
-			// check if payments already synced and set flag
-			for ($i = 0; $i < count($payments); $i++)
-			{
-				$this->ci->BenutzerModel->addSelect('person_id');
-				$personIdRes = $this->ci->BenutzerModel->loadWhere(
-					array(
-						'uid' => $fhcObj['bisio']['student_uid']
-					)
-				);
-
-				if (hasData($personIdRes))
-				{
-					$person_id = getData($personIdRes)[0]->person_id;
-					$referenzNrRes = $this->_checkPaymentInFhc($payments[$i]['buchungsinfo']['mo_referenz_nr'], $person_id);
-
-					if (isSuccess($referenzNrRes))
-					{
-						$payments[$i]['buchungsinfo']['infhc'] = hasData($referenzNrRes);
-					}
-				}
-			}
-		}
+		$payments = $this->getPaymentsFromNominationData($fhcObj['bisio']['student_uid'], $nominationData);
 
 		$fhcObj = array_merge($fhcObj, $fhcAddr, $fhcBankData, array('zahlungen' => $payments));
 
@@ -432,11 +389,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	public function saveOutgoing($appId, $outgoing, $bisio_id_existing)
 	{
 		//error check for missing data etc.
-		$errors = $this->_outgoingObjHasError($outgoing);
-
-		// check Zahlungen and Akten for errors separately
-		$zahlungen = isset($outgoing['zahlungen']) ? $outgoing['zahlungen'] : array();
-		$akten = isset($outgoing['akten']) ? $outgoing['akten'] : array();
+		$errors = $this->applicationObjHasError($outgoing);
 
 		if ($errors->error)
 		{
@@ -448,6 +401,10 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 			$this->addErrorOutput("Abbruch der Outgoing Speicherung");
 			return null;
 		}
+
+		// get Zahlungen and Akten
+		$zahlungen = isset($outgoing['zahlungen']) ? $outgoing['zahlungen'] : array();
+		$akten = isset($outgoing['akten']) ? $outgoing['akten'] : array();
 
 		$person = $outgoing['person'];
 		$prestudent = $outgoing['prestudent'];
@@ -589,8 +546,9 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 					$zahlung['konto']['studiensemester_kurzbz'] = $prestudent['studiensemester_kurzbz'];
 					$zahlung['konto']['buchungstext'] = $zahlung['buchungsinfo']['mo_zahlungsgrund'];
 
-					// TODO studiensemester auch - aber was ist wenn in MO tatsächlich Studiensemester geändert wird? Trotzdem neue Zahlung anlegen?
-					$this->_saveZahlung($zahlung, $person_id/*, $prestudent['studiensemester_kurzbz']*/);
+					// TODO studiensemester auch zur Identifikation der Zahlung
+					// - aber was ist wenn in MO tatsächlich Studiensemester geändert wird? Trotzdem neue Zahlung anlegen?
+					$this->saveZahlung($zahlung, $person_id/*, $prestudent['studiensemester_kurzbz']*/);
 				}
 
 				// Documents
@@ -761,83 +719,6 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Inserts Zahlung (konto) for a student or updates an existing one.
-	 * @param array $zahlung
-	 * @param int $person_id
-	 * @return int|null buchungsnr of inserted or updated konto Buchung if successful, null otherwise.
-	 */
-	private function _saveZahlung($zahlung, $person_id)
-	{
-		$buchungsnr = null;
-
-		$buchungsinfo = $zahlung['buchungsinfo'];
-		$konto = $zahlung['konto'];
-
-		// check existent Zahlungen
-		$zlgZuordnungRes = $this->_checkPaymentInFhc($buchungsinfo['mo_referenz_nr'], $person_id);
-
-		if (isSuccess($zlgZuordnungRes))
-		{
-			if (hasData($zlgZuordnungRes))
-			{
-				// Zahlung already exists - update
-				$buchungsnr = getData($zlgZuordnungRes);
-				$this->stamp('update', $konto);
-				$kontoResp = $this->ci->KontoModel->update($buchungsnr, $konto);
-				$this->log('update', $kontoResp, 'kontobuchung');
-			}
-			else
-			{
-				// new Zahlung
-				$konto['person_id'] = $person_id;
-				$this->stamp('insert', $konto);
-				$kontoResp = $this->ci->KontoModel->insert($konto);
-				$this->log('insert', $kontoResp, 'kontobuchung');
-
-				if (hasData($kontoResp))
-				{
-					$buchungsnr = getData($kontoResp);
-
-					// insert new mapping into zahlungssynctable
-					$this->ci->MozahlungidzuordnungModel->insert(
-						array('buchungsnr' => $buchungsnr, 'mo_referenz_nr' => $buchungsinfo['mo_referenz_nr'])
-					);
-				}
-			}
-		}
-
-		return $buchungsnr;
-	}
-
-	/**
-	 * Check if payment is already in fhcomplete by checking sync table.
-	 * @param string $mo_referenz_nr
-	 * @return object error or success with found buchungsnr if in fhcomplete, success with null if not in fhcomplete
-	 */
-	private function _checkPaymentInFhc($mo_referenz_nr, $person_id)
-	{
-		$infhccheck_buchungsnr = null;
-		$this->ci->MozahlungidzuordnungModel->addSelect('buchungsnr');
-		$this->ci->MozahlungidzuordnungModel->addJoin('public.tbl_konto', 'buchungsnr');
-		$checkInFhcRes = $this->ci->MozahlungidzuordnungModel->loadWhere(
-			array(
-				'mo_referenz_nr' => $mo_referenz_nr,
-				'person_id' => $person_id
-			)
-		);
-
-		if (isError($checkInFhcRes))
-			return $checkInFhcRes;
-
-		if (hasData($checkInFhcRes))
-		{
-			$infhccheck_buchungsnr = getData($checkInFhcRes)[0]->buchungsnr;
-		}
-
-		return success($infhccheck_buchungsnr);
-	}
-
-	/**
 	 * Check if payment is already in fhcomplete by checking sync table.
 	 * @param int $mo_person_id person id in mobility online
 	 * @return object error or success with found buchungsnr if in fhcomplete, success with null if not in fhcomplete
@@ -857,39 +738,5 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		return success($infhccheck_bankverbindung_id);
-	}
-
-	/**
-	 * Check if an outgoing object has errors. Checks "sub objects" as well.
-	 * @param array $outgoing
-	 * @return object error object with messages
-	 */
-	private function _outgoingObjHasError($outgoing)
-	{
-		$errorResults = new StdClass();
-		$errorResults->error = false;
-		$errorResults->errorMessages = array();
-
-		$objToCheck = array(
-			$this->moObjectType => array($outgoing),
-			'payment' => isset($outgoing['zahlungen']) ? $outgoing['zahlungen'] : array(),
-			'file' => isset($outgoing['akten']) ? $outgoing['akten'] : array(),
-		);
-
-		foreach ($objToCheck as $objName => $objects)
-		{
-			foreach ($objects as $object)
-			{
-				$hasErrorObj = $this->fhcObjHasError($object, $objName);
-
-				if ($hasErrorObj->error)
-				{
-					$errorResults->error = true;
-					$errorResults->errorMessages[] = array_merge($errorResults->errorMessages, $hasErrorObj->errorMessages);
-				}
-			}
-		}
-
-		return $errorResults;
 	}
 }

@@ -67,15 +67,19 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		$this->_conffhcdefaults = $this->ci->config->item('fhcdefaults');
 		$this->fhcconffields = $this->ci->config->item('fhcfields');
+		$this->fhcconffields_aliases = $this->ci->config->item('fhcfields_aliases');
 		$this->confmiscvalues = $this->ci->config->item('miscvalues');
 
 		$this->ci->load->model('content/TempFS_model', 'TempFSModel');
 		$this->ci->load->model('crm/Dokumentprestudent_model', 'DokumentprestudentModel');
+		$this->ci->load->model('person/benutzer_model', 'BenutzerModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MobilityonlinefhcModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moakteidzuordnung_model', 'MoakteidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobisioidzuordnung_model', 'MobisioidzuordnungModel');
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mozahlungidzuordnung_model', 'MozahlungidzuordnungModel');
+
 
 		$this->ci->load->library('AkteLib', array('who' => self::IMPORTUSER));
 		$this->ci->load->library('extensions/FHC-Core-MobilityOnline/frommobilityonline/FromMobilityOnlineDataConversionLib');
@@ -85,10 +89,36 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	/** ---------------------------------------------- Public methods ------------------------------------------------*/
 
 	/**
+	 * Gets max allowed post parameter length from php_ini config.
+	 * Can be e.g. "4M" for 4 Megabyte or a number in bytes.
+	 * If no value can be retrieved from ini, own configuration value is used.
+	 * @return string|null
+	 */
+	public function getPostMaxSize()
+	{
+		$max_size_res = null;
+
+		$post_max_size = ini_get('post_max_size');
+
+		$max_size_res = $this->_extractPostMaxSize($post_max_size);
+
+		if (!isset($max_size_res))
+		{
+			$config = $this->ci->config->item('FHC-Core-MobilityOnline');
+			$post_max_size = $config['post_max_size'];
+			$max_size_res = $this->_extractPostMaxSize($post_max_size);
+		}
+
+		return $max_size_res;
+	}
+
+	/** ---------------------------------------------- Protected methods ------------------------------------------------*/
+
+	/**
 	 * Gets sync output
 	 * @return array
 	 */
-	public function getOutput()
+	protected function getOutput()
 	{
 		return $this->output;
 	}
@@ -100,7 +130,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 * @param bool $withSpecifiedElementsForReturn limit result to only certain applicationElements
 	 * @return array the object containing search parameters.
 	 */
-	public function getSearchObj($objType, $searchParams, $withSpecifiedElementsForReturn = true)
+	protected function getSearchObj($objType, $searchParams, $withSpecifiedElementsForReturn = true)
 	{
 		$searchObj = array();
 
@@ -149,12 +179,46 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
+	 * Check if an application object has errors. Checks "sub objects" as well.
+	 * @param array $outgoing
+	 * @return object error object with messages
+	 */
+	protected function applicationObjHasError($application)
+	{
+			$errorResults = new StdClass();
+		$errorResults->error = false;
+		$errorResults->errorMessages = array();
+
+		$objToCheck = array(
+			$this->moObjectType => array($application),
+			'payment' => isset($application['zahlungen']) ? $application['zahlungen'] : array(),
+			'file' => isset($application['akten']) ? $application['akten'] : array()
+		);
+
+		foreach ($objToCheck as $objName => $objects)
+		{
+			foreach ($objects as $object)
+			{
+				$hasErrorObj = $this->fhcObjHasError($object, $objName);
+
+				if ($hasErrorObj->error)
+				{
+					$errorResults->error = true;
+					$errorResults->errorMessages[] = array_merge($errorResults->errorMessages, $hasErrorObj->errorMessages);
+				}
+			}
+		}
+
+		return $errorResults;
+	}
+
+	/**
 	 * Checks if fhcomplete object has errors, e.g. missing fields, thus cannot be inserted in db.
 	 * @param array $fhcObj
 	 * @param string $objType
 	 * @return StdClass object with properties boolean for has Error and array with errormessages
 	 */
-	public function fhcObjHasError($fhcObj, $objType)
+	protected function fhcObjHasError($fhcObj, $objType)
 	{
 		$hasErrorObj = new StdClass();
 		$hasErrorObj->error = false;
@@ -227,32 +291,6 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 		return $hasErrorObj;
 	}
-
-	/**
-	 * Gets max allowed post parameter length from php_ini config.
-	 * Can be e.g. "4M" for 4 Megabyte or a number in bytes.
-	 * If no value can be retrieved from ini, own configuration value is used.
-	 * @return string|null
-	 */
-	public function getPostMaxSize()
-	{
-		$max_size_res = null;
-
-		$post_max_size = ini_get('post_max_size');
-
-		$max_size_res = $this->_extractPostMaxSize($post_max_size);
-
-		if (!isset($max_size_res))
-		{
-			$config = $this->ci->config->item('FHC-Core-MobilityOnline');
-			$post_max_size = $config['post_max_size'];
-			$max_size_res = $this->_extractPostMaxSize($post_max_size);
-		}
-
-		return $max_size_res;
-	}
-
-	/** ---------------------------------------------- Protected methods ------------------------------------------------*/
 
 	/**
 	 * Gets a specified applicationDataElement value from MobilityOnline Application
@@ -595,6 +633,61 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
+	 * Gets payment objects from nomination data.
+	 * @param uid
+	 * @param nominationData
+	 */
+	protected function getPaymentsFromNominationData($uid, $nominationData)
+	{
+		$payments = array();
+		$paymentObjectName = 'payment';
+
+		if (isset($nominationData->project->payments))
+		{
+			// payment can be object is single or array if multiple
+			if (is_array($nominationData->project->payments))
+			{
+				foreach ($nominationData->project->payments as $payment)
+				{
+					$fhcPayment = $this->convertToFhcFormat($payment, $paymentObjectName);
+					if ($fhcPayment['buchungsinfo']['angewiesen'] === true) // sync only if authorized
+						$payments[] = $fhcPayment;
+				}
+			}
+			else
+			{
+				$fhcPayment = $this->convertToFhcFormat($nominationData->project->payments, $paymentObjectName);
+				if ($fhcPayment['buchungsinfo']['angewiesen'] === true) // sync only if authorized
+					$payments[] = $fhcPayment;
+			}
+
+			// check if payments already synced and set flag
+			for ($i = 0; $i < count($payments); $i++)
+			{
+				$this->ci->BenutzerModel->addSelect('person_id');
+				$personIdRes = $this->ci->BenutzerModel->loadWhere(
+					array(
+						'uid' => $uid
+					)
+				);
+
+				if (hasData($personIdRes))
+				{
+					$person_id = getData($personIdRes)[0]->person_id;
+					$referenzNrRes = $this->checkPaymentInFhc($payments[$i]['buchungsinfo']['mo_referenz_nr'], $person_id);
+
+					if (isSuccess($referenzNrRes))
+					{
+						$payments[$i]['buchungsinfo']['infhc'] = hasData($referenzNrRes);
+					}
+				}
+			}
+		}
+
+		return $payments;
+	}
+
+	/**
 	 * Inserts or updates a document of a person as an akte.
 	 * @param int $person_id
 	 * @param array $akte
@@ -697,6 +790,55 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
+	 * Inserts Zahlung (konto) for a student or updates an existing one.
+	 * @param array $zahlung
+	 * @param int $person_id
+	 * @return int|null buchungsnr of inserted or updated konto Buchung if successful, null otherwise.
+	 */
+	protected function saveZahlung($zahlung, $person_id)
+	{
+		$buchungsnr = null;
+
+		$buchungsinfo = $zahlung['buchungsinfo'];
+		$konto = $zahlung['konto'];
+
+		// check existent Zahlungen
+		$zlgZuordnungRes = $this->checkPaymentInFhc($buchungsinfo['mo_referenz_nr'], $person_id);
+
+		if (isSuccess($zlgZuordnungRes))
+		{
+			if (hasData($zlgZuordnungRes))
+			{
+				// Zahlung already exists - update
+				$buchungsnr = getData($zlgZuordnungRes);
+				$this->stamp('update', $konto);
+				$kontoResp = $this->ci->KontoModel->update($buchungsnr, $konto);
+				$this->log('update', $kontoResp, 'kontobuchung');
+			}
+			else
+			{
+				// new Zahlung
+				$konto['person_id'] = $person_id;
+				$this->stamp('insert', $konto);
+				$kontoResp = $this->ci->KontoModel->insert($konto);
+				$this->log('insert', $kontoResp, 'kontobuchung');
+
+				if (hasData($kontoResp))
+				{
+					$buchungsnr = getData($kontoResp);
+
+					// insert new mapping into zahlungssynctable
+					$this->ci->MozahlungidzuordnungModel->insert(
+						array('buchungsnr' => $buchungsnr, 'mo_referenz_nr' => $buchungsinfo['mo_referenz_nr'])
+					);
+				}
+			}
+		}
+
+		return $buchungsnr;
+	}
+
+	/**
 	 * Writes temporary file to file system.
 	 * Used as template for saving documents to dms.
 	 * @param string $filename
@@ -724,7 +866,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	 * @param int $appId
 	 * @return object error or success with found id if in fhcomplete, success with null if not in fhcomplete
 	 */
-	public function checkBisioInFhc($appId)
+	protected function checkBisioInFhc($appId)
 	{
 		$infhccheck_bisio_id = null;
 		$this->ci->MobisioidzuordnungModel->addSelect('bisio_id');
@@ -739,6 +881,35 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		}
 
 		return success($infhccheck_bisio_id);
+	}
+
+	/**
+	 * Check if payment is already in fhcomplete by checking sync table.
+	 * @param string $mo_referenz_nr
+	 * @param int $person_id
+	 * @return object error or success with found buchungsnr if in fhcomplete, success with null if not in fhcomplete
+	 */
+	protected function checkPaymentInFhc($mo_referenz_nr, $person_id)
+	{
+		$infhccheck_buchungsnr = null;
+		$this->ci->MozahlungidzuordnungModel->addSelect('buchungsnr');
+		$this->ci->MozahlungidzuordnungModel->addJoin('public.tbl_konto', 'buchungsnr');
+		$checkInFhcRes = $this->ci->MozahlungidzuordnungModel->loadWhere(
+			array(
+				'mo_referenz_nr' => $mo_referenz_nr,
+				'person_id' => $person_id
+			)
+		);
+
+		if (isError($checkInFhcRes))
+			return $checkInFhcRes;
+
+		if (hasData($checkInFhcRes))
+		{
+			$infhccheck_buchungsnr = getData($checkInFhcRes)[0]->buchungsnr;
+		}
+
+		return success($infhccheck_buchungsnr);
 	}
 
 	/** ---------------------------------------------- Private methods -----------------------------------------------*/
@@ -756,6 +927,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$hasError = false;
 		$errorText = '';
 		$required = isset($params['required']) && $params['required'];
+		if (isset($this->fhcconffields_aliases[$table])) $table = $this->fhcconffields_aliases[$table];
 
 		// value empty, but required?
 		if ($required && !is_numeric($value) && !is_bool($value) && isEmptyString($value))
