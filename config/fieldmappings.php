@@ -37,6 +37,9 @@ $filemapping = array(
 	'erstelltam' => 'createdOn'
 );
 
+// mobility online person incoming (does not need to be synced, but needed for sync)
+$config['fieldmappings']['application']['moPerson']['mo_person_id'] = 'p_id';
+
 // person incoming
 $config['fieldmappings']['application']['person'] = $personbasemapping;
 $config['fieldmappings']['application']['person']['staatsbuergerschaft'] = 'lcd_id_nat';
@@ -163,7 +166,7 @@ $config['fieldmappings']['applicationout']['kontaktmail'] = $mailmapping;
 // Institution adresse outgoing
 $config['fieldmappings']['instaddress']['institution_adresse'] = $adressemapping;
 
-// Bankkonto outgoing
+// Bankkonto outgoing/incoming
 $config['fieldmappings']['bankdetails']['bankverbindung'] = array(
 	'iban' => 'iban',
 	'name' => 'bankName',

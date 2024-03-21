@@ -73,11 +73,13 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		$this->ci->load->model('content/TempFS_model', 'TempFSModel');
 		$this->ci->load->model('crm/Dokumentprestudent_model', 'DokumentprestudentModel');
 		$this->ci->load->model('person/benutzer_model', 'BenutzerModel');
+		$this->ci->load->model('person/bankverbindung_model', 'BankverbindungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MobilityonlinefhcModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mogetapplicationdata_model', 'MoGetAppModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moakteidzuordnung_model', 'MoakteidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobisioidzuordnung_model', 'MobisioidzuordnungModel');
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobankverbindungidzuordnung_model', 'MobankverbindungidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mozahlungidzuordnung_model', 'MozahlungidzuordnungModel');
 
 
@@ -787,6 +789,99 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		}
 
 		return $akte_id;
+	}
+
+	/**
+	 * Inserts bankverbindung for a student or updates an existing one.
+	 * @param array $bankverbindung
+	 * @param int $mo_person_id application id for linking bankverbindung with application in sync table
+	 * @return int|null bankverbindung_id of inserted or updated bankverbindung if successful, null otherwise.
+	 */
+	protected function saveBankverbindung($bankverbindung, $mo_person_id)
+	{
+		$bankverbindung_id = null;
+		$insert = false;
+		$update = false;
+
+		// check existent Bankverbindungen
+		$this->ci->BankverbindungModel->addSelect('bankverbindung_id, insertvon');
+		$this->ci->BankverbindungModel->addOrder('insertamum', 'DESC');
+		$this->ci->BankverbindungModel->addLimit(1);
+
+		$bankverbindungRes = $this->ci->BankverbindungModel->loadWhere(array('person_id' => $bankverbindung['person_id']));
+
+		if (isSuccess($bankverbindungRes))
+		{
+			if (hasData($bankverbindungRes))
+			{
+				$bankverbindungData = getData($bankverbindungRes)[0];
+				$bankverbindung_id = $bankverbindungData->bankverbindung_id;
+				$bankverbindung_insertvon = $bankverbindungData->insertvon;
+
+				// check synced Bankverbindungen
+				$bankverbindungZuordnungRes = $this->ci->MobankverbindungidzuordnungModel->loadWhere(
+					array('bankverbindung_id' => $bankverbindung_id)
+				);
+
+				if (isSuccess($bankverbindungZuordnungRes))
+				{
+					// if already in sync table - update
+					if (hasData($bankverbindungZuordnungRes))
+					{
+						$update = true;
+					}
+					else
+					{
+						// not in sync table, existing bankverbindung inserted not by Mobility Online: insert new
+						if ($bankverbindung_insertvon !== self::IMPORTUSER)
+							$insert = true;
+						else // if not in sync table, but inserted by Mobility Online
+						{
+							// link Bankverbindung
+							$bankverbindungZuordnungInsertRes = $this->ci->MobankverbindungidzuordnungModel->insert(
+								array(
+									'bankverbindung_id' => $bankverbindung_id,
+									'mo_person_id' => $mo_person_id
+								)
+							);
+
+							if (isSuccess($bankverbindungZuordnungInsertRes))
+							{
+								// and update the linked Bankverbindung with data from mo
+								$update = true;
+							}
+						}
+					}
+				}
+			}
+			else // no Bankverbindung exists, add new
+				$insert = true;
+
+			if ($insert)
+			{
+				// new Bankverbindung
+				$this->stamp('insert', $bankverbindung);
+				$bankverbindungResp = $this->ci->BankverbindungModel->insert($bankverbindung);
+				$this->log('insert', $bankverbindungResp, 'bankverbindung');
+				$bankverbindung_id = getData($bankverbindungResp);
+
+				// link Bankverbindung
+				$bankverbindungZuordnungInsertRes = $this->ci->MobankverbindungidzuordnungModel->insert(
+					array(
+						'bankverbindung_id' => $bankverbindung_id,
+						'mo_person_id' => $mo_person_id
+					)
+				);
+			}
+			elseif ($update)
+			{
+				$this->stamp('update', $bankverbindung);
+				$bankverbindungResp = $this->ci->BankverbindungModel->update($bankverbindung_id, $bankverbindung);
+				$this->log('update', $bankverbindungResp, 'bankverbindung');
+			}
+		}
+
+		return $bankverbindung_id;
 	}
 
 	/**

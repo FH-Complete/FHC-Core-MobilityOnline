@@ -198,6 +198,16 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			};
 			$currAddressData = getData($currAddressData);
 
+			// get bank account data
+			$bankData = $this->ci->MoGetAppModel->getBankAccountDetails($appId);
+
+			if (isError($bankData))
+			{
+				$fhcobj_extended->error = true;
+				$fhcobj_extended->errorMessages[] = getError($bankData);
+			}
+			$bankData = getData($bankData);
+
 			// nomination data for payments
 			$nominationData = getData($this->ci->MoGetAppModel->getNominationDataByApplicationID($appId));
 
@@ -210,7 +220,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$lichtbildData = getData($lichtbildData);
 
 			// transform MobilityOnline application to FHC incoming
-			$fhcObj = $this->mapMoAppToIncoming($application, $addressData, $currAddressData, $nominationData, $lichtbildData);
+			$fhcObj = $this->mapMoAppToIncoming($application, $addressData, $currAddressData, $bankData, $nominationData, $lichtbildData);
 
 			// courses
 			$fhcObj['mocourses'] = array();
@@ -265,10 +275,13 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	 * Converts MobilityOnline application to fhcomplete array (with person, prestudent...)
 	 * @param object $moApp MobilityOnline application
 	 * @param object $moAddr MobilityOnline adress of application
+	 * @param object $currAddr MobilityOnline current adress of stay of application
+	 * @param object $bankData of applicant
+	 * @param object $nominationData of applicant (for payments)
 	 * @param array $photo of applicant
 	 * @return array with fhcomplete table arrays
 	 */
-	public function mapMoAppToIncoming($moApp, $moAddr = null, $currAddr = null, $nominationData = null, $photo = null)
+	public function mapMoAppToIncoming($moApp, $moAddr = null, $currAddr = null, $bankData = null, $nominationData = null, $photo = null)
 	{
 		$fieldMappings = $this->conffieldmappings[$this->moObjectType];
 		$personMappings = $fieldMappings['person'];
@@ -445,8 +458,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// adresses
 		$fhcAddr = $this->convertToFhcFormat($moAddr, 'address');
 		$fhcCurrAddr = $this->convertToFhcFormat($currAddr, 'curraddress');
+		$fhcBankData = $this->convertToFhcFormat($bankData, 'bankdetails');
 
-		$fhcObj = array_merge($fhcObj, $fhcLichtbild, $fhcAddr, $fhcCurrAddr, array('zahlungen' => $payments));
+		$fhcObj = array_merge($fhcObj, $fhcLichtbild, $fhcAddr, $fhcCurrAddr, $fhcBankData, array('zahlungen' => $payments));
 
 		//~ // courses
 		//~ $fhcObj['mocourses'] = array();
@@ -492,6 +506,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			return null;
 		}
 
+		$moPerson = $incoming['moPerson'];
 		$person = $incoming['person'];
 		$prestudent = $incoming['prestudent'];
 		$prestudentstatus = $incoming['prestudentstatus'];
@@ -600,6 +615,14 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 							$konto['studiensemester_kurzbz'] = $studiensem;
 							$this->_saveBuchungen($konto);
 						}
+					}
+
+					// Bankverbindung
+					if (isset($incoming['bankverbindung']['iban']) && !isEmptyString($incoming['bankverbindung']['iban']))
+					{
+						$bankverbindung = $incoming['bankverbindung'];
+						$bankverbindung['person_id'] = $person_id;
+						$this->saveBankverbindung($bankverbindung, $moPerson['mo_person_id']);
 					}
 
 					// Zahlungen
