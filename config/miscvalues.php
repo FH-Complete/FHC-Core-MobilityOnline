@@ -22,3 +22,6 @@ $config['miscvalues']['documentstosync'] = array(
 		)
 	)
 );
+
+// name of type of Lichtbild in Mobility Online
+$config['miscvalues']['lichtbildtyptosync'] = 'PASSFOTO';

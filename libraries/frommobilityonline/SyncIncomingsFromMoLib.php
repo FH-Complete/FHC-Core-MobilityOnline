@@ -211,7 +211,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			// nomination data for payments
 			$nominationData = getData($this->ci->MoGetAppModel->getNominationDataByApplicationID($appId));
 
-			$lichtbildData = $this->ci->MoGetAppModel->getFilesOfApplication($appId, 'PASSFOTO');
+			$lichtbildData = $this->ci->MoGetAppModel->getFilesOfApplication($appId, $this->confmiscvalues['lichtbildtyptosync']);
 			if (isError($lichtbildData))
 			{
 				$fhcobj_extended->error = true;
