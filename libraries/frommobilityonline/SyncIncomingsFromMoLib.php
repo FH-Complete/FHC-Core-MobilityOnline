@@ -379,7 +379,13 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// WS and SS if Studienjahr given in MO
 		if ($moAppElementsExtracted->{$prestudentstatusMappings['studiensemester_kurzbz']} === $moStudjahr)
 		{
-			$allSemesters = array_unique(array_merge($allSemesters, $this->ci->frommobilityonlinedataconversionlib->mapMoStudienjahrToSemester($moStudjahr)));
+			$allSemesters =
+				array_unique(
+					array_merge(
+						$allSemesters,
+						$this->ci->frommobilityonlinedataconversionlib->mapMoStudienjahrToSemester($moStudjahr)
+					)
+				);
 		}
 
 		// get start of Studiensemester for getting semester by date
@@ -863,12 +869,16 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 						// check if there is a Studienplan with orgform from priorities (prioirities defined in config)
 						if (isset($this->confmiscvalues['orgform_priorities']) && !isEmptyArray($this->confmiscvalues['orgform_priorities']))
 						{
-							$studienplaeneResponse = $this->ci->StudienplanModel->getStudienplaeneBySemester($prestudent['studiengang_kz'], $semester);
+							$studienplaeneResponse = $this->ci->StudienplanModel->getStudienplaeneBySemester(
+								$prestudent['studiengang_kz'],
+								$semester
+							);
 
 							if (hasData($studienplaeneResponse))
 							{
 								$studienplaene = getData($studienplaeneResponse);
 
+								// set orgform from config (sorted by priority) if found in status
 								foreach ($this->confmiscvalues['orgform_priorities'] as $orgform_kurzbz)
 								{
 									foreach ($studienplaene as $studienplan)
