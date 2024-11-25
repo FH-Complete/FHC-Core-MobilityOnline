@@ -955,7 +955,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 			$dokumentprestudent = array(
 				'dokument_kurzbz' => $dokument_kurzbz,
 				'prestudent_id' => $prestudent_id,
-				'datum' => date('Y-m-d'),
+				'datum' => date('Y-m-d')
 			);
 
 			$this->stamp('insert', $dokumentprestudent);

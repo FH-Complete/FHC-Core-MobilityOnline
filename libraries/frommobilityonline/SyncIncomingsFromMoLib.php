@@ -486,6 +486,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			return null;
 		}
 
+		// TODO: required vs optional from config
 		$person = $incoming['person'];
 		$prestudent = $incoming['prestudent'];
 		$prestudentstatus = $incoming['prestudentstatus'];
@@ -556,13 +557,24 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 				$this->_savePrestudentStatus($studiensemarr, $prestudentstatus);
 
+				// personenkennzeichen - von date of bisio is needed for extracting year from Studiensemester
+				$personenkennzeichenData =
+					$this->ci->StudentModel->generatePersonenkennzeichen($prestudent['studiengang_kz'], $studiensemester, $bisio['von']);
+
+				if (!hasData($personenkennzeichenData))
+				{
+					$this->addErrorOutput("Fehler bei Generierung des Personenkennzeichens");
+					return null;
+				}
+
+				$personenkennzeichen = getData($personenkennzeichenData);
+
 				// benutzer
-				$matrikelnr = $this->ci->StudentModel->generateMatrikelnummer($prestudent['studiengang_kz'], $studiensemester);
-				$benutzerrespuid = $this->_saveBenutzer($matrikelnr, $prestudent, $benutzer);
+				$benutzerrespuid = $this->_saveBenutzer($personenkennzeichen, $prestudent, $benutzer);
 
 				if (!isEmptyString($benutzerrespuid))
 				{
-					$studentuidresp = $this->_saveStudent($benutzerrespuid, $matrikelnr, $prestudent, $student);
+					$studentuidresp = $this->_saveStudent($benutzerrespuid, $personenkennzeichen, $prestudent, $student);
 
 					if (!isEmptyString($studentuidresp))
 					{
@@ -861,12 +873,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 	/**
 	 * Inserts benutzer and generates uid and activation key, if no benutzer already exists for given prestudent.
-	 * @param string $matrikelnr for uid generation
+	 * @param string $personenkennzeichen for uid generation
 	 * @param array $prestudent
 	 * @param array $benutzer
 	 * @return string|null benutzer_uid of inserted benutzer if successful, null otherwise
 	 */
-	private function _saveBenutzer($matrikelnr, $prestudent, $benutzer)
+	private function _saveBenutzer($personenkennzeichen, $prestudent, $benutzer)
 	{
 		$benutzerresp_uid = null;
 
@@ -888,8 +900,8 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			else
 			{
 				$benutzer['person_id'] = $prestudent['person_id'];
-				$jahr = mb_substr($matrikelnr, 0, 2);
-				$stg = mb_substr($matrikelnr, 3, 4);
+				$jahr = mb_substr($personenkennzeichen, 0, 2);
+				$stg = mb_substr($personenkennzeichen, 3, 4);
 
 				$stgres = $this->ci->StudiengangModel->load($stg);
 
@@ -897,7 +909,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				{
 					$stg_bez = $stgres->retval[0]->kurzbz;
 					$stg_typ = $stgres->retval[0]->typ;
-					$benutzer['uid'] = generateUID($stg_bez, $jahr, $stg_typ, $matrikelnr);
+					$benutzer['uid'] = generateUID($stg_bez, $jahr, $stg_typ, $personenkennzeichen);
 
 					//check for existing benutzer
 					$benutzerCheckResp = $this->ci->BenutzerModel->loadWhere(array('uid' => $benutzer['uid']));
@@ -927,12 +939,12 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	/**
 	 * Inserts student or updates an existing one.
 	 * @param string $student_uid of existing benutzer for the student
-	 * @param string $matrikelnr
+	 * @param string $personenkennzeichen
 	 * @param array $prestudent for retrieving prestudent_id and studiengang_kz for student
 	 * @param array $student
 	 * @return string|null student_uid of inserted/updated student if successful, null otherwise
 	 */
-	private function _saveStudent($student_uid, $matrikelnr, $prestudent, $student)
+	private function _saveStudent($student_uid, $personenkennzeichen, $prestudent, $student)
 	{
 		$studentresp_uid = null;
 
@@ -951,7 +963,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 			else
 			{
-				$student['matrikelnr'] = $matrikelnr;
+				$student['matrikelnr'] = $personenkennzeichen;
 				$this->stamp('insert', $student);
 				$student['student_uid'] = $student_uid;
 				$studentResponse = $this->ci->StudentModel->insert($student);
