@@ -21,6 +21,8 @@ class FromMobilityOnlineDataConversionLib
 		// get Code Igniter instance
 		$this->ci =& get_instance();
 
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MoFhcModel');
+
 		$this->ci->load->library('extensions/FHC-Core-MobilityOnline/tomobilityonline/ToMobilityOnlineDataConversionLib');
 
 		// set semester and studienjahr mappings
@@ -83,6 +85,23 @@ class FromMobilityOnlineDataConversionLib
 		}
 		else
 			return null;
+	}
+
+	/**
+	 * Converts MobilityOnline nation to fhcomplete nation.
+	 * @param string $moNation
+	 * @return string fhcomplete nation
+	 */
+	public function mapNationToFhc($moNation)
+	{
+		$fhcNations = $this->ci->MoFhcModel->getNationByText($moNation);
+
+		if (hasData($fhcNations))
+		{
+			return getData($fhcNations)[0]->nation_code;
+		}
+
+		return null;
 	}
 
 	/**

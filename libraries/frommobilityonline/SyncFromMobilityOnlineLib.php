@@ -34,12 +34,9 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		'bis' => 'mapDateToFhc',
 		'studiengang_kz' => 'replaceByEmptyString',// empty string if no studiengang found in value mappings
 		'anmerkung' => 'replaceEmptyByNull',
-		'zgvnation' => 'replaceEmptyByNull',
 		'zgvdatum' => 'mapDateToFhc',
 		'zgvmas_code' => 'replaceEmptyByNull',
-		'zgvmanation' => 'replaceEmptyByNull',
 		'zgvmadatum' => 'mapDateToFhc',
-		'geburtsnation' => 'replaceEmptyByNull',
 		'foto' => 'resizeBase64ImageSmall',
 		'titel' => 'getFileExtension',
 		'mimetype' => 'mapFileToMimetype', // is placed before inhalt to get mime type from unencoded document
@@ -55,7 +52,14 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		'ects_erworben' => 'mapEctsToFhc',
 		'ects_angerechnet' => 'mapEctsToFhc',
 		'betrag' => 'mapBetragToFhc',
-		'buchungsdatum' => 'mapIsoDateToFhc'
+		'buchungsdatum' => 'mapIsoDateToFhc',
+		'staatsbuergerschaft' => 'mapNationToFhc',
+		'geburtsnation' => 'mapNationToFhc',
+		'nation' => 'mapNationToFhc', // adress nation
+		'nation_code' => 'mapNationToFhc', // bisio nation
+		'herkunftsland_code' => 'mapNationToFhc', // bisio origin nation
+		'zgvnation' => 'mapNationToFhc',
+		'zgvmanation' => 'mapNationToFhc'
 	);
 
 	/**

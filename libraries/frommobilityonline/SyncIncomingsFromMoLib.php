@@ -280,7 +280,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$applicationDataElementsByValueType = array(
 			// applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
 			'comboboxFirstValue' => array(
-				$personMappings['staatsbuergerschaft'], $personMappings['sprache'], $prestudentstatusMappings['studiensemester_kurzbz'],
+				$personMappings['staatsbuergerschaft'], $personMappings['geburtsnation'], $personMappings['sprache'], $prestudentstatusMappings['studiensemester_kurzbz'],
 				$prestudentMappings['zgvnation'], $prestudentMappings['zgvmanation'],
 				$bisioMappings['nation_code'], $bisioMappings['herkunftsland_code']
 			)
@@ -308,56 +308,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 				if ($found === true)
 					$moAppElementsExtracted->$elementName = $appDataValue;
-			}
-		}
-
-		// Nation
-		$moNation = $moAppElementsExtracted->{$personMappings['staatsbuergerschaft']};
-		$moBisioNation = $moAppElementsExtracted->{$bisioMappings['nation_code']};
-		$moBisioHerkunftsNation = $moAppElementsExtracted->{$bisioMappings['herkunftsland_code']};
-		$moAddrNation = isset($moAddr) ? $moAddr->{$adresseMappings['nation']['name']}->description : null;
-		$currAddrNation = isset($currAddr) ? $currAddr->{$adresseMappings['nation']['name']}->description : null;
-
-		$moZgvNation = isset($prestudentMappings['zgvnation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvnation']})
-							? $moAppElementsExtracted->{$prestudentMappings['zgvnation']}
-							: null;
-		$mozgvMaNation = isset($prestudentMappings['zgvmanation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvmanation']})
-							? $moAppElementsExtracted->{$prestudentMappings['zgvmanation']}
-							: null;
-
-		$moNations = array(
-			$personMappings['staatsbuergerschaft'] => $moNation,
-			$bisioMappings['nation_code'] => $moBisioNation,
-			$bisioMappings['herkunftsland_code'] => $moBisioHerkunftsNation,
-			$prestudentMappings['zgvnation'] => $moZgvNation,
-			$prestudentMappings['zgvmanation'] => $mozgvMaNation
-		);
-
-		$fhcNations = $this->ci->NationModel->load();
-
-		if (hasData($fhcNations))
-		{
-			foreach (getData($fhcNations) as $fhcNation)
-			{
-				// trying to get nations by bezeichnung
-				foreach ($moNations as $configBez => $mooNation)
-				{
-					if ($fhcNation->kurztext === $mooNation || $fhcNation->langtext === $mooNation || $fhcNation->engltext === $mooNation)
-					{
-						if (isset($moAppElementsExtracted->{$configBez}))
-							$moAppElementsExtracted->{$configBez} = $fhcNation->nation_code;
-					}
-				}
-
-				if ($fhcNation->kurztext === $moAddrNation || $fhcNation->langtext === $moAddrNation || $fhcNation->engltext === $moAddrNation)
-				{
-					$moAddr->{$adresseMappings['nation']['name']} = $fhcNation->nation_code;
-				}
-
-				if ($fhcNation->kurztext === $currAddrNation || $fhcNation->langtext === $currAddrNation || $fhcNation->engltext === $currAddrNation)
-				{
-					$currAddr->{$adresseMappings['nation']['name']} = $fhcNation->nation_code;
-				}
 			}
 		}
 
