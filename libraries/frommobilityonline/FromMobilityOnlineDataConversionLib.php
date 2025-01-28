@@ -112,12 +112,7 @@ class FromMobilityOnlineDataConversionLib
 	public function mapEctsToFhc($moEcts)
 	{
 		$pattern = '/^(\d+),(\d{2})$/';
-		if (preg_match($pattern, $moEcts))
-		{
-			return (float)str_replace(',', '.', $moEcts);
-		}
-		else
-			return null;
+		return preg_match($pattern, $moEcts) ? str_replace(',', '.', $moEcts) : null;
 	}
 
 	/**
