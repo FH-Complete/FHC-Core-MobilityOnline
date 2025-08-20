@@ -123,6 +123,7 @@ $config['valuemappings']['frommo']['curraddress']['studienadresse']['nation'] = 
 $config['valuemappings']['frommo']['instaddress']['institution_adresse']['nation'] = $nations;
 
 $config['valuemappings']['frommo']['application']['person']['staatsbuergerschaft'] = $nations;
+$config['valuemappings']['frommo']['application']['person']['geburtsnation'] = $nations;
 
 $config['valuemappings']['frommo']['application']['bisio']['herkunftsland_code'] = $nations;
 $config['valuemappings']['frommo']['applicationout']['bisio']['herkunftsland_code'] = $nations;

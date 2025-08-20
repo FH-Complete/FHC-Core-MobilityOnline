@@ -22,3 +22,9 @@ $config['miscvalues']['documentstosync'] = array(
 		)
 	)
 );
+
+// priorities for saving Orgform (lower index - higher priority)
+$config['miscvalues']['orgform_priorities'] = array(0 => 'VZ', 1 => 'BB');
+
+// fallback for Orgform: if no Orgform found, get Orgform by Studiengang type
+$config['miscvalues']['orgform_studiengangtyp_fallback'] = array('b' => 'VZ', 'm' => 'BB');
