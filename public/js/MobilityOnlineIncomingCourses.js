@@ -42,6 +42,7 @@ $(document).ready(function()
 
 var MobilityOnlineIncomingCourses = {
 	incomingCourses: null,// object for storing array with incomings and their courses
+	uidsOfFetchedCourses: [],
 	/**
 	 * Gets incomings from MobilityOnline and fhcomplete together with
 	 * their courses assigned in MobilityOnline
@@ -75,6 +76,73 @@ var MobilityOnlineIncomingCourses = {
 				errorCallback: function()
 				{
 					$("#incomingprestudents").html("<tr align='center'><td colspan='5'>Fehler beim Holen der Incomings!</td></tr>");
+				}
+			}
+		);
+	},
+	/**
+	 * Gets courses for a single incoming.
+	 * @param prestudentObj with lv info
+	 * @param studiensemester
+	 * @param uid of the incoming
+	 **/
+	getCoursesForIncoming: function(prestudentObj, studiensemester, uid)
+	{
+		if (MobilityOnlineIncomingCourses.uidsOfFetchedCourses.includes(uid))
+		{
+			MobilityOnlineIncomingCourses._printAllLvs(prestudentObj);
+			return;
+		}
+
+		let lv_kuerzel = [];
+		for (let lv of prestudentObj.lvs)
+		{
+			lv_kuerzel.push(lv['lehrveranstaltung']['lv_kuerzel_mo']);
+		}
+
+		FHC_AjaxClient.ajaxCallPost(
+			FHC_JS_DATA_STORAGE_OBJECT.called_path+'/getCoursesForIncoming',
+			{
+				"lv_kuerzel": lv_kuerzel,
+				"studiensemester": studiensemester,
+				"uid": uid
+			},
+			{
+				successCallback: function(data, textStatus, jqXHR)
+				{
+					if (FHC_AjaxClient.hasData(data))
+					{
+						MobilityOnlineIncomingCourses.uidsOfFetchedCourses.push(uid);
+						let newLvs = FHC_AjaxClient.getData(data);
+
+						for (let oldLvIdx in prestudentObj.lvs)
+						{
+							for (let newLv of newLvs)
+							{
+								if (newLv.lehrveranstaltung.lehrveranstaltung_id_mo == prestudentObj.lvs[oldLvIdx].lehrveranstaltung.lehrveranstaltung_id_mo)
+								{
+									prestudentObj.lvs[oldLvIdx] = newLv;
+								}
+							}
+						}
+						MobilityOnlineIncomingCourses._printAllLvs(prestudentObj);
+					}
+					else
+					{
+						MobilityOnlineIncomingCourses._toggleIncomingCoursesView();
+
+						$("#molvs").html("<tr align='center'><td colspan='5'>Keine Kurse für den Incoming gefunden!</td></tr>");
+						$("#allfhcles").html(MobilityOnlineIncomingCourses._getBackButtonHtml(false));
+						MobilityOnlineIncomingCourses._resetCoursesWell();
+
+						$("#backtoincomings").click(
+							MobilityOnlineIncomingCourses._toggleIncomingCoursesView
+						);
+					}
+				},
+				errorCallback: function()
+				{
+					$("#incomingprestudents").html("<tr align='center'><td colspan='5'>Fehler beim Holen der Kurse für den Incoming!</td></tr>");
 				}
 			}
 		);
@@ -156,19 +224,14 @@ var MobilityOnlineIncomingCourses = {
 					{
 						let lvData = FHC_AjaxClient.getData(data);
 
-						for (let prestudent in MobilityOnlineIncomingCourses.incomingCourses)
+						for (let prestudentObj of MobilityOnlineIncomingCourses.incomingCourses)
 						{
-							let prestudentObj = MobilityOnlineIncomingCourses.incomingCourses[prestudent];
-
 							if (prestudentObj.uid === uid)
 							{
-								for (let lvId in lvData)
+								for (let lv of lvData)
 								{
-									let lv = lvData[lvId];
-
-									for (let oldLvId in prestudentObj.lvs)
+									for (let oldLv of prestudentObj.lvs)
 									{
-										let oldLv = prestudentObj.lvs[oldLvId];
 										if (oldLv != null && oldLv.lehrveranstaltung.lehrveranstaltung_id == lv.lehrveranstaltung.lehrveranstaltung_id)
 										{
 											oldLv.lehrveranstaltung.incomingsplaetze = lv.lehrveranstaltung.incomingsplaetze;
@@ -177,9 +240,8 @@ var MobilityOnlineIncomingCourses = {
 										}
 									}
 
-									for (let oldNonMoLvid in prestudentObj.nonMoLvs)
+									for (let oldNonMoLv of prestudentObj.nonMoLvs)
 									{
-										let oldNonMoLv = prestudentObj.nonMoLvs[oldNonMoLvid];
 										if (oldNonMoLv != null && oldNonMoLv.lehrveranstaltung.lehrveranstaltung_id == lv.lehrveranstaltung.lehrveranstaltung_id)
 										 {
 											 oldNonMoLv.lehrveranstaltung.incomingsplaetze = lv.lehrveranstaltung.incomingsplaetze;
@@ -215,9 +277,8 @@ var MobilityOnlineIncomingCourses = {
 
 		let totalAssigned = 0, totalLvsInFhc = 0;
 
-		for (let person in incomingscourses)
+		for (let prestudentObj of incomingscourses)
 		{
-			let prestudentObj = incomingscourses[person];
 			let tablerowString = "<tr>";
 
 			tablerowString += "<td>"+prestudentObj.nachname+", "+prestudentObj.vorname+"</td>" +
@@ -287,8 +348,9 @@ var MobilityOnlineIncomingCourses = {
 			$("#incomingprestudents").append(tablerowString);
 
 			$("#lezuw_"+prestudentObj.prestudent_id).click(
-				prestudentObj,
-				MobilityOnlineIncomingCourses._printLvs
+				() => {
+					MobilityOnlineIncomingCourses.getCoursesForIncoming(prestudentObj, $("#studiensemester").val(), prestudentObj.uid);
+				}
 			)
 		}
 		$("#totalCoursesAssigned").text(totalAssigned);
@@ -302,13 +364,12 @@ var MobilityOnlineIncomingCourses = {
 	 * @param prestudentObj prestudent whose courses are displayed
 	 * @private
 	 */
-	_printLvs: function(prestudentObj)
+	_printAllLvs: function(prestudentObj)
 	{
-		MobilityOnlineIncomingCourses._printMoCourses(prestudentObj.data);
-		MobilityOnlineIncomingCourses._printFhcCourses(prestudentObj.data);
+		MobilityOnlineIncomingCourses._printMoCourses(prestudentObj);
+		MobilityOnlineIncomingCourses._printFhcCourses(prestudentObj);
 		MobilityOnlineIncomingCourses._toggleIncomingCoursesView();
-		$("#mocourseswell").css('top', '0');
-		$(window).scrollTop(0);
+		MobilityOnlineIncomingCourses._resetCoursesWell();
 	},
 	_printMoCourses: function(moApplication)
 	{
@@ -374,9 +435,8 @@ var MobilityOnlineIncomingCourses = {
 
 		fhcLvHtml += "<div id='fhcles'>";
 
-		for (let fhcLv in fhcPrestudent.lvs)
+		for (let fhcLvObj of fhcPrestudent.lvs)
 		{
-			let fhcLvObj = fhcPrestudent.lvs[fhcLv];
 			if ($.isNumeric(fhcLvObj.lehrveranstaltung.lehrveranstaltung_id))
 			{
 				numLvs++;
@@ -393,9 +453,8 @@ var MobilityOnlineIncomingCourses = {
 		if (fhcPrestudent.nonMoLvs.length > 0)
 		{
 			let first = true;
-			for (let noMoLv in fhcPrestudent.nonMoLvs)
+			for (let noMoLvobj of fhcPrestudent.nonMoLvs)
 			{
-				let noMoLvobj = fhcPrestudent.nonMoLvs[noMoLv];
 				if ($.isNumeric(noMoLvobj.lehrveranstaltung.lehrveranstaltung_id))
 				{
 					numLvs++;
@@ -425,23 +484,7 @@ var MobilityOnlineIncomingCourses = {
 		}
 		fhcLvHtml += "</div>";
 
-		fhcLvHtml += "<hr>";
-
-		fhcLvHtml += "<div class='row'>";
-		fhcLvHtml += "<div class='col-xs-6 text-left'>" +
-			"<button class='btn btn-default' id='backtoincomings'>" +
-			"<i class='fa fa-arrow-left'></i> Zurück zu allen Incomings"+
-			"</button>"+
-			"</div>";
-
-		if (numLvs > 0 && hasLes)
-			fhcLvHtml += "<div class='col-xs-6 text-right'>" +
-				"<button class='btn btn-default' id='save'>" +
-				"<i class='glyphicon glyphicon-floppy-disk'></i> Speichern"+
-				"</button>"+
-				"</div>";
-
-		fhcLvHtml += "</div>";
+		fhcLvHtml += MobilityOnlineIncomingCourses._getBackButtonHtml(numLvs > 0 && hasLes);
 
 		$("#allfhcles").html(fhcLvHtml);
 
@@ -482,16 +525,14 @@ var MobilityOnlineIncomingCourses = {
 		fhcLvHtml += "" + lehrveranstaltungobj.lehrveranstaltung.fhcbezeichnung +
 			 " | ";
 
-		for (let stg in lehrveranstaltungobj.studiengaenge)
+		for (let stg of lehrveranstaltungobj.studiengaenge)
 		{
-			let stgObj = lehrveranstaltungobj.studiengaenge[stg];
-			fhcLvHtml += (" " + stgObj.kuerzel);
+			fhcLvHtml += (" " + stg.kuerzel);
 		}
 
-		for (let sem in lehrveranstaltungobj.ausbildungssemester)
+		for (let sem of lehrveranstaltungobj.ausbildungssemester)
 		{
-			let semObj = lehrveranstaltungobj.ausbildungssemester[sem];
-			fhcLvHtml += " " + semObj;
+			fhcLvHtml += " " + sem;
 		}
 
 		fhcLvHtml += " | ";
@@ -515,9 +556,8 @@ var MobilityOnlineIncomingCourses = {
 
 		fhcLvHtml += "<input type='hidden' class='lehrveranstaltunginput' value="+lehrveranstaltungobj.lehrveranstaltung.lehrveranstaltung_id+">";
 
-		for (let le in lehrveranstaltungobj.lehreinheiten)
+		for (let lehreinheitObj of lehrveranstaltungobj.lehreinheiten)
 		{
-			let lehreinheitObj = lehrveranstaltungobj.lehreinheiten[le];
 			fhcLvHtml += MobilityOnlineIncomingCourses._getLehreinheitHtml(lehrveranstaltungobj, lehreinheitObj);
 		}
 		fhcLvHtml += "</div></div>";
@@ -531,9 +571,8 @@ var MobilityOnlineIncomingCourses = {
 		fhcLesHtml += "<div class='checkbox'><input type='checkbox' class='lehreinheitinput' id='lecheckbox_"+lehreinheitObj.lehreinheit_id+"' "+checked+">";
 		fhcLesHtml += lehreinheitObj.lehrform_kurzbz;
 
-		for (let legr in lehreinheitObj.lehreinheitgruppen)
+		for (let legrObj of lehreinheitObj.lehreinheitgruppen)
 		{
-			let legrObj = lehreinheitObj.lehreinheitgruppen[legr];
 			if (legrObj.direktinskription === true)
 				continue;
 
@@ -551,9 +590,8 @@ var MobilityOnlineIncomingCourses = {
 			}
 		}
 
-		for (let lektor in lehreinheitObj.lektoren)
+		for (let lektorUid of lehreinheitObj.lektoren)
 		{
-			let lektorUid = lehreinheitObj.lektoren[lektor];
 			fhcLesHtml += " "+(lektorUid == null ? '' : lektorUid);
 		}
 
@@ -562,6 +600,28 @@ var MobilityOnlineIncomingCourses = {
 		fhcLesHtml += "</div>";
 
 		return fhcLesHtml;
+	},
+	_getBackButtonHtml: function(includeSaveBtn)
+	{
+		let html = "<hr>";
+
+		html += "<div class='row'>";
+		html += "<div class='col-xs-6 text-left'>" +
+			"<button class='btn btn-default' id='backtoincomings'>" +
+			"<i class='fa fa-arrow-left'></i> Zurück zu allen Incomings"+
+			"</button>"+
+			"</div>";
+
+		if (includeSaveBtn)
+			html += "<div class='col-xs-6 text-right'>" +
+				"<button class='btn btn-default' id='save'>" +
+				"<i class='glyphicon glyphicon-floppy-disk'></i> Speichern"+
+				"</button>"+
+				"</div>";
+
+		html += "</div>";
+
+		return html;
 	},
 	/**
 	 * Shows hidden html views, hides non-hidden
@@ -578,15 +638,18 @@ var MobilityOnlineIncomingCourses = {
 			$("#lvsprestudent")
 		];
 
-		for (let element in toToggle)
+		for (let el of toToggle)
 		{
-			let el = toToggle[element];
-
 			if (el.hasClass("hidden"))
 				el.removeClass("hidden");
 			else
 				el.addClass("hidden");
 		}
+	},
+	_resetCoursesWell: function()
+	{
+		$("#mocourseswell").css('top', '0');
+		$(window).scrollTop(0);
 	},
 	/**
 	 * Formats a date in format YYYY-mm-dd to dd.mm.YYYY
