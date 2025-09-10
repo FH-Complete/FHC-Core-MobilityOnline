@@ -174,6 +174,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 			{
 				$fhcLv = array();
 				$this->syncincomingcoursesfrommolib->fillFhcCourse($lvid, $uid, $studiensemester, $fhcLv);
+				$this->syncincomingcoursesfrommolib->fillFhcCourseWithLehreinheitData($lvid, $uid, $studiensemester, $fhcLv);
 				$fhcCourses[] = $fhcLv;
 			}
 		}

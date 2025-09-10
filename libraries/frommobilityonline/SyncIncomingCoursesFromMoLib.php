@@ -102,6 +102,12 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 									$studiensemester,
 									$fhcCourse
 								);
+								$this->fillFhcCourseWithAssignmentInformation(
+									$fhcCourse['lehrveranstaltung']['lehrveranstaltung_id'],
+									$prestudentObj->uid,
+									$studiensemester,
+									$fhcCourse
+								);
 							}
 							if (!$course->deleted && isset($fhcCourse))
 								$prestudentObj->lvs[] = $fhcCourse;
@@ -131,6 +137,12 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 							if (!$found)
 							{
 								$this->fillFhcCourse($additionalCourse->lehrveranstaltung_id, $prestudentObj->uid, $studiensemester, $fhcCourse);
+								$this->fillFhcCourseWithAssignmentInformation(
+									$additionalCourse->lehrveranstaltung_id,
+									$prestudentObj->uid,
+									$studiensemester,
+									$fhcCourse
+								);
 								$prestudentObj->nonMoLvs[] = $fhcCourse;
 							}
 						}
@@ -156,7 +168,8 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	{
 		$studiensemestermo = $this->ci->tomobilityonlinedataconversionlib->mapSemesterToMo($studiensemester);
 
-		$courses = array();
+		$courses = array('moLvs' => array(), 'nonMoLvs' => array());
+
 		if (is_array($lv_kuerzel))
 		{
 			foreach ($lv_kuerzel as $kuerzel)
@@ -192,13 +205,43 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 						if (hasData($lvidzuordnung))
 						{
 							$this->fillFhcCourse(getData($lvidzuordnung)[0]->lehrveranstaltung_id, $uid, $studiensemester, $fhcCourse);
+							$this->fillFhcCourseWithLehreinheitData(getData($lvidzuordnung)[0]->lehrveranstaltung_id, $uid, $studiensemester, $fhcCourse);
 						}
 					}
 				}
 
-				if (isset($fhcCourse)) $courses[] = $fhcCourse;
+				if (isset($fhcCourse))  $courses['moLvs'][] = $fhcCourse;
 			}
+		}
 
+		$additionalCourses = $this->ci->LehrveranstaltungModel->getLvsByStudent($uid, $studiensemester);
+
+		//additional courses in fhcomplete, but not in MobilityOnline
+		if (hasData($additionalCourses))
+		{
+			foreach (getData($additionalCourses) as $additionalCourse)
+			{
+				$fhcCourse = array();
+
+				$found = false;
+				foreach ($courses['moLvs'] as $molv)
+				{
+					if (isset($molv['lehrveranstaltung']['lehrveranstaltung_id'])
+						&& $molv['lehrveranstaltung']['lehrveranstaltung_id'] === $additionalCourse->lehrveranstaltung_id
+					)
+					{
+						$found = true;
+						break;
+					}
+				}
+
+				if (!$found)
+				{
+					$this->fillFhcCourse($additionalCourse->lehrveranstaltung_id, $uid, $studiensemester, $fhcCourse);
+					$this->fillFhcCourseWithLehreinheitData($additionalCourse->lehrveranstaltung_id, $uid, $studiensemester, $fhcCourse);
+					$courses['nonMoLvs'][] = $fhcCourse;
+				}
+			}
 		}
 
 		return $courses;
@@ -285,8 +328,44 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 					}
 				}
 			}
+		}
+	}
 
-			$this->fillFhcCourseWithLehreinheitData($lehrveranstaltung_id, $uid, $studiensemester_kurzbz, $fhcCourse);
+	/**
+	 * Fills fhcomplete course with course assignment information (wether incoming course is already assigned in fhc).
+	 * @param $lehrveranstaltung_id
+	 * @param $$uid of student
+	 * @param $studiensemester_kurzbz
+	 * @param $fhcCourse to be filled with information
+	 */
+	public function fillFhcCourseWithAssignmentInformation($lehrveranstaltung_id, $uid, $studiensemester_kurzbz, &$fhcCourse)
+	{
+		//get Lehreinheiten, number of students, directly assigned for Lv
+		if (isset($lehrveranstaltung_id) && is_numeric($lehrveranstaltung_id))
+		{
+			$this->ci->LehreinheitModel->addSelect('lehreinheit_id');
+			$les = $this->ci->LehreinheitModel->loadWhere(
+				array(
+					'lehrveranstaltung_id' => $lehrveranstaltung_id,
+					'studiensemester_kurzbz' => $studiensemester_kurzbz
+				)
+			);
+
+			if (!hasData($les)) return;
+
+			$fhcCourse['lehreinheiten'] = getData($les);
+
+			$incoming_prestudent_ids = array();
+
+			foreach ($fhcCourse['lehreinheiten'] as $lehreinheit)
+			{
+				$lehreinheit->directlyAssigned = false;
+
+				$directlyAssigned = $this->ci->LehreinheitgruppeModel->getDirectGroupAssignment($uid, $lehreinheit->lehreinheit_id);
+
+				if (hasData($directlyAssigned))
+					$lehreinheit->directlyAssigned = true;
+			}
 		}
 	}
 

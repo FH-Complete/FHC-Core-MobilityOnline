@@ -113,11 +113,10 @@ var MobilityOnlineIncomingCourses = {
 					if (FHC_AjaxClient.hasData(data))
 					{
 						MobilityOnlineIncomingCourses.uidsOfFetchedCourses.push(uid);
-						let newLvs = FHC_AjaxClient.getData(data);
-
+						let lvData = FHC_AjaxClient.getData(data);
 						for (let oldLvIdx in prestudentObj.lvs)
 						{
-							for (let newLv of newLvs)
+							for (let newLv of lvData.moLvs)
 							{
 								if (newLv.lehrveranstaltung.lehrveranstaltung_id_mo == prestudentObj.lvs[oldLvIdx].lehrveranstaltung.lehrveranstaltung_id_mo)
 								{
@@ -125,6 +124,7 @@ var MobilityOnlineIncomingCourses = {
 								}
 							}
 						}
+						prestudentObj.nonMoLvs = lvData.nonMoLvs;
 						MobilityOnlineIncomingCourses._printAllLvs(prestudentObj);
 					}
 					else
