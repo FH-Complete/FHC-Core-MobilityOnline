@@ -117,6 +117,14 @@ $config['fieldmappings']['application']['status_info'] = array(
 
 $config['fieldmappings']['incomingcourse']['lehrveranstaltung'] = array(
 	'mobezeichnung' => 'hostCourseName',
+	'lehrveranstaltung_id_mo' => 'hostCourseNumber',
+	'lv_kuerzel_mo' => 'hostCourseNumber'
+);
+
+$config['fieldmappings']['incomingcourseSearched']['lehrveranstaltung'] = array(
+	'mobezeichnung' => 'courseName',
+	'lehrveranstaltung_id_mo' => 'courseNumber',
+	'lv_kuerzel_mo' => 'courseNumber'
 );
 
 $config['fieldmappings']['incomingcourse']['mostudiengang'] = array(

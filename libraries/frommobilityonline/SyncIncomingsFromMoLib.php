@@ -655,6 +655,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		if (isEmptyArray($adresse))
 			return null;
 
+		// use Ort if there is no Gemeinde
+		if ((!isset($adresse['gemeinde']) || isEmptyString($adresse['gemeinde'])) && isset($adresse['ort'])) $adresse['gemeinde'] = $adresse['ort'];
+
 		$adresse_id = null;
 		// insert if there is no adress with same heimatadresse / zustelladresse values
 		$heimatAddrResp = $this->ci->AdresseModel->loadWhere(array(

@@ -29,52 +29,222 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 	}
 
 	/**
-	 * Converts MobilityOnline course to fhcomplete course.
-	 * Finds course in synctable and loads them from fhcomplete.
-	 * @param object $course
+	 * Gets incomings with courses for a studiensemester.
 	 * @param string $studiensemester
-	 * @param string $uid
-	 * @return array
+	 * @param string $studiengang_kz
+	 * @return array with prestudents
 	 */
-	public function mapMoIncomingCourseToLv($course, $studiensemester, $uid)
+	public function getIncomingWithCourses($studiensemester, $studiengang_kz = null)
+	{
+		$prestudents = array();
+
+		$syncedIncomingIds = $this->ci->MoappidzuordnungModel->loadWhere(array('studiensemester_kurzbz' => $studiensemester));
+
+		if (hasData($syncedIncomingIds))
+		{
+			foreach (getData($syncedIncomingIds) as $syncedIncomingId)
+			{
+				$prestudent = $this->ci->MoFhcModel->getIncomingPrestudent($syncedIncomingId->prestudent_id, $studiengang_kz);
+
+				if (hasData($prestudent))
+				{
+					$prestudentObj = getData($prestudent);
+
+					// if semester is not the one in MobilityOnline, check semesters based on stay duration
+					if ($studiensemester !== $syncedIncomingId->studiensemester_kurzbz)
+					{
+						$prestudentStatus = $this->ci->PrestudentstatusModel->load(array('prestudent_id' => $syncedIncomingId->prestudent_id));
+
+						$semFound = false;
+
+						if (hasData($prestudentStatus))
+						{
+							foreach (getData($prestudentStatus) as $status)
+							{
+								if ($status->studiensemester_kurzbz === $studiensemester)
+								{
+									$semFound = true;
+									break;
+								}
+							}
+						}
+
+						if (!$semFound)
+							continue;
+					}
+
+					$courses = $this->ci->MoGetAppModel->getCoursesOfApplication($syncedIncomingId->mo_applicationid);
+
+					$prestudentObj->lvs = array();
+					$prestudentObj->nonMoLvs = array();
+
+					if (hasData($courses))
+					{
+						$coursesData = getData($courses);
+						$prestudentObj->anzahlMoLvs = count($coursesData);
+
+						foreach ($coursesData as $course)
+						{
+							$fhcCourse = $this->convertToFhcFormat($course, $this->moObjectType);
+
+							$lvidzuordnung = $this->ci->MolvidzuordnungModel->loadWhere(
+								array(
+									'studiensemester_kurzbz' => $studiensemester,
+									'lehrveranstaltung_id' => $fhcCourse['lehrveranstaltung']['lehrveranstaltung_id_mo']
+								)
+							);
+
+							if (hasData($lvidzuordnung))
+							{
+								$this->fillFhcCourse(
+									$fhcCourse['lehrveranstaltung']['lehrveranstaltung_id_mo'],
+									$prestudentObj->uid,
+									$studiensemester,
+									$fhcCourse
+								);
+								$this->fillFhcCourseWithAssignmentInformation(
+									$fhcCourse['lehrveranstaltung']['lehrveranstaltung_id'],
+									$prestudentObj->uid,
+									$studiensemester,
+									$fhcCourse
+								);
+							}
+							if (!$course->deleted && isset($fhcCourse))
+								$prestudentObj->lvs[] = $fhcCourse;
+						}
+					}
+
+					$additionalCourses = $this->ci->LehrveranstaltungModel->getLvsByStudent($prestudentObj->uid, $studiensemester);
+
+					//additional courses in fhcomplete, but not in MobilityOnline
+					if (hasData($additionalCourses))
+					{
+						foreach (getData($additionalCourses) as $additionalCourse)
+						{
+							$fhcCourse = array();
+
+							$found = false;
+							foreach ($prestudentObj->lvs as $molv)
+							{
+								if (isset($molv['lehrveranstaltung']['lehrveranstaltung_id'])
+									&& $molv['lehrveranstaltung']['lehrveranstaltung_id'] === $additionalCourse->lehrveranstaltung_id
+								)
+								{
+									$found = true;
+									break;
+								}
+							}
+							if (!$found)
+							{
+								$this->fillFhcCourse($additionalCourse->lehrveranstaltung_id, $prestudentObj->uid, $studiensemester, $fhcCourse);
+								$this->fillFhcCourseWithAssignmentInformation(
+									$additionalCourse->lehrveranstaltung_id,
+									$prestudentObj->uid,
+									$studiensemester,
+									$fhcCourse
+								);
+								$prestudentObj->nonMoLvs[] = $fhcCourse;
+							}
+						}
+					}
+
+					//sort courses alphabetically
+					usort($prestudentObj->lvs, array($this, '_cmpCourses'));
+					usort($prestudentObj->nonMoLvs, array($this, '_cmpCourses'));
+
+					$prestudents[] = $prestudentObj;
+				}
+			}
+		}
+		return $prestudents;
+	}
+
+	/**
+	 * Gets all courses of an incoming
+	 * @param lv_kuerzel to identify
+	 * @return object success or error
+	 */
+	public function getCoursesForIncoming($lv_kuerzel, $studiensemester, $uid)
 	{
 		$studiensemestermo = $this->ci->tomobilityonlinedataconversionlib->mapSemesterToMo($studiensemester);
 
-		$searchparams = array('semesterDescription' => $studiensemestermo, 'applicationType' => 'IN', 'courseNumber' => $course->hostCourseNumber);
+		$courses = array('moLvs' => array(), 'nonMoLvs' => array());
 
-		$searchobj = $this->getSearchObj(
-			'course',
-			$searchparams,
-			false
-		);
-
-		// search for course to get courseID
-		$mocourses = $this->ci->MoGetMaModel->getCoursesOfSemesterBySearchParameters($searchobj);
-
-		$fhccourse = $this->convertToFhcFormat($course, $this->moObjectType);
-
-		if (hasData($mocourses))
+		if (is_array($lv_kuerzel))
 		{
-			$mocoursesData = getData($mocourses);
-			foreach ($mocoursesData as $mocourse)
+			foreach ($lv_kuerzel as $kuerzel)
 			{
-				$mocourseid = $mocourse->courseID;
+				$fhcCourse = null;
 
-				$lvidzuordnung = $this->ci->MolvidzuordnungModel->loadWhere(
-					array(
-						'studiensemester_kurzbz' => $studiensemester,
-						'mo_lvid' => $mocourseid
-					)
+				$searchparams = array('semesterDescription' => $studiensemestermo, 'applicationType' => 'IN', 'courseNumber' => $kuerzel);
+
+				$searchobj = $this->getSearchObj(
+					'course',
+					$searchparams,
+					false
 				);
 
-				if (hasData($lvidzuordnung))
+				// search for course to get courseID
+				$mocourses = $this->ci->MoGetMaModel->getCoursesOfSemesterBySearchParameters($searchobj);
+
+				if (hasData($mocourses))
 				{
-					$this->fillFhcCourse($lvidzuordnung->retval[0]->lehrveranstaltung_id, $uid, $studiensemester, $fhccourse);
+					$mocoursesData = getData($mocourses);
+					foreach ($mocoursesData as $mocourse)
+					{
+						$fhcCourse = $this->convertToFhcFormat($mocourse, 'incomingcourseSearched');
+						$mocourseid = $mocourse->courseID;
+
+						$lvidzuordnung = $this->ci->MolvidzuordnungModel->loadWhere(
+							array(
+								'studiensemester_kurzbz' => $studiensemester,
+								'mo_lvid' => $mocourseid
+							)
+						);
+
+						if (hasData($lvidzuordnung))
+						{
+							$this->fillFhcCourse(getData($lvidzuordnung)[0]->lehrveranstaltung_id, $uid, $studiensemester, $fhcCourse);
+							$this->fillFhcCourseWithLehreinheitData(getData($lvidzuordnung)[0]->lehrveranstaltung_id, $uid, $studiensemester, $fhcCourse);
+						}
+					}
+				}
+
+				if (isset($fhcCourse))  $courses['moLvs'][] = $fhcCourse;
+			}
+		}
+
+		$additionalCourses = $this->ci->LehrveranstaltungModel->getLvsByStudent($uid, $studiensemester);
+
+		//additional courses in fhcomplete, but not in MobilityOnline
+		if (hasData($additionalCourses))
+		{
+			foreach (getData($additionalCourses) as $additionalCourse)
+			{
+				$fhcCourse = array();
+
+				$found = false;
+				foreach ($courses['moLvs'] as $molv)
+				{
+					if (isset($molv['lehrveranstaltung']['lehrveranstaltung_id'])
+						&& $molv['lehrveranstaltung']['lehrveranstaltung_id'] === $additionalCourse->lehrveranstaltung_id
+					)
+					{
+						$found = true;
+						break;
+					}
+				}
+
+				if (!$found)
+				{
+					$this->fillFhcCourse($additionalCourse->lehrveranstaltung_id, $uid, $studiensemester, $fhcCourse);
+					$this->fillFhcCourseWithLehreinheitData($additionalCourse->lehrveranstaltung_id, $uid, $studiensemester, $fhcCourse);
+					$courses['nonMoLvs'][] = $fhcCourse;
 				}
 			}
 		}
 
-		return $fhccourse;
+		return $courses;
 	}
 
 	/**
@@ -96,7 +266,7 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 		if (hasData($lvResult))
 		{
-			$lv = $lvResult->retval[0];
+			$lv = getData($lvResult)[0];
 			$fhcCourse['lehrveranstaltung']['lehrveranstaltung_id'] = $lv->lehrveranstaltung_id;
 			$fhcCourse['lehrveranstaltung']['fhcbezeichnung'] = $lv->lvbezeichnung;
 			$fhcCourse['lehrveranstaltung']['incomingplaetze'] = $lv->incoming;
@@ -121,7 +291,7 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 
 			if (hasData($lvDataResult))
 			{
-				foreach ($lvDataResult->retval as $lvData)
+				foreach (getData($lvDataResult) as $lvData)
 				{
 					$found = false;
 					foreach ($fhcCourse['studiengaenge'] as $studiengangObj)
@@ -158,159 +328,106 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 					}
 				}
 			}
+		}
+	}
 
-			//get Lehreinheiten, number of students, directly assigned for Lv
-			if (isset($fhcCourse['lehrveranstaltung']['lehrveranstaltung_id']) &&
-				is_numeric($fhcCourse['lehrveranstaltung']['lehrveranstaltung_id']))
+	/**
+	 * Fills fhcomplete course with course assignment information (wether incoming course is already assigned in fhc).
+	 * @param $lehrveranstaltung_id
+	 * @param $$uid of student
+	 * @param $studiensemester_kurzbz
+	 * @param $fhcCourse to be filled with information
+	 */
+	public function fillFhcCourseWithAssignmentInformation($lehrveranstaltung_id, $uid, $studiensemester_kurzbz, &$fhcCourse)
+	{
+		//get Lehreinheiten, number of students, directly assigned for Lv
+		if (isset($lehrveranstaltung_id) && is_numeric($lehrveranstaltung_id))
+		{
+			$this->ci->LehreinheitModel->addSelect('lehreinheit_id');
+			$les = $this->ci->LehreinheitModel->loadWhere(
+				array(
+					'lehrveranstaltung_id' => $lehrveranstaltung_id,
+					'studiensemester_kurzbz' => $studiensemester_kurzbz
+				)
+			);
+
+			if (!hasData($les)) return;
+
+			$fhcCourse['lehreinheiten'] = getData($les);
+
+			$incoming_prestudent_ids = array();
+
+			foreach ($fhcCourse['lehreinheiten'] as $lehreinheit)
 			{
-				$fhcCourse['lehreinheiten'] = $this->ci->LehreinheitModel->getLesForLv(
-					$fhcCourse['lehrveranstaltung']['lehrveranstaltung_id'],
-					$studiensemester_kurzbz
-					//false
-				);
+				$lehreinheit->directlyAssigned = false;
 
-				$anz_incomings = 0;
+				$directlyAssigned = $this->ci->LehreinheitgruppeModel->getDirectGroupAssignment($uid, $lehreinheit->lehreinheit_id);
 
-				$incoming_prestudent_ids = array();
-
-				foreach ($fhcCourse['lehreinheiten'] as $lehreinheit)
-				{
-					$lehreinheit->directlyAssigned = false;
-
-					$students = $this->ci->LehreinheitModel->getStudenten($lehreinheit->lehreinheit_id);
-
-					$anz_teilnehmer = 0;
-
-					if (isSuccess($students))
-					{
-						$anz_teilnehmer = count($students->retval);
-
-						foreach ($students->retval as $student)
-						{
-							if (!in_array($student->prestudent_id, $incoming_prestudent_ids))
-							{
-								$lastStatus = $this->ci->PrestudentstatusModel->getLastStatus($student->prestudent_id, $studiensemester_kurzbz, 'Incoming');
-
-								if (hasData($lastStatus))
-								{
-									$incoming_prestudent_ids[] = $student->prestudent_id;
-									$anz_incomings++;
-								}
-							}
-						}
-					}
-
-					$lehreinheit->anz_teilnehmer = $anz_teilnehmer;
-
-					$directlyAssigned = $this->ci->LehreinheitgruppeModel->getDirectGroupAssignment($uid, $lehreinheit->lehreinheit_id);
-
-					if (hasData($directlyAssigned))
-						$lehreinheit->directlyAssigned = true;
-				}
-
-				$fhcCourse['lehrveranstaltung']['anz_incomings'] = $anz_incomings;
+				if (hasData($directlyAssigned))
+					$lehreinheit->directlyAssigned = true;
 			}
 		}
 	}
 
 	/**
-	 * Gets incomings with courses for a studiensemester.
-	 * @param string$studiensemester
-	 * @return array with prestudents
+	 * Fills a course array with Lehreinheit data.
+	 * @param $lehrveranstaltung_id in fh complete
+	 * @param $uid for group assignment
+	 * @param $studiensemester_kurzbz
+	 * @param $fhcCourse course to be filled
 	 */
-	public function getIncomingWithCourses($studiensemester, $studiengang_kz = null)
+	public function fillFhcCourseWithLehreinheitData($lehrveranstaltung_id, $uid, $studiensemester_kurzbz, &$fhcCourse)
 	{
-		$prestudents = array();
-
-		$syncedIncomingIds = $this->ci->MoappidzuordnungModel->load();
-
-		if (hasData($syncedIncomingIds))
+		//get Lehreinheiten, number of students, directly assigned for Lv
+		if (isset($lehrveranstaltung_id) && is_numeric($lehrveranstaltung_id))
 		{
-			foreach ($syncedIncomingIds->retval as $syncedIncomingId)
+			$fhcCourse['lehreinheiten'] = $this->ci->LehreinheitModel->getLesForLv(
+				$lehrveranstaltung_id,
+				$studiensemester_kurzbz
+				//false
+			);
+
+			$anz_incomings = 0;
+
+			$incoming_prestudent_ids = array();
+
+			foreach ($fhcCourse['lehreinheiten'] as $lehreinheit)
 			{
-				$prestudent = $this->ci->MoFhcModel->getIncomingPrestudent($syncedIncomingId->prestudent_id, $studiengang_kz);
+				$lehreinheit->directlyAssigned = false;
 
-				if (hasData($prestudent))
+				$students = $this->ci->LehreinheitModel->getStudenten($lehreinheit->lehreinheit_id);
+
+				$anz_teilnehmer = 0;
+
+				if (hasData($students))
 				{
-					$prestudentObj = $prestudent->retval;
+					$anz_teilnehmer = count(getData($students));
 
-					// if semester is not the one in MobilityOnline, check semesters based on stay duration
-					if ($studiensemester !== $syncedIncomingId->studiensemester_kurzbz)
+					foreach (getData($students) as $student)
 					{
-						$prestudentStatus = $this->ci->PrestudentstatusModel->load(array('prestudent_id' => $syncedIncomingId->prestudent_id));
-
-						$semFound = false;
-
-						if (hasData($prestudentStatus))
+						if (!in_array($student->prestudent_id, $incoming_prestudent_ids))
 						{
-							foreach (getData($prestudentStatus) as $status)
+							$lastStatus = $this->ci->PrestudentstatusModel->getLastStatus($student->prestudent_id, $studiensemester_kurzbz, 'Incoming');
+
+							if (hasData($lastStatus))
 							{
-								if ($status->studiensemester_kurzbz === $studiensemester)
-								{
-									$semFound = true;
-									break;
-								}
-							}
-						}
-
-						if (!$semFound)
-							continue;
-					}
-
-					$courses = $this->ci->MoGetAppModel->getCoursesOfApplication($syncedIncomingId->mo_applicationid);
-
-					$prestudentObj->lvs = array();
-					$prestudentObj->nonMoLvs = array();
-
-					if (hasData($courses))
-					{
-						$coursesData = getData($courses);
-						foreach ($coursesData as $course)
-						{
-							$fhcLv = $this->mapMoIncomingCourseToLv($course, $studiensemester, $prestudentObj->uid);
-
-							if (!$course->deleted && isset($fhcLv))
-								$prestudentObj->lvs[] = $fhcLv;
-						}
-					}
-
-					$additionalCourses = $this->ci->LehrveranstaltungModel->getLvsByStudent($prestudentObj->uid, $studiensemester);
-
-					//additional courses in fhcomplete, but not in MobilityOnline
-					if (hasData($additionalCourses))
-					{
-						foreach ($additionalCourses->retval as $additionalCourse)
-						{
-							$fhcLv = array();
-
-							$found = false;
-							foreach ($prestudentObj->lvs as $molv)
-							{
-								if (isset($molv['lehrveranstaltung']['lehrveranstaltung_id'])
-									&& $molv['lehrveranstaltung']['lehrveranstaltung_id'] === $additionalCourse->lehrveranstaltung_id
-								)
-								{
-									$found = true;
-									break;
-								}
-							}
-							if (!$found)
-							{
-								$this->fillFhcCourse($additionalCourse->lehrveranstaltung_id, $prestudentObj->uid, $studiensemester, $fhcLv);
-								$prestudentObj->nonMoLvs[] = $fhcLv;
+								$incoming_prestudent_ids[] = $student->prestudent_id;
+								$anz_incomings++;
 							}
 						}
 					}
-
-					//sort courses alphabetically
-					usort($prestudentObj->lvs, array($this, '_cmpCourses'));
-					usort($prestudentObj->nonMoLvs, array($this, '_cmpCourses'));
-
-					$prestudents[] = $prestudentObj;
 				}
+
+				$lehreinheit->anz_teilnehmer = $anz_teilnehmer;
+
+				$directlyAssigned = $this->ci->LehreinheitgruppeModel->getDirectGroupAssignment($uid, $lehreinheit->lehreinheit_id);
+
+				if (hasData($directlyAssigned))
+					$lehreinheit->directlyAssigned = true;
 			}
+
+			$fhcCourse['lehrveranstaltung']['anz_incomings'] = $anz_incomings;
 		}
-		return $prestudents;
 	}
 
 	/**

@@ -59,7 +59,8 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		'nation_code' => 'mapNationToFhc', // bisio nation
 		'herkunftsland_code' => 'mapNationToFhc', // bisio origin nation
 		'zgvnation' => 'mapNationToFhc',
-		'zgvmanation' => 'mapNationToFhc'
+		'zgvmanation' => 'mapNationToFhc',
+		'lehrveranstaltung_id_mo' => 'extractLvIdFromKuerzel'
 	);
 
 	/**

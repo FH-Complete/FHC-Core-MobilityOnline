@@ -234,6 +234,16 @@ class FromMobilityOnlineDataConversionLib
 		return $d && $d->format($format) === $date;
 	}
 
+	/**
+	 * Extracts Lehrveranstaltung id from Kürzel.
+	 * @param string $kuerzel
+	 * @return string
+	 */
+	public function extractLvIdFromKuerzel($kuerzel)
+	{
+		return substr($kuerzel, 0, strpos($kuerzel, '_'));
+	}
+
 	/** ---------------------------------------------- Private methods ------------------------------------------------*/
 
 	/**
