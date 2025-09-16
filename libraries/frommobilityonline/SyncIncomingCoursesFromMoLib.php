@@ -42,7 +42,8 @@ class SyncIncomingCoursesFromMoLib extends SyncFromMobilityOnlineLib
 		$whereParams = array('tbl_prestudentstatus.studiensemester_kurzbz' => $studiensemester);
 
 		if (isset($studiengang_kz)) $whereParams['tbl_prestudent.studiengang_kz'] = $studiengang_kz;
-		$this->ci->MoappidzuordnungModel->addDistinct(
+		$this->ci->MoappidzuordnungModel->addDistinct();
+		$this->ci->MoappidzuordnungModel->addSelect(
 			'tbl_mo_appidzuordnung.prestudent_id, tbl_mo_appidzuordnung.mo_applicationid, tbl_mo_appidzuordnung.studiensemester_kurzbz'
 		);
 		$this->ci->MoappidzuordnungModel->addJoin('public.tbl_prestudent', 'prestudent_id');
