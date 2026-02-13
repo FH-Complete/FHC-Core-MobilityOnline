@@ -42,7 +42,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 		if (isError($studiensemesterdata))
 			show_error(getError($studiensemesterdata));
 
-		$currsemdata = $this->StudiensemesterModel->getAktOrNextSemester();
+		$currsemdata = $this->StudiensemesterModel->getAktOrNextSemester(62);
 
 		if (isError($currsemdata))
 			show_error(getError($currsemdata));

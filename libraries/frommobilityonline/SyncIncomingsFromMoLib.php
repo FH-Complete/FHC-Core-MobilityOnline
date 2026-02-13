@@ -349,7 +349,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		}
 
 		// add Studiensemester for each semester in the span of first semester start - stay end date
-		$studiensemesterRes = $this->ci->StudiensemesterModel->getByDate($semStart, $fhcObj['bisio']['bis']);
+		$studiensemesterRes = $this->ci->StudiensemesterModel->getByDateRange($semStart, $fhcObj['bisio']['bis']);
 
 		if (hasData($studiensemesterRes))
 		{

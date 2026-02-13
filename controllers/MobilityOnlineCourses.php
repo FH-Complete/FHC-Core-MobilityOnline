@@ -44,7 +44,7 @@ class MobilityOnlineCourses extends Auth_Controller
 		$currSem = '';
 		$lvs = array();
 
-		$currSemData = $this->StudiensemesterModel->getAktOrNextSemester();
+		$currSemData = $this->StudiensemesterModel->getAktOrNextSemester(62);
 
 		if (isError($currSemData))
 			show_error(getError($currSemData));
