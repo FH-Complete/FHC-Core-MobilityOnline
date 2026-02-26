@@ -573,12 +573,12 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 						break;
 					}
 				}
-			}
 
-			if (!$stgFound)
-			{
-				$this->addErrorOutput("Unbekannter Studiengang");
-				return [];
+				if (!$stgFound)
+				{
+					$this->addErrorOutput("Unbekannter Studiengang");
+					return [];
+				}
 			}
 
 			$searchArrays[] = $searchArray;
