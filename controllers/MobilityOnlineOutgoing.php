@@ -88,6 +88,8 @@ class MobilityOnlineOutgoing extends Auth_Controller
 
 		$outgoingData = $this->syncoutgoingsfrommolib->getOutgoing($studiensemester, $studiengang_kz);
 
+		if ($this->syncoutgoingsfrommolib->hasError()) return $this->outputJsonError($this->syncoutgoingsfrommolib->getErrorString());
+
 		$this->outputJsonSuccess($outgoingData);
 	}
 

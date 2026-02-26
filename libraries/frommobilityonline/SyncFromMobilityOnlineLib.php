@@ -99,6 +99,35 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	}
 
 	/**
+	 * Checks if an error occured.
+	 * @return boolean true if error occured
+	 */
+	public function hasError()
+	{
+		foreach ($this->output as $output)
+		{
+			if (isset($output->type) && $output->type == self::ERROR_TYPE) return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Gets string with all occured errors.
+	 * @return string
+	 */
+	public function getErrorString()
+	{
+		$errorString = '';
+		foreach ($this->output as $output)
+		{
+			if (isset($output->type) && isset($output->text) && $output->type == self::ERROR_TYPE) $errorString .= $output->text;
+		}
+
+		return $errorString;
+	}
+
+	/**
 	 * Gets object for searching an Object in MobilityOnline API
 	 * @param string $objType Type of object to search.
 	 * @param array $searchParams Fields with values to search for.
@@ -527,6 +556,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
 			{
+				$stgFound = false;
 				foreach ($stgValuemappings as $moid => $stg_kz)
 				{
 					if ($stg_kz === (int)$studiengang_kz)
@@ -539,9 +569,16 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 						$studyFieldObj->elementType = 'integer';
 						$stgFurtherSearchRestrictions[] = $studyFieldObj;
 						$searchArray['furtherSearchRestrictions'] = $stgFurtherSearchRestrictions;
+						$stgFound = true;
 						break;
 					}
 				}
+			}
+
+			if (!$stgFound)
+			{
+				$this->addErrorOutput("Unbekannter Studiengang");
+				return [];
 			}
 
 			$searchArrays[] = $searchArray;

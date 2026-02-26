@@ -77,6 +77,7 @@ $studiengaenge = array(
 	'7036' => 298, // Telekommunikation und Internettechnologien (alt)
 	'7051' => 692, // Tissue Engineering and Regenerative Medicine
 	'7048' => 476, // Urbane Erneuerbare Energietechnologien
+	'17037' => 916, // Wasserstofftechnik
 	'7032' => 256, // Wirtschaftsinformatik
 	'7371' => 302 // Wirtschaftsinformatik Master
 );
