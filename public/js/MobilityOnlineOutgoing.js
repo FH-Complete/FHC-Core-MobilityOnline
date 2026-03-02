@@ -72,7 +72,11 @@ var MobilityOnlineOutgoing = {
 				{
 					$("#applications").empty();
 
-					if (FHC_AjaxClient.hasData(data))
+					if (FHC_AjaxClient.isError(data))
+					{
+						$("#applicationsyncoutputtext").html("<div class='text-center'>" + FHC_AjaxClient.getError(data) + "</div>");
+					}
+					else if (FHC_AjaxClient.hasData(data))
 					{
 						let outgoings = FHC_AjaxClient.getData(data);
 						MobilityOnlineOutgoing.outgoings = outgoings;
