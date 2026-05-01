@@ -50,7 +50,6 @@ $studiengaenge = array(
 	'7031' => 255, // Elektronik/Wirtschaft
 	'7035' => 297, // Embedded Systems
 	'7049' => 578, // Erneuerbare Urbane Energiesysteme Master
-	'7050' => 585, // Game Engineering und Simulation
 	'7042' => 329, // Gesundheits- und Rehabilitationstechnik
 	'7041' => 327, // Human Factors and Sports Engineering
 	'7033' => 257, // Informatik/Computer Science
@@ -61,20 +60,25 @@ $studiengaenge = array(
 	'7046' => 334, // Integrative Stadtentwicklung-Smart City
 	'7370' => 335, // Internationales Wirtschaftsingenieurwesen
 	'7047' => 336, // Internationales Wirtschaftsingenieurwesen Master
+	'17006' => 934, // Klimabewusste Gebäudetechnik
 	'7372' => 779, // Maschinenbau
 	'7053' => 804, // Maschinenbau Master
 	'7043' => 330, // Mechatronik/Robotik
 	'7373' => 331, // Mechatronik/Robotik Master
 	'7029' => 228, // Medical Engineering & eHealth
+	'17005' => 914, // Nachhaltige Umwelt- und Bioprozesstechnik
+	'17004' => 915, // Quantum Engineering
 	'7052' => 768, // Smart Homes und Assistive Technologien
 	'7037' => 299, // Software Engineering
 	'7369' => 328, // Sports Technology Master
 	'7044' => 332, // Technisches Umweltmanagement und Ökotoxikologie
-	'7036' => 298, // Telekommunikation und Internettechnologien (alt)
 	'7051' => 692, // Tissue Engineering and Regenerative Medicine
 	'7048' => 476, // Urbane Erneuerbare Energietechnologien
+	'17037' => 916, // Wasserstofftechnik
 	'7032' => 256, // Wirtschaftsinformatik
-	'7371' => 302 // Wirtschaftsinformatik Master
+	'7371' => 302, // Wirtschaftsinformatik Master
+	'7036' => 298, // Telekommunikation und Internettechnologien (alt)
+	'7050' => 585 // Game Engineering und Simulation (alt)
 );
 
 $mobilitaetsprogramme = array(
@@ -121,6 +125,7 @@ $config['valuemappings']['frommo']['curraddress']['studienadresse']['nation'] = 
 $config['valuemappings']['frommo']['instaddress']['institution_adresse']['nation'] = $nations;
 
 $config['valuemappings']['frommo']['application']['person']['staatsbuergerschaft'] = $nations;
+$config['valuemappings']['frommo']['application']['person']['geburtsnation'] = $nations;
 
 $config['valuemappings']['frommo']['application']['bisio']['herkunftsland_code'] = $nations;
 $config['valuemappings']['frommo']['applicationout']['bisio']['herkunftsland_code'] = $nations;

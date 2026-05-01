@@ -34,12 +34,9 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		'bis' => 'mapDateToFhc',
 		'studiengang_kz' => 'replaceByEmptyString',// empty string if no studiengang found in value mappings
 		'anmerkung' => 'replaceEmptyByNull',
-		'zgvnation' => 'replaceEmptyByNull',
 		'zgvdatum' => 'mapDateToFhc',
 		'zgvmas_code' => 'replaceEmptyByNull',
-		'zgvmanation' => 'replaceEmptyByNull',
 		'zgvmadatum' => 'mapDateToFhc',
-		'geburtsnation' => 'replaceEmptyByNull',
 		'foto' => 'resizeBase64ImageSmall',
 		'titel' => 'getFileExtension',
 		'mimetype' => 'mapFileToMimetype', // is placed before inhalt to get mime type from unencoded document
@@ -55,7 +52,15 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 		'ects_erworben' => 'mapEctsToFhc',
 		'ects_angerechnet' => 'mapEctsToFhc',
 		'betrag' => 'mapBetragToFhc',
-		'buchungsdatum' => 'mapIsoDateToFhc'
+		'buchungsdatum' => 'mapIsoDateToFhc',
+		'staatsbuergerschaft' => 'mapNationToFhc',
+		'geburtsnation' => 'mapNationToFhc',
+		'nation' => 'mapNationToFhc', // adress nation
+		'nation_code' => 'mapNationToFhc', // bisio nation
+		'herkunftsland_code' => 'mapNationToFhc', // bisio origin nation
+		'zgvnation' => 'mapNationToFhc',
+		'zgvmanation' => 'mapNationToFhc',
+		'lehrveranstaltung_id_mo' => 'extractLvIdFromKuerzel'
 	);
 
 	/**
@@ -91,6 +96,35 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 	public function getOutput()
 	{
 		return $this->output;
+	}
+
+	/**
+	 * Checks if an error occured.
+	 * @return boolean true if error occured
+	 */
+	public function hasError()
+	{
+		foreach ($this->output as $output)
+		{
+			if (isset($output->type) && $output->type == self::ERROR_TYPE) return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Gets string with all occured errors.
+	 * @return string
+	 */
+	public function getErrorString()
+	{
+		$errorString = '';
+		foreach ($this->output as $output)
+		{
+			if (isset($output->type) && isset($output->text) && $output->type == self::ERROR_TYPE) $errorString .= $output->text;
+		}
+
+		return $errorString;
 	}
 
 	/**
@@ -522,6 +556,7 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 
 			if (isset($studiengang_kz) && is_numeric($studiengang_kz))
 			{
+				$stgFound = false;
 				foreach ($stgValuemappings as $moid => $stg_kz)
 				{
 					if ($stg_kz === (int)$studiengang_kz)
@@ -534,8 +569,15 @@ class SyncFromMobilityOnlineLib extends MobilityOnlineSyncLib
 						$studyFieldObj->elementType = 'integer';
 						$stgFurtherSearchRestrictions[] = $studyFieldObj;
 						$searchArray['furtherSearchRestrictions'] = $stgFurtherSearchRestrictions;
+						$stgFound = true;
 						break;
 					}
+				}
+
+				if (!$stgFound)
+				{
+					$this->addErrorOutput("Unbekannter Studiengang");
+					return [];
 				}
 			}
 

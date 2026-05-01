@@ -116,6 +116,8 @@ class MobilityOnlineIncoming extends Auth_Controller
 		$studiengang_kz = $this->input->get('studiengang_kz');
 		$incomingData = $this->syncincomingsfrommolib->getIncoming($studiensemester, $studiengang_kz);
 
+		if ($this->syncincomingsfrommolib->hasError()) return $this->outputJsonError($this->syncincomingsfrommolib->getErrorString());
+
 		$this->outputJsonSuccess($incomingData);
 	}
 }

@@ -109,6 +109,38 @@ class Mobilityonlinefhc_model extends DB_Model
 	}
 
 	/**
+	 * Gets nation by text by comparing different database fields.
+	 * @param string $text the nation text to search for
+	 * @return object
+	 */
+	public function getNationByText($text)
+	{
+		$query = "
+			SELECT * FROM
+			(
+				SELECT
+					nation_code,
+					eu,
+					CASE
+						WHEN langtext = ? THEN 0
+						WHEN kurztext = ? THEN 1
+						WHEN engltext = ? THEN 2
+						ELSE NULL END AS sort
+				FROM
+					bis.tbl_nation
+			) nations
+			WHERE
+				sort IS NOT NULL
+			ORDER BY
+				sort,
+				CASE WHEN eu THEN 0 ELSE 1 END,
+				nation_code
+			LIMIT 1";
+
+		return $this->execQuery($query, array_fill(0, 3, $text));
+	}
+
+	/**
 	 * Checks if a table column value exists in fhcomplete database
 	 * @param string $table
 	 * @param string $field
@@ -156,7 +188,7 @@ class Mobilityonlinefhc_model extends DB_Model
 	 */
 	public function getBisio($student_uid)
 	{
-		$bisioqry = "SELECT tbl_bisio.bisio_id, tbl_bisio.von, tbl_bisio.bis, universitaet, 
+		$bisioqry = "SELECT tbl_bisio.bisio_id, tbl_bisio.von, tbl_bisio.bis, universitaet,
 					tbl_mobilitaetsprogramm.beschreibung as mobilitaetsprogramm, ort, tbl_nation.langtext as nation,
        				string_agg(tbl_zweck.bezeichnung, ', ') AS zweck
 					FROM bis.tbl_bisio

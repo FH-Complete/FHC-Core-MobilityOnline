@@ -42,7 +42,7 @@ $config['fieldmappings']['application']['person']['staatsbuergerschaft'] = 'lcd_
 $config['fieldmappings']['application']['person']['geschlecht'] = 'bew_geschlecht';
 $config['fieldmappings']['application']['person']['anrede'] = 'bew_geschlecht';
 $config['fieldmappings']['application']['person']['gebdatum'] = 'bew_geb_datum';
-$config['fieldmappings']['application']['person']['geburtsnation'] = 'bew_geb_ort';
+$config['fieldmappings']['application']['person']['geburtsnation'] = 'lcd_id_geb';
 $config['fieldmappings']['application']['person']['sprache'] = 'spr_id_komm';
 $config['fieldmappings']['application']['person']['foto'] = 'file';
 $config['fieldmappings']['application']['person']['anmerkung'] = 'bew_txt_gruende';
@@ -117,6 +117,14 @@ $config['fieldmappings']['application']['status_info'] = array(
 
 $config['fieldmappings']['incomingcourse']['lehrveranstaltung'] = array(
 	'mobezeichnung' => 'hostCourseName',
+	'lehrveranstaltung_id_mo' => 'hostCourseNumber',
+	'lv_kuerzel_mo' => 'hostCourseNumber'
+);
+
+$config['fieldmappings']['incomingcourseSearched']['lehrveranstaltung'] = array(
+	'mobezeichnung' => 'courseName',
+	'lehrveranstaltung_id_mo' => 'courseNumber',
+	'lv_kuerzel_mo' => 'courseNumber'
 );
 
 $config['fieldmappings']['incomingcourse']['mostudiengang'] = array(

@@ -14,6 +14,7 @@ $config['fhcfields']['application']['required'] = array(
 		'staatsbuergerschaft' => array('ref' => 'bis.tbl_nation', 'reffield' => 'nation_code'),
 		'anrede' => array(),
 		'gebdatum' => array('name' => 'Geburtsdatum', 'type' => 'date'),
+		'geburtsnation' => array('required' => true, 'ref' => 'bis.tbl_nation', 'reffield' => 'nation_code'),
 		'sprache' => array('ref' => 'public.tbl_sprache'),
 		'anmerkung' => array(),
 		'foto' => array('type' => 'base64')

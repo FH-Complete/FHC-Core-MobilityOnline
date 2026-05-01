@@ -16,6 +16,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 			array(
 				'index' => 'inout/incoming:rw',
 				'getIncomingWithCoursesJson' => 'inout/incoming:r',
+				'getCoursesForIncoming' => 'inout/incoming:r',
 				'updateLehreinheitAssignment' => 'inout/incoming:rw',
 				'getFhcCourses' => 'inout/incoming:r'
 			)
@@ -68,6 +69,19 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 		$studiensemester = $this->input->get('studiensemester');
 		$studiengang_kz = $this->input->get('studiengang_kz');
 		$incomingdata = $this->syncincomingcoursesfrommolib->getIncomingWithCourses($studiensemester, $studiengang_kz);
+
+		$this->outputJsonSuccess($incomingdata);
+	}
+
+	/**
+	 * Gets courses of an incoming for a studiensemester and outputs json
+	 */
+	public function getCoursesForIncoming()
+	{
+		$lv_kuerzel = $this->input->post('lv_kuerzel');
+		$studiensemester = $this->input->post('studiensemester');
+		$uid = $this->input->post('uid');
+		$incomingdata = $this->syncincomingcoursesfrommolib->getCoursesForIncoming($lv_kuerzel, $studiensemester, $uid);
 
 		$this->outputJsonSuccess($incomingdata);
 	}
@@ -160,6 +174,7 @@ class MobilityOnlineIncomingCourses extends Auth_Controller
 			{
 				$fhcLv = array();
 				$this->syncincomingcoursesfrommolib->fillFhcCourse($lvid, $uid, $studiensemester, $fhcLv);
+				$this->syncincomingcoursesfrommolib->fillFhcCourseWithLehreinheitData($lvid, $uid, $studiensemester, $fhcLv);
 				$fhcCourses[] = $fhcLv;
 			}
 		}

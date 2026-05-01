@@ -332,41 +332,7 @@ class SyncOutgoingsFromMoLib extends SyncFromMobilityOnlineLib
 		// remove original applicationDataElements
 		unset($moAppElementsExtracted->applicationDataElements);
 
-		// Nation
-		$moBisionation = $moAppElementsExtracted->{$bisioMappings['nation_code']};
-		$moBisioHerkunftnation = $moAppElementsExtracted->{$bisioMappings['herkunftsland_code']};
-		$moInstitutionAddrNation = isset($institutionAddressData) ? $institutionAddressData->{$adresseMappings['nation']['name']}->description : null;
-
-		$moNations = array(
-			$bisioMappings['nation_code'] => $moBisionation,
-			$bisioMappings['herkunftsland_code'] => $moBisioHerkunftnation
-		);
-
-		$fhcNations = $this->ci->NationModel->load();
-
-		if (hasData($fhcNations))
-		{
-			foreach ($fhcNations->retval as $fhcNation)
-			{
-				// trying to get nations by bezeichnung
-				foreach ($moNations as $configBez => $mooNation)
-				{
-					if ($fhcNation->kurztext === $mooNation || $fhcNation->langtext === $mooNation || $fhcNation->engltext === $mooNation)
-					{
-						if (isset($moAppElementsExtracted->{$configBez}))
-							$moAppElementsExtracted->{$configBez} = $fhcNation->nation_code;
-					}
-				}
-
-				if (isset($institutionAddressData) &&
-						($fhcNation->kurztext === $moInstitutionAddrNation || $fhcNation->langtext === $moInstitutionAddrNation
-							|| $fhcNation->engltext === $moInstitutionAddrNation))
-				{
-					$institutionAddressData->{$adresseMappings['nation']['name']} = $fhcNation->nation_code;
-				}
-			}
-		}
-
+		// convert MobilityOnline objects to fhcomplete objects
 		$fhcObj = $this->convertToFhcFormat($moAppElementsExtracted, $this->moObjectType);
 		$fhcAddr = $this->convertToFhcFormat($institutionAddressData, 'instaddress');
 		$fhcBankData = $this->convertToFhcFormat($bankData, 'bankdetails');

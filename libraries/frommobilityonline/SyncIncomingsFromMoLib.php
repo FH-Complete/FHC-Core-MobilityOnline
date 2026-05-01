@@ -35,6 +35,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('education/studentlehrverband_model', 'StudentlehrverbandModel');
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 		$this->ci->load->model('codex/bisio_model', 'BisioModel');
+		$this->ci->load->model('organisation/studienplan_model', 'StudienplanModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moappidzuordnung_model', 'MoappidzuordnungModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Mobilityonlinefhc_model', 'MoFhcModel');
@@ -279,7 +280,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$applicationDataElementsByValueType = array(
 			// applicationDataElements for which comboboxFirstValue is retrieved instead of elementValue
 			'comboboxFirstValue' => array(
-				$personMappings['staatsbuergerschaft'], $personMappings['sprache'], $prestudentstatusMappings['studiensemester_kurzbz'],
+				$personMappings['staatsbuergerschaft'], $personMappings['geburtsnation'], $personMappings['sprache'], $prestudentstatusMappings['studiensemester_kurzbz'],
 				$prestudentMappings['zgvnation'], $prestudentMappings['zgvmanation'],
 				$bisioMappings['nation_code'], $bisioMappings['herkunftsland_code']
 			)
@@ -310,56 +311,6 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			}
 		}
 
-		// Nation
-		$moNation = $moAppElementsExtracted->{$personMappings['staatsbuergerschaft']};
-		$moBisioNation = $moAppElementsExtracted->{$bisioMappings['nation_code']};
-		$moBisioHerkunftsNation = $moAppElementsExtracted->{$bisioMappings['herkunftsland_code']};
-		$moAddrNation = isset($moAddr) ? $moAddr->{$adresseMappings['nation']['name']}->description : null;
-		$currAddrNation = isset($currAddr) ? $currAddr->{$adresseMappings['nation']['name']}->description : null;
-
-		$moZgvNation = isset($prestudentMappings['zgvnation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvnation']})
-							? $moAppElementsExtracted->{$prestudentMappings['zgvnation']}
-							: null;
-		$mozgvMaNation = isset($prestudentMappings['zgvmanation']) && isset($moAppElementsExtracted->{$prestudentMappings['zgvmanation']})
-							? $moAppElementsExtracted->{$prestudentMappings['zgvmanation']}
-							: null;
-
-		$moNations = array(
-			$personMappings['staatsbuergerschaft'] => $moNation,
-			$bisioMappings['nation_code'] => $moBisioNation,
-			$bisioMappings['herkunftsland_code'] => $moBisioHerkunftsNation,
-			$prestudentMappings['zgvnation'] => $moZgvNation,
-			$prestudentMappings['zgvmanation'] => $mozgvMaNation
-		);
-
-		$fhcNations = $this->ci->NationModel->load();
-
-		if (hasData($fhcNations))
-		{
-			foreach ($fhcNations->retval as $fhcNation)
-			{
-				// trying to get nations by bezeichnung
-				foreach ($moNations as $configBez => $mooNation)
-				{
-					if ($fhcNation->kurztext === $mooNation || $fhcNation->langtext === $mooNation || $fhcNation->engltext === $mooNation)
-					{
-						if (isset($moAppElementsExtracted->{$configBez}))
-							$moAppElementsExtracted->{$configBez} = $fhcNation->nation_code;
-					}
-				}
-
-				if ($fhcNation->kurztext === $moAddrNation || $fhcNation->langtext === $moAddrNation || $fhcNation->engltext === $moAddrNation)
-				{
-					$moAddr->{$adresseMappings['nation']['name']} = $fhcNation->nation_code;
-				}
-
-				if ($fhcNation->kurztext === $currAddrNation || $fhcNation->langtext === $currAddrNation || $fhcNation->engltext === $currAddrNation)
-				{
-					$currAddr->{$adresseMappings['nation']['name']} = $fhcNation->nation_code;
-				}
-			}
-		}
-
 		// small Lichtbild
 		if (!isEmptyArray($photo))
 		{
@@ -378,7 +329,13 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// WS and SS if Studienjahr given in MO
 		if ($moAppElementsExtracted->{$prestudentstatusMappings['studiensemester_kurzbz']} === $moStudjahr)
 		{
-			$allSemesters = array_unique(array_merge($allSemesters, $this->ci->frommobilityonlinedataconversionlib->mapMoStudienjahrToSemester($moStudjahr)));
+			$allSemesters =
+				array_unique(
+					array_merge(
+						$allSemesters,
+						$this->ci->frommobilityonlinedataconversionlib->mapMoStudienjahrToSemester($moStudjahr)
+					)
+				);
 		}
 
 		// get start of Studiensemester for getting semester by date
@@ -396,7 +353,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 		if (hasData($studiensemesterRes))
 		{
-			foreach ($studiensemesterRes->retval as $semester)
+			foreach (getData($studiensemesterRes) as $semester)
 			{
 				$studiensemester_kurzbz = $semester->studiensemester_kurzbz;
 				if (!in_array($studiensemester_kurzbz, $allSemesters))
@@ -555,7 +512,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				// prestudentstatus
 				$prestudent['prestudent_id'] = $prestudentstatus['prestudent_id'] = $prestudent_id_res;
 
-				$this->_savePrestudentStatus($studiensemarr, $prestudentstatus);
+				$this->_savePrestudentStatus($studiensemarr, $prestudent, $prestudentstatus);
 
 				// personenkennzeichen - von date of bisio is needed for extracting year from Studiensemester
 				$personenkennzeichenData =
@@ -644,7 +601,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$appIdZuordnung = $this->ci->MoappidzuordnungModel->loadWhere(array('mo_applicationid' => $moId));
 		if (hasData($appIdZuordnung))
 		{
-			$prestudent_id = $appIdZuordnung->retval[0]->prestudent_id;
+			$prestudent_id = getData($appIdZuordnung)[0]->prestudent_id;
 			$prestudent = $this->ci->PrestudentModel->load($prestudent_id);
 			if (hasData($prestudent))
 			{
@@ -680,7 +637,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		// update if prestudent already exists, insert otherwise
 		if ($update)
 		{
-			$person_id = $prestudentCheckResp->retval[0]->person_id;
+			$person_id = getData($prestudentCheckResp)[0]->person_id;
 			$this->stamp('update', $person);
 			$personResponse = $this->ci->PersonModel->update($person_id, $person);
 			$this->log('update', $personResponse, 'person');
@@ -691,7 +648,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$personResponse = $this->ci->PersonModel->insert($person);
 			if (isSuccess($personResponse))
 			{
-				$person_id = $personResponse->retval;
+				$person_id = getData($personResponse);
 			}
 			$this->log('insert', $personResponse, 'person');
 		}
@@ -710,6 +667,9 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		if (isEmptyArray($adresse))
 			return null;
 
+		// use Ort if there is no Gemeinde
+		if ((!isset($adresse['gemeinde']) || isEmptyString($adresse['gemeinde'])) && isset($adresse['ort'])) $adresse['gemeinde'] = $adresse['ort'];
+
 		$adresse_id = null;
 		// insert if there is no adress with same heimatadresse / zustelladresse values
 		$heimatAddrResp = $this->ci->AdresseModel->loadWhere(array(
@@ -723,7 +683,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$adresse['person_id'] = $person_id;
 			$this->stamp('insert', $adresse);
 			$addrResp = $this->ci->AdresseModel->insert($adresse);
-			$adresse_id = $addrResp->retval;
+			$adresse_id = getData($addrResp);
 			$this->log('insert', $addrResp, 'adresse');
 		}
 
@@ -750,7 +710,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				$kontaktFound = false;
 				if (hasData($kontaktResp))
 				{
-					foreach ($kontaktResp->retval as $ktkt)
+					foreach (getData($kontaktResp) as $ktkt)
 					{
 						if ($ktkt->kontakt === $kontakt['kontakt'])
 						{
@@ -765,7 +725,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 					$kontakt['person_id'] = $person_id;
 					$this->stamp('insert', $kontakt);
 					$kontaktResp = $kontaktinsresp = $this->ci->KontaktModel->insert($kontakt);
-					$kontakt_id = $kontaktResp->retval;
+					$kontakt_id = getData($kontaktResp);
 					$this->log('insert', $kontaktinsresp, $table);
 				}
 			}
@@ -794,7 +754,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				{
 					if ($this->debugmode)
 					{
-						$this->addInfoOutput('Lichtbild existiert bereits, akte_id '.$aktecheckResp->retval[0]->akte_id);
+						$this->addInfoOutput('Lichtbild existiert bereits, akte_id '.getData($aktecheckResp)[0]->akte_id);
 					}
 				}
 				else
@@ -804,7 +764,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 					$akte['titel'] = $akte['bezeichnung'].'_'.$person_id.$akte['titel'];
 					$this->stamp('insert', $akte);
 					$akteResp = $this->ci->AkteModel->insert($akte);
-					$akte_id = $akteResp->retval;
+					$akte_id = getData($akteResp);
 					$this->log('insert', $akteResp, $akte['bezeichnung']);
 				}
 			}
@@ -838,7 +798,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 			$prestudentResponse = $this->ci->PrestudentModel->insert($prestudent);
 			$this->log('insert', $prestudentResponse, 'prestudent');
 		}
-		$prestudent_id_response = $prestudentResponse->retval;
+		$prestudent_id_response = getData($prestudentResponse);
 
 		return $prestudent_id_response;
 	}
@@ -846,24 +806,80 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 	/**
 	 * Inserts prestudentstatus for each given Studiensemester.
 	 * @param string $studiensemarr all semester, for which a prestudentstatus entry should be generated
+	 * @param array $prestudent
 	 * @param array $prestudentstatus
 	 * @return array containing inserted prestudentstatus primary keys
 	 */
-	private function _savePrestudentStatus($studiensemarr, $prestudentstatus)
+	private function _savePrestudentStatus($studiensemarr, $prestudent, $prestudentstatus)
 	{
 		$saved = array();
 
 		foreach ($studiensemarr as $semester)
 		{
 			$lastStatus = $this->ci->PrestudentstatusModel->getLastStatus($prestudentstatus['prestudent_id'], $semester);
-			if (isSuccess($lastStatus) && (!hasData($lastStatus) || $lastStatus->retval[0]->status_kurzbz !== 'Incoming'))
+
+			// if there is no latest status
+			if (isSuccess($lastStatus) && (!hasData($lastStatus) || getData($lastStatus)[0]->status_kurzbz !== 'Incoming'))
 			{
+				if (isset($prestudent['studiengang_kz']))
+				{
+					// get Studiengang data
+					$this->ci->StudiengangModel->addSelect('orgform_kurzbz, typ');
+					$studiengangResponse = $this->ci->StudiengangModel->load($prestudent['studiengang_kz']);
+
+					if (hasData($studiengangResponse))
+					{
+						$studiengang = getData($studiengangResponse)[0];
+
+						// check if there is a Studienplan with orgform from priorities (prioirities defined in config)
+						if (isset($this->confmiscvalues['orgform_priorities']) && !isEmptyArray($this->confmiscvalues['orgform_priorities']))
+						{
+							$studienplaeneResponse = $this->ci->StudienplanModel->getStudienplaeneBySemester(
+								$prestudent['studiengang_kz'],
+								$semester
+							);
+
+							if (hasData($studienplaeneResponse))
+							{
+								$studienplaene = getData($studienplaeneResponse);
+
+								// set orgform from config (sorted by priority) if found in status
+								foreach ($this->confmiscvalues['orgform_priorities'] as $orgform_kurzbz)
+								{
+									foreach ($studienplaene as $studienplan)
+									{
+										if ($orgform_kurzbz == $studienplan->orgform_kurzbz)
+										{
+											$prestudentstatus['orgform_kurzbz'] = $studienplan->orgform_kurzbz;
+											break 2;
+										}
+									}
+								}
+							}
+						}
+
+						if (!isset($prestudentstatus['orgform_kurzbz']))
+						{
+							// fallback: if no Studienplan found for orgform, use studiengangtyp fallback from config
+							if (isset($this->confmiscvalues['orgform_studiengangtyp_fallback'][$studiengang->typ]))
+							{
+								$prestudentstatus['orgform_kurzbz'] = $this->confmiscvalues['orgform_studiengangtyp_fallback'][$studiengang->typ];
+							}
+							// second fallback: if no Orgform for Studiengangtyp, use the highest priority Orgform from config
+							elseif (isset($this->confmiscvalues['orgform_priorities'][0]))
+							{
+								$prestudentstatus['orgform_kurzbz'] = $this->confmiscvalues['orgform_priorities'][0];
+							}
+						}
+					}
+				}
+
 				$prestudentstatus['studiensemester_kurzbz'] = $semester;
 				$prestudentstatus['datum'] = date('Y-m-d', time());
 				$this->stamp('insert', $prestudentstatus);
 				$prestudentstatusResponse = $this->ci->PrestudentstatusModel->insert($prestudentstatus);
 				if (hasData($prestudentstatusResponse))
-					$saved[] = $prestudentstatusResponse->retval;
+					$saved[] = getData($prestudentstatusResponse);
 				$this->log('insert', $prestudentstatusResponse, 'prestudentstatus');
 			}
 		}
@@ -889,7 +905,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		{
 			if (hasData($benutzerstudCheckResp))
 			{
-				$benutzer['uid'] = $benutzerstudCheckResp->retval[0]->student_uid;
+				$benutzer['uid'] = getData($benutzerstudCheckResp)[0]->student_uid;
 				$benutzerresp_uid = $benutzer['uid'];
 
 				if ($this->debugmode)
@@ -907,8 +923,8 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 				if (hasData($stgres))
 				{
-					$stg_bez = $stgres->retval[0]->kurzbz;
-					$stg_typ = $stgres->retval[0]->typ;
+					$stg_bez = getData($stgres)[0]->kurzbz;
+					$stg_typ = getData($stgres)[0]->typ;
 					$benutzer['uid'] = generateUID($stg_bez, $jahr, $stg_typ, $personenkennzeichen);
 
 					//check for existing benutzer
@@ -925,7 +941,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 						$this->stamp('insert', $benutzer);
 						$benutzerInsCheckResp = $this->ci->BenutzerModel->insert($benutzer);
 						if (hasData($benutzerInsCheckResp))
-							$benutzerresp_uid = $benutzerInsCheckResp->retval['uid'];
+							$benutzerresp_uid = getData($benutzerInsCheckResp)['uid'];
 
 						$this->log('insert', $benutzerInsCheckResp, 'benutzer');
 					}
@@ -970,7 +986,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 				$this->log('insert', $studentResponse, 'student');
 			}
 
-			$studentresp_uid = $studentResponse->retval['student_uid'];
+			$studentresp_uid = getData($studentResponse)['student_uid'];
 		}
 
 		return $studentresp_uid;
@@ -1017,7 +1033,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 						$studentlehrverbandResponse = $this->ci->StudentlehrverbandModel->insert($studentlehrverband);
 						$this->log('insert', $studentlehrverbandResponse, 'studentlehrverband');
 					}
-					$studentlehrverbandPk = $studentlehrverbandResponse->retval;
+					$studentlehrverbandPk = getData($studentlehrverbandResponse);
 				}
 			}
 		}
@@ -1118,7 +1134,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 					if (isSuccess($checkbuchungRes) && !hasData($checkbuchungRes))
 					{
-						$buchungstyp = $buchungstypRes->retval[0];
+						$buchungstyp = getData($buchungstypRes)[0];
 						$kontoToInsert['buchungstyp_kurzbz'] = $buchungstyp_kurzbz;
 
 						if (isset($konto['betrag'][$buchungstyp_kurzbz]))
@@ -1138,7 +1154,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 						if (hasData($kontoInsertRes))
 						{
-							$kontoInsertId = $kontoInsertRes->retval;
+							$kontoInsertId = getData($kontoInsertRes);
 							// Zahlungsreferenz generieren
 							$zahlungsref = generateZahlungsreferenz($konto['studiengang_kz'], $kontoInsertId);
 

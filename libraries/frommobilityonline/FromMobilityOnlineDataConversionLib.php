@@ -21,6 +21,8 @@ class FromMobilityOnlineDataConversionLib
 		// get Code Igniter instance
 		$this->ci =& get_instance();
 
+		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/fhcomplete/Mobilityonlinefhc_model', 'MoFhcModel');
+
 		$this->ci->load->library('extensions/FHC-Core-MobilityOnline/tomobilityonline/ToMobilityOnlineDataConversionLib');
 
 		// set semester and studienjahr mappings
@@ -86,6 +88,23 @@ class FromMobilityOnlineDataConversionLib
 	}
 
 	/**
+	 * Converts MobilityOnline nation to fhcomplete nation.
+	 * @param string $moNation
+	 * @return string fhcomplete nation
+	 */
+	public function mapNationToFhc($moNation)
+	{
+		$fhcNations = $this->ci->MoFhcModel->getNationByText($moNation);
+
+		if (hasData($fhcNations))
+		{
+			return getData($fhcNations)[0]->nation_code;
+		}
+
+		return null;
+	}
+
+	/**
 	 * Converts MobilityOnline ects amount to fhcomplete format.
 	 * @param float $moEcts
 	 * @return float fhcomplete ects
@@ -93,12 +112,7 @@ class FromMobilityOnlineDataConversionLib
 	public function mapEctsToFhc($moEcts)
 	{
 		$pattern = '/^(\d+),(\d{2})$/';
-		if (preg_match($pattern, $moEcts))
-		{
-			return (float)str_replace(',', '.', $moEcts);
-		}
-		else
-			return null;
+		return preg_match($pattern, $moEcts) ? str_replace(',', '.', $moEcts) : null;
 	}
 
 	/**
@@ -218,6 +232,16 @@ class FromMobilityOnlineDataConversionLib
 	{
 		$d = DateTime::createFromFormat($format, $date);
 		return $d && $d->format($format) === $date;
+	}
+
+	/**
+	 * Extracts Lehrveranstaltung id from Kürzel.
+	 * @param string $kuerzel
+	 * @return string
+	 */
+	public function extractLvIdFromKuerzel($kuerzel)
+	{
+		return substr($kuerzel, 0, strpos($kuerzel, '_'));
 	}
 
 	/** ---------------------------------------------- Private methods ------------------------------------------------*/
