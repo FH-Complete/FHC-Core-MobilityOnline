@@ -516,7 +516,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 				// personenkennzeichen - von date of bisio is needed for extracting year from Studiensemester
 				$personenkennzeichenData =
-					$this->ci->StudentModel->generatePersonenkennzeichen($prestudent['studiengang_kz'], $studiensemester, $bisio['von']);
+					$this->ci->StudentModel->generatePersonenkennzeichen($prestudent['studiengang_kz'], $bisio['von']);
 
 				if (!hasData($personenkennzeichenData))
 				{
