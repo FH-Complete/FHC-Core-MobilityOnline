@@ -35,6 +35,7 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 		$this->ci->load->model('education/studentlehrverband_model', 'StudentlehrverbandModel');
 		$this->ci->load->model('codex/Nation_model', 'NationModel');
 		$this->ci->load->model('codex/bisio_model', 'BisioModel');
+		$this->ci->load->model('codex/Oehbeitrag_model', 'OehbeitragModel');
 		$this->ci->load->model('organisation/studienplan_model', 'StudienplanModel');
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mobilityonline/Mobilityonlineapi_model');//parent model
 		$this->ci->load->model('extensions/FHC-Core-MobilityOnline/mappings/Moappidzuordnung_model', 'MoappidzuordnungModel');
@@ -1122,13 +1123,27 @@ class SyncIncomingsFromMoLib extends SyncFromMobilityOnlineLib
 
 					if (isSuccess($checkbuchungRes) && !hasData($checkbuchungRes))
 					{
-						$buchungstyp = getData($buchungstypRes)[0];
 						$kontoToInsert['buchungstyp_kurzbz'] = $buchungstyp_kurzbz;
 
 						if (isset($konto['betrag'][$buchungstyp_kurzbz]))
 							$kontoToInsert['betrag'] = $konto['betrag'][$buchungstyp_kurzbz];
 						else
+						{
+							$buchungstyp = getData($buchungstypRes)[0];
 							$kontoToInsert['betrag'] = $buchungstyp->standardbetrag;
+
+							if ($buchungstyp_kurzbz == $this->confmiscvalues['oeh_buchungstyp_kurzbz'])
+							{
+								// oehbeitrag: get from oehbeitrag history table if possible
+								$oehbeitragRes = $this->ci->OehbeitragModel->getByStudiensemester($konto['studiensemester_kurzbz']);
+
+								if (hasData($oehbeitragRes))
+								{
+									$oehbeitrag = getData($oehbeitragRes)[0];
+									$kontoToInsert['betrag'] = $oehbeitrag->studierendenbeitrag + $oehbeitrag->versicherung;
+								}
+							}
+						}
 
 						if (isset($konto['buchungstext'][$buchungstyp_kurzbz]))
 							$kontoToInsert['buchungstext'] = $konto['buchungstext'][$buchungstyp_kurzbz];
