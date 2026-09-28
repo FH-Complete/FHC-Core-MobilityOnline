@@ -13,6 +13,8 @@ $config['FHC-Core-MobilityOnline']['debugmode'] = false; // gives more detailed 
 
 $config['FHC-Core-MobilityOnline']['post_max_size'] = '4M';
 
+$config['FHC-Core-MobilityOnline']['verify_certificate'] = true;
+
 $config['FHC-Core-MobilityOnline']['services'] = array(
 	'getMasterData' => array(
 		'service' => 'GetMasterDataService',

@@ -30,26 +30,39 @@ class Mobilityonlineapi_model extends CI_Model
 	{
 		try
 		{
+			$soapOptions = array(
+				'soap_version' => $this->_mobilityonline_config['soapversion'],
+				'encoding' => $this->_mobilityonline_config['encoding'],
+				'uri' => $this->_mobilityonline_config['wsdlurl'].'/'.
+					$this->_mobilityonline_config['services'][$this->name]['service'].'.'.
+					$this->_mobilityonline_config['services'][$this->name]['endpoint'],
+				'typemap' => array( // set typemappings for correct serialization of dates
+					array(
+						// type namespaces have to match those declared in the WSDL
+						'type_ns' => self::DATETIME_NAMESPACE,
+						'type_name' => 'DateTime',
+						'from_xml' => array($this, 'datetimeFromXml') // callback for transformation of date to string
+					),
+				),
+				'features' => SOAP_SINGLE_ELEMENT_ARRAYS // elements appearning once are placed in array, so access is consistent
+			);
+
+			// bypass certificate validation if configured
+			if (isset($this->_mobilityonline_config['verify_certificate']) && $this->_mobilityonline_config['verify_certificate'] === false)
+			{
+				$soapOptions['stream_context'] = stream_context_create([
+					'ssl' => [
+						'verify_peer' => false, // Not recommended for production
+						'verify_peer_name' => false, // Not recommended for production
+						'allow_self_signed' => true // Not recommended for production
+					 ]
+				]);
+			}
+
 			$this->_soapClient = new SoapClient(
 				$this->_mobilityonline_config['wsdlurl'].'/'.
 				$this->_mobilityonline_config['services'][$this->name]['service'].'?'.self::WSDL,
-				array(
-					'soap_version' => $this->_mobilityonline_config['soapversion'],
-					'encoding' => $this->_mobilityonline_config['encoding'],
-					'uri' => $this->_mobilityonline_config['wsdlurl'].'/'.
-						$this->_mobilityonline_config['services'][$this->name]['service'].'.'.
-						$this->_mobilityonline_config['services'][$this->name]['endpoint'],
-					'typemap' => array( // set typemappings for correct serialization of dates
-						array(
-							// type namespaces have to match those declared in the WSDL
-							'type_ns' => self::DATETIME_NAMESPACE,
-							'type_name' => 'DateTime',
-							'from_xml' => array($this, 'datetimeFromXml') // callback for transformation of date to string
-						),
-    				),
-					'features' => SOAP_SINGLE_ELEMENT_ARRAYS // elements appearning once are placed in array, so access is consistent
-					/*'default_socket_timeout' => $this->_mobilityonline_config['default_socket_timeout']*/
-				)
+				$soapOptions
 			);
 		}
 		catch (SoapFault $e)
