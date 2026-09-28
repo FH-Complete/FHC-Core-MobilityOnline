@@ -28,6 +28,14 @@ class Mobilityonlineapi_model extends CI_Model
 	 */
 	protected function setSoapClient()
 	{
+		$context = stream_context_create([
+			'ssl' => [
+				'verify_peer' => false, // Not recommended for production
+				'verify_peer_name' => false, // Not recommended for production
+				'allow_self_signed' => true // Not recommended for production
+			 ]
+		]);
+
 		try
 		{
 			$this->_soapClient = new SoapClient(
@@ -47,8 +55,8 @@ class Mobilityonlineapi_model extends CI_Model
 							'from_xml' => array($this, 'datetimeFromXml') // callback for transformation of date to string
 						),
     				),
-					'features' => SOAP_SINGLE_ELEMENT_ARRAYS // elements appearning once are placed in array, so access is consistent
-					/*'default_socket_timeout' => $this->_mobilityonline_config['default_socket_timeout']*/
+					'features' => SOAP_SINGLE_ELEMENT_ARRAYS, // elements appearning once are placed in array, so access is consistent
+					'stream_context' => $context
 				)
 			);
 		}
